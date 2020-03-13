@@ -1,0 +1,28 @@
+# Experiment settings of half-cheetah environment with target direction 
+
+# General
+# -------
+env_name: 'HalfCheetahDir-v2' # Name of the half-cheetah environment
+env_params: # Additional parameters for the environment (eg. bound for task sampling)
+  n_tasks: 2
+  randomize_tasks: True
+gamma: 0.99 # Discount factor
+lam: 0.97 # Discount factor lambda used in "Generalized Advantage Estimation" (GAE)
+first_order: False # If "true", then the first order approximation of MAML is applied
+
+# Task-specific
+# -------------
+fast_batch_size: 20 # Number of trajectories to sample for each task
+num_steps: 1 # Number of gradient steps in the inner loop / fast adaptation
+fast_lr: 0.1 # Step size for each gradient step in the inner loop / fast adaptation
+
+# Optimization
+# ------------
+num_batches: 500 # Number of outer-loop updates (ie. number of batches of tasks)
+meta_batch_size: 40 # Number of tasks in each batch of tasks
+
+# TRPO-specific
+# -------------
+max_kl: 0.01 # Size of the trust-region
+backtrack_iter: 10 # Maximum number of steps in the backtracking line search
+backtrack_ratio: 0.8 # Ratio to use for backtracking during the line search
