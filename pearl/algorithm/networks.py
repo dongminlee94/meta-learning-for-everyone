@@ -22,20 +22,20 @@ class MLP(nn.Module):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.hidden_sizes = hidden_sizes
+        self.hidden_units = hidden_units
         self.hidden_activation = hidden_activation
         
         # Set fully connected layers
         self.fcs = nn.ModuleList()
-        in_size = input_dim
-        for i, next_size in enumerate(hidden_sizes):
-            fc = nn.Linear(in_size, next_size)
-            in_size = next_size
+        in_dim = input_dim
+        for i, hidden_unit in enumerate(hidden_units):
+            fc = nn.Linear(in_dim, hidden_unit)
+            in_dim = hidden_unit
             self.__setattr__("fc{}".format(i), fc)
             self.fcs.append(fc)
 
         # Set the output layer
-        self.last_fc = nn.Linear(in_size, output_dim)
+        self.last_fc = nn.Linear(in_dim, output_dim)
         self.last_fc.weight.data.uniform_(-init_w, init_w)
         self.last_fc.bias.data.uniform_(-init_w, init_w)
 
@@ -61,16 +61,16 @@ class MLPEncoder(FlattenMLP):
             self, 
             input_dim: int,
             output_dim: int,
-            hidden_sizes: List[int],
-            latent_size: int,
+            latent_dim: int,
+            hidden_units: List[int],
     ):  
         super(MLPEncoder, self).__init__(
             input_dim=input_dim, 
             output_dim=output_dim,
-            hidden_sizes=hidden_sizes)
+            hidden_units=hidden_units)
 
         self.output_dim = output_dim
-        self.latent_size = latent_size
+        self.latent_dim = latent_dim
         self.clear_z()
 
     def sample_z(self, z_mu, z_var):
@@ -92,8 +92,8 @@ class MLPEncoder(FlattenMLP):
         params = params.view(context.size(0), -1, self.output_dim)
 
         # With probabilistic z, predict mean and variance of q(z | c)
-        mu = params[..., :self.latent_size]
-        var = F.softplus(params[..., self.latent_size:])
+        mu = params[..., :self.latent_dim]
+        var = F.softplus(params[..., self.latent_dim:])
         z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(torch.unbind(mu), torch.unbind(var))]
         z_mu = torch.stack([p[0] for p in z_params])
         z_std = torch.stack([p[1] for p in z_params])
@@ -102,7 +102,7 @@ class MLPEncoder(FlattenMLP):
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
-        prior = torch.distributions.Normal(torch.zeros(self.latent_size), torch.ones(self.latent_size))
+        prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim))
         posteriors = [torch.distributions.Normal(mu, torch.sqrt(var)) for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var))]
         kl_div = [torch.distributions.kl.kl_divergence(post, prior) for post in posteriors]
         return torch.sum(torch.stack(kl_div))
@@ -127,17 +127,17 @@ class TanhGaussianPolicy(MLP):
             self, 
             input_dim: int,
             output_dim: int,
-            hidden_sizes: List[int],
+            hidden_units: List[int],
             init_w: float = 1e-3,
     ):
         super(TanhGaussianPolicy, self).__init__(
             input_dim=input_dim, 
             output_dim=output_dim,
-            hidden_sizes=hidden_sizes,
+            hidden_units=hidden_units,
             init_w=init_w)
         
-        last_hidden_size = hidden_sizes[-1]
-        self.last_fc_log_std = nn.Linear(last_hidden_size, output_dim)
+        last_hidden_units = hidden_units[-1]
+        self.last_fc_log_std = nn.Linear(last_hidden_units, output_dim)
         self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
         self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
 
