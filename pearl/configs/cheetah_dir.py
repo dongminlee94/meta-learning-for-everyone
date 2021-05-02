@@ -12,7 +12,7 @@ config = dict(
     latent_size=5,              # default: 5
 
     # number of hidden units in neural networks
-    hidden_units='300,300,300'      # default: 300,300,300
+    hidden_units='300,300,300',      # default: 300,300,300
 
     # path to pre-trained weights to load into networks
     path_to_weights=None,       # default: None
