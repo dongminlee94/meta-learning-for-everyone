@@ -50,8 +50,8 @@ class SAC(object):
         self.encoder = MLPEncoder(
             input_dim=encoder_input_dim,
             output_dim=encoder_output_dim,
+            latent_dim=latent_dim,
             hidden_units=hidden_units,
-            latent_size=latent_dim,
         ).to(device)
         self.policy = TanhGaussianPolicy(
             input_dim=observ_dim + latent_dim,
