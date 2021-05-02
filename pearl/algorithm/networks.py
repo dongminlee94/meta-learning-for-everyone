@@ -71,7 +71,6 @@ class MLPEncoder(FlattenMLP):
 
         self.output_dim = output_dim
         self.latent_dim = latent_dim
-        self.clear_z()
 
     def sample_z(self, z_mu, z_var):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''

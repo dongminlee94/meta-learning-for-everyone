@@ -70,7 +70,7 @@ def trainer():
     #     policy.load_state_dict(torch.load(os.path.join(path, 'policy.pth')))
 
     # run meta-training
-    meta_learner.meta_train()
+    # meta_learner.meta_train()
 
 if __name__ == "__main__":
     trainer()
