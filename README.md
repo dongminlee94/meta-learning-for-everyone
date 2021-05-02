@@ -1,1 +1,1 @@
-# Meta Reinforcement Learning (Meta-RL) Algorithms with PyTorch
+# Meta-Reinforcement Learning Algorithms with PyTorch
