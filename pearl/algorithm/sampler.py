@@ -12,7 +12,7 @@ class InPlacePathSampler(object):
     sampler.obtain_samples  # this has side-effects: env will change!
     ```
     """
-    def __init__(self, env, policy, encoder, max_path_length, update_context):
+    def __init__(self, env, policy, encoder, max_path_length):
         self.env = env
         self.policy = policy
         self.encoder = encoder
