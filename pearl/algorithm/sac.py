@@ -4,8 +4,8 @@ from typing import Callable, List
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import algorithm.utils as ptu
-from algorithm.networks import *
+from algorithm.utils.util import *
+from algorithm.utils.networks import *
 
 
 class SAC(object):
@@ -60,8 +60,8 @@ class SAC(object):
         ).to(device)
 
         # Initialize target parameters to match main parameters
-        ptu.hard_target_update(self.qf1, self.target_qf1)
-        ptu.hard_target_update(self.qf2, self.target_qf2)
+        hard_target_update(self.qf1, self.target_qf1)
+        hard_target_update(self.qf2, self.target_qf2)
 
         self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=config['policy_lr'])
         self.context_optimizer = optim.Adam(self.encoder.parameters(), lr=config['encoder_lr'])

@@ -6,9 +6,10 @@ from collections import OrderedDict
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-import algorithm.utils as ptu
-from algorithm.sampler import InPlacePathSampler
-from algorithm.buffers import MultiTaskReplayBuffer
+from algorithm.utils.util import *
+from algorithm.utils.sampler import InPlacePathSampler
+from algorithm.utils.buffers import MultiTaskReplayBuffer
+
 
 class MetaLearner(object):
     def __init__(

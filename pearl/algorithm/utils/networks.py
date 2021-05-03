@@ -6,8 +6,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.distributions import Normal
 
-import algorithm.utils as ptu
-
 
 class MLP(nn.Module):
     def __init__(
