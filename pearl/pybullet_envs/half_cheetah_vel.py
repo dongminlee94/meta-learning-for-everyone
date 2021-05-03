@@ -7,7 +7,6 @@ from . import register_env
 
 @register_env('cheetah-vel')
 class HalfCheetahVelBulletEnv(HalfCheetahBulletEnv):
-    
   def __init__(self, task={}, n_tasks=2, randomize_tasks=True):
     self.env_name = 'cheetah-vel'
     self.robot = HalfCheetah()

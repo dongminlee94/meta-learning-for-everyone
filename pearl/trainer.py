@@ -57,19 +57,11 @@ def trainer():
         **config['pearl_params']
     )
 
-    # optionally load pre-trained weights
-    # if config['path_to_weights'] is not None:
-    #     path = config['path_to_weights']
-    #     context_encoder.load_state_dict(torch.load(os.path.join(path, 'context_encoder.pth')))
-    #     qf1.load_state_dict(torch.load(os.path.join(path, 'qf1.pth')))
-    #     qf2.load_state_dict(torch.load(os.path.join(path, 'qf2.pth')))
-    #     vf.load_state_dict(torch.load(os.path.join(path, 'vf.pth')))
-    #     # TODO hacky, revisit after model refactor
-    #     algorithm.networks[-2].load_state_dict(torch.load(os.path.join(path, 'target_vf.pth')))
-    #     policy.load_state_dict(torch.load(os.path.join(path, 'policy.pth')))
+    # Run meta-training
+    # train_results = meta_learner.meta_train()
 
-    # run meta-training
-    # meta_learner.meta_train()
+    # Run meta-testing
+    # test_results = meta_learner.meta_test()
 
 if __name__ == "__main__":
     trainer()

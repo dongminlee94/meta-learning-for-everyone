@@ -10,15 +10,15 @@ from algorithm.utils.networks import *
 
 class SAC(object):
     def __init__(
-            self,
-            observ_dim,
-            action_dim,
-            latent_dim,
-            hidden_units,
-            encoder_input_dim,
-            encoder_output_dim,
-            device,
-            **config,
+        self,
+        observ_dim,
+        action_dim,
+        latent_dim,
+        hidden_units,
+        encoder_input_dim,
+        encoder_output_dim,
+        device,
+        **config,
     ):
 
         self.gamma = config['gamma']
@@ -74,3 +74,11 @@ class SAC(object):
             self.target_entropy = -np.prod((action_dim,)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
             self.alpha_optimizer = optim.Adam([self.log_alpha], lr=config['policy_lr'])
+
+    def get_action(self, obs, deterministic=False):
+        ''' Sample action from the policy, conditioned on the task embedding '''
+        z = self.encoder.z
+        obs = torch.from_numpy(obs).float()
+        inputs = torch.cat([obs, z], dim=1)
+        action = self.policy(inputs, deterministic=deterministic)
+        return action.detach().cpu().numpy()

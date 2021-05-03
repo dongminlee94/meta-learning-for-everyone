@@ -7,7 +7,6 @@ from . import register_env
 
 @register_env('cheetah-dir')
 class HalfCheetahDirBulletEnv(HalfCheetahBulletEnv):
-      
   def __init__(self, task={}, n_tasks=2, randomize_tasks=False):
     directions = [-1, 1]
     self.env_name = 'cheetah-dir'

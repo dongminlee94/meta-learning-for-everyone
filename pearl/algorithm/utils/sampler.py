@@ -1,132 +1,104 @@
 import numpy as np
 import torch
 
-class InPlacePathSampler(object):
-    """
-    A sampler that does not serialization for sampling. Instead, it just uses
-    the current policy and environment as-is.
-
-    WARNING: This will affect the environment! So
-    ```
-    sampler = InPlacePathSampler(env, ...)
-    sampler.obtain_samples  # this has side-effects: env will change!
-    ```
-    """
-    def __init__(self, env, policy, encoder, max_path_length):
+class Sampler(object):
+    def __init__(
+        self, 
+        env, 
+        agent, 
+        max_step,
+    ):
+    
         self.env = env
-        self.policy = policy
-        self.encoder = encoder
-        self.max_path_length = max_path_length
+        self.agent = agent
+        self.max_step = max_step
 
-    def update_context(self, transition: torch.Tensor):
-        ''' Append single transition to the current context '''
-        o, a, r = transition
-        o = torch.from_numpy(o[None, None, ...]).float()
-        a = torch.from_numpy(a[None, None, ...]).float()
-        r = torch.from_numpy(np.array([r])[None, None, ...]).float()
-        data = torch.cat([o, a, r], dim=2)
-        if self.encoder.context is None:
-            self.encoder.context = data
-        else:
-            self.encoder.context = torch.cat([self.encoder.context, data], dim=1)
+    def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
+        trajs = []
+        cur_samples = 0
+        num_trajs = 0
 
-    def rollout(self, agent, accum_context=True, animated=False):
-        """
-        The following value for the following keys will be a 2D array, with the
-        first dimension corresponding to the time dimension.
-        - observations
-        - actions
-        - rewards
-        - next_observations
-        - terminals
+        while cur_samples < max_samples:
+            traj = self.rollout(
+                accum_context=accum_context,
+                use_rendering=use_rendering,
+            )
+            
+            # Save the latent context that generated this trajectory
+            traj['context'] = self.agent.encoder.z.detach().cpu().numpy()
+            trajs.append(traj)
+            cur_samples += len(traj['observs'])
+            num_trajs += 1
 
-        The next two elements will be lists of dictionaries, with the index into
-        the list being the index into the time
-        - agent_infos
-        - env_infos
+            self.agent.encoder.sample_z()
+            
+            if min_trajs == 1:
+                break
+        return trajs, cur_samples
 
-        :param env:
-        :param agent:
-        :param max_path_length:
-        :param accum_context: if True, accumulate the collected context
-        :param animated: if True, render video of rollout
-        :return:
-        """
-        observations = []
+    def rollout(self, accum_context=True, use_rendering=False):
+        ''' Rollout up to maximum trajectory length '''
+        observs = []
         actions = []
         rewards = []
-        terminals = []
-        agent_infos = []
-        env_infos = []
-        o = self.env.reset()
-        next_o = None
-        path_length = 0
+        dones = []
 
-        if animated:
+        obs = self.env.reset()
+        cur_step = 0
+
+        if use_rendering:
             self.env.render()
 
-        while path_length < self.max_path_length:
-            a, agent_info = agent.get_action(o)
-            next_o, r, d, env_info = self.env.step(a)
+        while cur_step < self.max_step:
+            action, _ = self.agent.get_action(obs)
+            next_obs, reward, done, _ = self.env.step(action)
             
-            # update the agents's current context
+            # Update the agent's current context
             if accum_context:
-                self.update_context([o, a, r])
+                self.update_context([obs, action, reward])
             
-            observations.append(o)
-            rewards.append(r)
-            terminals.append(d)
-            actions.append(a)
-            agent_infos.append(agent_info)
+            observs.append(obs)
+            actions.append(action)
+            rewards.append(reward)
+            dones.append(done)
             
-            path_length += 1
-            o = next_o
-            if d:
+            cur_step += 1
+            obs = next_obs
+            if done:
                 break
 
         actions = np.array(actions)
         if len(actions.shape) == 1:
             actions = np.expand_dims(actions, 1)
         
-        observations = np.array(observations)
-        if len(observations.shape) == 1:
-            observations = np.expand_dims(observations, 1)
-            next_o = np.array([next_o])
+        observs = np.array(observs)
+        if len(observs.shape) == 1:
+            observs = np.expand_dims(observs, 1)
+            next_obs = np.array([next_obs])
         
-        next_observations = np.vstack(
+        next_observs = np.vstack(
             (
-                observations[1:, :],
-                np.expand_dims(next_o, 0)
+                observs[1:, :],
+                np.expand_dims(next_obs, 0)
             )
         )
         return dict(
-            observations=observations,
+            observs=observs,
             actions=actions,
             rewards=np.array(rewards).reshape(-1, 1),
-            next_observations=next_observations,
-            terminals=np.array(terminals).reshape(-1, 1),
-            agent_infos=agent_infos,
-            env_infos=env_infos,
+            next_observs=next_observs,
+            dones=np.array(dones).reshape(-1, 1),
         )
-
-    def obtain_samples(self, max_samples, max_trajs, deterministic=False, accum_context=True, resample=1):
-        paths = []
-        n_steps_total = 0
-        n_trajs = 0
-
-        while n_steps_total < max_samples:
-            path = rollout(self.policy, accum_context)
-            
-            # save the latent context that generated this trajectory
-            path['context'] = self.policy.z.detach().cpu().numpy()
-            paths.append(path)
-            n_steps_total += len(path['observations'])
-            n_trajs += 1
-
-            # don't we also want the option to resample z ever transition?
-            if n_trajs % resample == 0:
-                self.policy.sample_z()
-            
-            if max_trajs == 1:
-                break
-        return paths, n_steps_total
+    
+    def update_context(self, transition: torch.Tensor):
+        ''' Append single transition to the current context '''
+        obs, action, reward = transition
+        obs = torch.from_numpy(obs[None, None, ...]).float()
+        action = torch.from_numpy(action[None, None, ...]).float()
+        reward = torch.from_numpy(np.array([reward])[None, None, ...]).float()
+        data = torch.cat([obs, action, reward], dim=-1)
+        
+        if self.agent.encoder.context is None:
+            self.agent.encoder.context = data
+        else:
+            self.agent.encoder.context = torch.cat([self.agent.encoder.context, data], dim=1)

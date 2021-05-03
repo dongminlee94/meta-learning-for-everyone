@@ -9,12 +9,12 @@ from torch.distributions import Normal
 
 class MLP(nn.Module):
     def __init__(
-            self,
-            input_dim: int,
-            output_dim: int,
-            hidden_units: list,
-            hidden_activation: Callable = F.relu,
-            init_w: float = 3e-3,
+        self,
+        input_dim: int,
+        output_dim: int,
+        hidden_units: list,
+        hidden_activation: Callable = F.relu,
+        init_w: float = 3e-3,
     ):
         super(MLP, self).__init__()
 
@@ -54,21 +54,38 @@ class FlattenMLP(MLP):
 
 class MLPEncoder(FlattenMLP):
     ''' Encode context via MLP '''
-    
     def __init__(
-            self, 
-            input_dim: int,
-            output_dim: int,
-            latent_dim: int,
-            hidden_units: List[int],
+        self, 
+        input_dim: int,
+        output_dim: int,
+        latent_dim: int,
+        hidden_units: List[int],
     ):  
         super(MLPEncoder, self).__init__(
             input_dim=input_dim, 
             output_dim=output_dim,
-            hidden_units=hidden_units)
+            hidden_units=hidden_units
+        )
 
         self.output_dim = output_dim
         self.latent_dim = latent_dim
+        self.clear_z()
+
+    def clear_z(self, num_tasks: int = 1):
+        '''
+        Reset q(z|c) to the prior r(z)
+        Sample a new z from the prior r(z)
+        Reset the context collected so far
+        '''
+        # Reset q(z|c) to the prior r(z)
+        z_mu = torch.zeros(num_tasks, self.latent_dim)
+        z_var = torch.ones(num_tasks, self.latent_dim)
+        
+        # Sample a new z from the prior r(z)
+        self.sample_z(z_mu, z_var)
+        
+        # Reset the context collected so far
+        self.context = None
 
     def sample_z(self, z_mu, z_var):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
@@ -113,51 +130,30 @@ LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
 
 class TanhGaussianPolicy(MLP):
-    """
-    Usage:
-
-    ```
-    policy = TanhGaussianPolicy(...)
-    """
-
     def __init__(
-            self, 
-            input_dim: int,
-            output_dim: int,
-            hidden_units: List[int],
-            init_w: float = 1e-3,
+        self, 
+        input_dim: int,
+        output_dim: int,
+        hidden_units: List[int],
+        init_w: float = 1e-3,
     ):
         super(TanhGaussianPolicy, self).__init__(
             input_dim=input_dim, 
             output_dim=output_dim,
             hidden_units=hidden_units,
-            init_w=init_w)
+            init_w=init_w
+        )
         
         last_hidden_units = hidden_units[-1]
         self.last_fc_log_std = nn.Linear(last_hidden_units, output_dim)
         self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
         self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
 
-    def np_ify(self, tensor_or_other):
-        if isinstance(tensor_or_other, Variable):
-            return tensor_or_other.detach().cpu().numpy()
-        else:
-            return tensor_or_other
-
-    def get_action(self, x: torch.Tensor, deterministic: bool = False):
-        actions = self.get_actions(x, deterministic=deterministic)
-        return actions[0, :], {}
-
-    @torch.no_grad()
-    def get_actions(self, x: torch.Tensor, deterministic: bool = False):
-        outputs = self.forward(x, deterministic=deterministic)[0]
-        return np_ify(outputs)
-
     def forward(
             self,
             x: torch.Tensor,
             deterministic: bool = False,
-            reparameterize: bool = False,
+            reparameterize: bool = True,
     ) -> Tuple[torch.Tensor, ...]:
         for i, fc in enumerate(self.fcs):
             x = self.hidden_activation(fc(x))

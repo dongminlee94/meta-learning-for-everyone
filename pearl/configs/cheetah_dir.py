@@ -18,7 +18,7 @@ config = dict(
     path_to_weights=None,       # default: None
     
     env_params=dict(
-        # number of distinct tasks in this domain, should equal sum of train and eval tasks
+        # number of distinct tasks in the domain, should equal sum of train and eval tasks
         n_tasks=2,              # default: 2
         
         # shuffle the tasks after creating them     
@@ -33,19 +33,20 @@ config = dict(
         num_iterations=500,                 # default: 500
 
         # number of meta-gradient steps taken per iteration
-        num_train_steps_per_itr=2000,       # default: 2000
+        num_meta_gradient=2000,             # default: 2000
         
         # number of transitions collected per task before training 
         num_initial_steps=2000,             # default: 2000
 
         # number of randomly sampled tasks to collect data for each iteration
-        num_tasks_sample=5,                 # default: 5
+        num_random_sample=5,                # default: 5
         
         # number of transitions to collect per task with z ~ prior 
-        num_steps_prior=1000,               # default: 1000
+        num_prior_sample=1000,              # default: 1000
         
-        # number of additional transitions to collect per task with z ~ posterior that are only used to train the policy and NOT the encoder
-        num_extra_rl_steps_posterior=1000,  # default: 1000
+        # number of transitions to collect per task with z ~ posterior 
+        # that are only used to train the policy and NOT the encoder
+        num_posterior_sample=1000,          # default: 1000
         
         # number of independent evals 
         num_evals=4,                        # default: 4
@@ -53,8 +54,8 @@ config = dict(
         # number of transitions to eval on
         num_steps_per_eval=600,             # default: 600
         
-        # max path length for this environment
-        max_path_length=200,                # default: 200
+        # maximum step for the environment
+        max_step=200,                       # default: 200
         
         # how often to resample the context when collecting data during training (in trajectories)
         update_post_train=True,             # default: True
@@ -65,7 +66,8 @@ config = dict(
         # number of transitions in the context batch
         embedding_batch_size=256,           # default: 256
         
-        # number of context transitions to backprop through (should equal the arg above except in the recurrent encoder case)
+        # number of context transitions to backprop through 
+        # (should equal the arg above except in the recurrent encoder case)
         embedding_mini_batch_size=256,      # default: 256
     
         # How many transitions to store
@@ -83,7 +85,8 @@ config = dict(
         # number of transitions in the RL batch
         batch_size=256,                 # default: 256
         
-        # scale rewards before constructing Bellman update, effectively controls weight on the entropy of the policy
+        # scale rewards before constructing Bellman update, 
+        # effectively controls weight on the entropy of the policy
         reward_scale=5.,                # default: 5.
         
         # Q-function network's learning rate
