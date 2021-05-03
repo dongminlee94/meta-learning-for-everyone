@@ -18,13 +18,13 @@ class SAC(object):
             encoder_input_dim,
             encoder_output_dim,
             device,
-            **kwargs,
+            **config,
     ):
 
-        self.gamma = kwargs['gamma']
-        self.kl_lambda = kwargs['kl_lambda']
-        self.batch_size = kwargs['batch_size']
-        self.reward_scale = kwargs['reward_scale']
+        self.gamma = config['gamma']
+        self.kl_lambda = config['kl_lambda']
+        self.batch_size = config['batch_size']
+        self.reward_scale = config['reward_scale']
         
         # Instantiate networks
         self.qf1 = FlattenMLP(
@@ -63,14 +63,14 @@ class SAC(object):
         ptu.hard_target_update(self.qf1, self.target_qf1)
         ptu.hard_target_update(self.qf2, self.target_qf2)
 
-        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=kwargs['policy_lr'])
-        self.context_optimizer = optim.Adam(self.encoder.parameters(), lr=kwargs['encoder_lr'])
+        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=config['policy_lr'])
+        self.context_optimizer = optim.Adam(self.encoder.parameters(), lr=config['encoder_lr'])
         self.qf_parameters = list(self.qf1.parameters()) + list(self.qf2.parameters())
-        self.qf_optimizer = optim.Adam(self.qf_parameters, lr=kwargs['qf_lr'])
+        self.qf_optimizer = optim.Adam(self.qf_parameters, lr=config['qf_lr'])
 
         # If automatic entropy tuning is True, 
         # initialize a target entropy, a log alpha and an alpha optimizer
-        if kwargs['automatic_entropy_tuning']:
+        if config['automatic_entropy_tuning']:
             self.target_entropy = -np.prod((action_dim,)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
-            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=kwargs['policy_lr'])
+            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=config['policy_lr'])

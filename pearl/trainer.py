@@ -49,14 +49,14 @@ def trainer():
         **config['sac_params'],
     )
 
-    # meta_learner = MetaLearner(
-    #     env=env,
-    #     agent=agent,
-    #     train_tasks=list(tasks[:config['n_train_tasks']]),
-    #     eval_tasks=list(tasks[-config['n_eval_tasks']:]),
-    #     device=config['device'],
-    #     **config['pearl_params']
-    # )
+    meta_learner = MetaLearner(
+        env=env,
+        agent=agent,
+        train_tasks=list(tasks[:config['n_train_tasks']]),
+        eval_tasks=list(tasks[-config['n_eval_tasks']:]),
+        device=config['device'],
+        **config['pearl_params']
+    )
 
     # optionally load pre-trained weights
     # if config['path_to_weights'] is not None:

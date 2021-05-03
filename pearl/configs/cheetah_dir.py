@@ -32,6 +32,9 @@ config = dict(
         # number of data sampling / training iterates 
         num_iterations=500,                 # default: 500
 
+        # number of meta-gradient steps taken per iteration
+        num_train_steps_per_itr=2000,       # default: 2000
+        
         # number of transitions collected per task before training 
         num_initial_steps=2000,             # default: 2000
 
@@ -43,9 +46,6 @@ config = dict(
         
         # number of additional transitions to collect per task with z ~ posterior that are only used to train the policy and NOT the encoder
         num_extra_rl_steps_posterior=1000,  # default: 1000
-        
-        # number of meta-gradient steps taken per iteration
-        num_train_steps_per_itr=2000,       # default: 2000
         
         # number of independent evals 
         num_evals=4,                        # default: 4
@@ -67,6 +67,9 @@ config = dict(
         
         # number of context transitions to backprop through (should equal the arg above except in the recurrent encoder case)
         embedding_mini_batch_size=256,      # default: 256
+    
+        # How many transitions to store
+        replay_buffer_size=int(1e6),        # default: int(1e6)
     ),
     
     sac_params=dict(
