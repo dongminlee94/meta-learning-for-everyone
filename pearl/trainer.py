@@ -15,7 +15,7 @@ p.add_argument(
 )
 p.add_argument(
     '--gpu_index', type=int, default=0,
-    help='Set GPU index')
+    help='Set a GPU index')
 args = p.parse_args()
 
 
