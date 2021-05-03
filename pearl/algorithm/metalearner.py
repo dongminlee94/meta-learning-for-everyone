@@ -7,7 +7,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import algorithm.utils as ptu
-from algorithm.samplers import InPlacePathSampler
+from algorithm.sampler import InPlacePathSampler
 from algorithm.buffers import MultiTaskReplayBuffer
 
 class MetaLearner(object):
