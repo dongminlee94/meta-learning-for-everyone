@@ -5,7 +5,7 @@ import numpy as np
 
 from pybullet_envs import *
 from algorithm.sac import SAC
-# from algorithm.metalearner import MetaLearner
+from algorithm.metalearner import MetaLearner
 from configs import cheetah_dir, cheetah_vel
 
 p = argparse.ArgumentParser()
