@@ -1,67 +1,77 @@
-"""
-MAML trainer based on half-cheetah environment
-"""
-
-import argparse
-
+import os
 import torch
-from algorithm.maml import MAML
-from algorithm.ppo import PPO
-from configs.cheetah_dir import config as dir_config
-from configs.cheetah_vel import config as vel_config
-from envs import ENVS
+import argparse
+import numpy as np
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--env", type=str, default="dir", help="Env to use: default cheetah-dir"
+from pybullet_envs import *
+from algorithm.sac import SAC
+# from algorithm.metalearner import MetaLearner
+from configs import cheetah_dir, cheetah_vel
+
+p = argparse.ArgumentParser()
+p.add_argument(
+    '--env', type=str, default='dir',
+    help='Env to use: default cheetah-dir'
 )
-parser.add_argument("--gpu_index", type=int, default=0, help="Set a GPU index")
-args = parser.parse_args()
+p.add_argument(
+    '--gpu_index', type=int, default=0,
+    help='Set a GPU index')
+args = p.parse_args()
 
 
-if __name__ == "__main__":
+def trainer():
+    if args.env == 'dir':
+        config = cheetah_dir.config
+    elif args.env == 'vel':
+        config = cheetah_vel.config
+    else:
+        NotImplementedError
+
     # Create a multi-task environment and sample tasks
-    if args.env == "dir":
-        config = dir_config
-        env = ENVS[config["env_name"]]()
-    elif args.env == "vel":
-        config = vel_config
-        env = ENVS[config["env_name"]](**config["env_params"])
-    env.seed(config["seed"])
+    env = envs[config['env_name']](**config['env_params'])
     tasks = env.get_all_task_idx()
 
     observ_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    hidden_units = list(map(int, config["hidden_units"].split(",")))
+    latent_dim = config['latent_size']
+    hidden_units = list(map(int, config['hidden_units'].split(",")))
+    encoder_input_dim = observ_dim + action_dim + 1
+    encoder_output_dim = latent_dim * 2
 
-    device = (
-        torch.device("cuda", index=args.gpu_index)
-        if torch.cuda.is_available()
-        else torch.device("cpu")
-    )
-
-    agent = PPO(
+    agent = SAC(
         observ_dim=observ_dim,
         action_dim=action_dim,
+        latent_dim=latent_dim,
         hidden_units=hidden_units,
-        env_target=config["env_name"],
-        device=device,
-        **config["ppo_params"],
+        encoder_input_dim=encoder_input_dim,
+        encoder_output_dim=encoder_output_dim,
+        device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu'),
+        **config['sac_params'],
     )
 
-    maml = MAML(
-        env=env,
-        agent=agent,
-        observ_dim=observ_dim,
-        action_dim=action_dim,
-        train_tasks=list(tasks[: config["n_train_tasks"]]),
-        eval_tasks=list(tasks[-config["n_eval_tasks"] :]),
-        device=device,
-        **config["maml_params"],
-    )
+    # meta_learner = MetaLearner(
+    #     env=env,
+    #     agent=agent,
+    #     train_tasks=list(tasks[:config['n_train_tasks']]),
+    #     eval_tasks=list(tasks[-config['n_eval_tasks']:]),
+    #     device=config['device'],
+    #     **config['pearl_params']
+    # )
 
-    # Run meta-train
-    maml.meta_train()
+    # optionally load pre-trained weights
+    # if config['path_to_weights'] is not None:
+    #     path = config['path_to_weights']
+    #     context_encoder.load_state_dict(torch.load(os.path.join(path, 'context_encoder.pth')))
+    #     qf1.load_state_dict(torch.load(os.path.join(path, 'qf1.pth')))
+    #     qf2.load_state_dict(torch.load(os.path.join(path, 'qf2.pth')))
+    #     vf.load_state_dict(torch.load(os.path.join(path, 'vf.pth')))
+    #     # TODO hacky, revisit after model refactor
+    #     algorithm.networks[-2].load_state_dict(torch.load(os.path.join(path, 'target_vf.pth')))
+    #     policy.load_state_dict(torch.load(os.path.join(path, 'policy.pth')))
 
-    # Run meta-test
-    # test_results = meta_learner.meta_test()
+    # run meta-training
+    # meta_learner.meta_train()
+
+if __name__ == "__main__":
+    trainer()
+
