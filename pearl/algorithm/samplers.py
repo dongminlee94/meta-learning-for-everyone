@@ -1,5 +1,4 @@
 import numpy as np
-from algorithm.sac import MakeDeterministic
 
 class InPlacePathSampler(object):
     """
@@ -110,23 +109,22 @@ class InPlacePathSampler(object):
         )
 
     def obtain_samples(self, max_samples, max_trajs, deterministic=False, accum_context=True, resample=1):
-        policy = MakeDeterministic(self.policy) if deterministic else self.policy
         paths = []
         n_steps_total = 0
         n_trajs = 0
 
         while n_steps_total < max_samples:
-            path = rollout(policy, accum_context)
+            path = rollout(self.policy, accum_context)
             
             # save the latent context that generated this trajectory
-            path['context'] = policy.z.detach().cpu().numpy()
+            path['context'] = self.policy.z.detach().cpu().numpy()
             paths.append(path)
             n_steps_total += len(path['observations'])
             n_trajs += 1
 
             # don't we also want the option to resample z ever transition?
             if n_trajs % resample == 0:
-                policy.sample_z()
+                self.policy.sample_z()
             
             if max_trajs == 1:
                 break
