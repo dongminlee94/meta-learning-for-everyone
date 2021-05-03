@@ -54,7 +54,6 @@ def trainer():
         agent=agent,
         train_tasks=list(tasks[:config['n_train_tasks']]),
         eval_tasks=list(tasks[-config['n_eval_tasks']:]),
-        device=config['device'],
         **config['pearl_params']
     )
 
