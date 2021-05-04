@@ -1,5 +1,5 @@
 # Meta-Reinforcement Learning Algorithms with PyTorch
-## high-level structure
+## high-level structure (임시)
 ```
 ├── pybullet_envs: pybullet 물리 엔진을 이용한 환경들 구성
 ├── configs: 알고리즘을 실행할 때 사용할 configurations
