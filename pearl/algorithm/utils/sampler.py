@@ -14,6 +14,7 @@ class Sampler(object):
         self.max_step = max_step
 
     def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
+        ''' Obtain samples up to the number of maximum samples '''
         trajs = []
         cur_samples = 0
         num_trajs = 0
@@ -55,7 +56,7 @@ class Sampler(object):
             
             # Update the agent's current context
             if accum_context:
-                self.update_context([obs, action, reward])
+                self.update_context(obs, action, reward)
             
             observs.append(obs)
             actions.append(action)
@@ -68,19 +69,9 @@ class Sampler(object):
                 break
 
         actions = np.array(actions)
-        if len(actions.shape) == 1:
-            actions = np.expand_dims(actions, 1)
-        
         observs = np.array(observs)
-        if len(observs.shape) == 1:
-            observs = np.expand_dims(observs, 1)
-            next_obs = np.array([next_obs])
-        
         next_observs = np.vstack(
-            (
-                observs[1:, :],
-                np.expand_dims(next_obs, 0)
-            )
+            (observs[1:, :], np.expand_dims(next_obs, 0))
         )
         return dict(
             observs=observs,
@@ -90,9 +81,8 @@ class Sampler(object):
             dones=np.array(dones).reshape(-1, 1),
         )
     
-    def update_context(self, transition: torch.Tensor):
+    def update_context(self, obs, action, reward):
         ''' Append single transition to the current context '''
-        obs, action, reward = transition
         obs = torch.from_numpy(obs[None, None, ...]).float()
         action = torch.from_numpy(action[None, None, ...]).float()
         reward = torch.from_numpy(np.array([reward])[None, None, ...]).float()

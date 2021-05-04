@@ -33,10 +33,10 @@ config = dict(
         num_iterations=500,                 # default: 500
 
         # number of transitions collected per task before training
-        num_initial_steps=2000,             # default: 2000
+        num_init_samples=2000,              # default: 2000
 
-        # number of randomly sampled tasks to collect data for each iteration
-        num_random_sample=5,                # default: 5   
+        # number of sampled tasks to collect data for each iteration
+        num_task_samples=5,                 # default: 5   
 
         # number of transitions to collect per task with z ~ prior
         num_prior_sample=400,                # default: 400
@@ -64,11 +64,11 @@ config = dict(
         num_exp_traj_eval=2,                # default: 2
 
         # number of transitions in the context batch
-        embedding_batch_size=100,           # default: 100
+        batch_size=100,                     # default: 100
 
         # number of context transitions to backprop through 
         # (should equal the arg above except in the recurrent encoder case)
-        embedding_mini_batch_size=100,      # default: 100
+        mini_batch_size=100,                # default: 100
     ),
     
     sac_params=dict(
