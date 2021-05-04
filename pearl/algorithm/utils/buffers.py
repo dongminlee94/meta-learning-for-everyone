@@ -11,16 +11,10 @@ class MultiTaskReplayBuffer(object):
     ):
 
         self.env = env
-        self.obs_space = env.observation_space
-        self.action_space = env.action_space
-        print(env.observation_space.shape[0])
-        print(env.action_space.shape[0])
-        print(get_dim(self.obs_space))
-        print(get_dim(self.action_space))
         self.task_buffers = dict([(index, SimpleReplayBuffer(
             max_size=max_size,
-            observ_dim=get_dim(self.obs_space),
-            action_dim=get_dim(self.action_space),
+            observ_dim=env.observation_space.shape[0],
+            action_dim=env.action_space.shape[0],
         )) for index in tasks])
 
     def add_trajs(self, task, trajs):
@@ -40,15 +34,12 @@ class SimpleReplayBuffer(object):
         action_dim,
     ):
 
-        self._observ_dim = observ_dim
-        self._action_dim = action_dim
-        self._max_size = max_size
-        
         self._obs = np.zeros((max_size, observ_dim))
         self._next_obs = np.zeros((max_size, observ_dim))
         self._action = np.zeros((max_size, action_dim))
         self._reward = np.zeros((max_size, 1))
         self._done = np.zeros((max_size, 1), dtype='uint8')
+        self._max_size = max_size
         self.clear()
 
     def clear(self):
@@ -96,22 +87,3 @@ class SimpleReplayBuffer(object):
             next_obs=self._next_obs[indices],
             done=self._done[indices],
         )
-
-
-def get_dim(space):
-    if isinstance(space, Box):
-        return space.low.size
-    elif isinstance(space, Discrete):
-        return space.n
-    elif isinstance(space, Tuple):
-        return sum(get_dim(subspace) for subspace in space.spaces)
-    elif hasattr(space, 'flat_dim'):
-        return space.flat_dim
-    else:
-        # import OldBox here so it is not necessary to have rand_param_envs
-        # installed if not running the rand_param envs
-        from rand_param_envs.gym.spaces.box import Box as OldBox
-        if isinstance(space, OldBox):
-            return space.low.size
-        else:
-            raise TypeError("Unknown space: {}".format(space))

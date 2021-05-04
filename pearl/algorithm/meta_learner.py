@@ -36,10 +36,6 @@ class MetaLearner(object):
         self.meta_batch = config['meta_batch']
         self.batch_size = config['batch_size']
 
-        self.num_evals = config['num_evals']
-        self.num_steps_per_eval = config['num_steps_per_eval']
-        self.num_exp_traj_eval = config['num_exp_traj_eval']
-        
         self.sampler = Sampler(
             env=env,
             agent=agent,
@@ -49,12 +45,12 @@ class MetaLearner(object):
         # separate replay buffers for
         # - training RL update
         # - training encoder update
-        self.replay_buffer = MultiTaskReplayBuffer(
+        self.rl_replay_buffer = MultiTaskReplayBuffer(
             env=env,
             tasks=train_tasks,
             max_size=config['max_buffer_size'],
         )
-        self.enc_replay_buffer = MultiTaskReplayBuffer(
+        self.encoder_replay_buffer = MultiTaskReplayBuffer(
             env=env,
             tasks=train_tasks,
             max_size=config['max_buffer_size'],
@@ -71,10 +67,6 @@ class MetaLearner(object):
         '''
         for i in range(self.num_iterations):
             if i == 0:
-                # Create a SummaryWriter object by TensorBoard
-                # dir_name = 'runs/' + self.env._wrapped_env.env_name + '_200_' + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                # writer = SummaryWriter(log_dir=dir_name)
-
                 for index in self.train_tasks:
                     self.env.reset_task(index)
                     self.collect_data(
@@ -88,7 +80,7 @@ class MetaLearner(object):
             for i in range(self.num_task_samples):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
-                self.enc_replay_buffer.task_buffers[index].clear()
+                self.encoder_replay_buffer.task_buffers[index].clear()
 
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
@@ -147,9 +139,9 @@ class MetaLearner(object):
             )
             cur_samples += samples
 
-            self.replay_buffer.add_trajs(task_index, trajs)
+            self.rl_replay_buffer.add_trajs(task_index, trajs)
             if add_to_enc_buffer:
-                self.enc_replay_buffer.add_trajs(task_index, trajs)
+                self.encoder_replay_buffer.add_trajs(task_index, trajs)
             
             if update_posterior:
                 context_batch = self.sample_context([task_index])
@@ -160,7 +152,7 @@ class MetaLearner(object):
         ''' Sample batch of context from a list of tasks from the replay buffer '''
         context_batch = []
         for index in indices:
-            batch = self.enc_replay_buffer.sample(
+            batch = self.encoder_replay_buffer.sample(
                 task=index, 
                 batch_size=self.batch_size, 
             )
