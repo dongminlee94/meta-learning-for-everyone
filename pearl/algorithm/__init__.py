@@ -1,2 +1,2 @@
 from algorithm.sac import SAC
-from algorithm.meta_learner import MetaLearner
+from algorithm.pearl import PEARL

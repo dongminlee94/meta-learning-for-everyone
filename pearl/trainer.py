@@ -5,7 +5,7 @@ import numpy as np
 
 from pybullet_envs import *
 from algorithm.sac import SAC
-from algorithm.meta_learner import MetaLearner
+from algorithm.pearl import PEARL
 from configs import cheetah_dir, cheetah_vel
 
 p = argparse.ArgumentParser()
@@ -49,7 +49,7 @@ def trainer():
         **config['sac_params'],
     )
 
-    meta_learner = MetaLearner(
+    pearl = PEARL(
         env=env,
         agent=agent,
         train_tasks=list(tasks[:config['n_train_tasks']]),
@@ -58,7 +58,7 @@ def trainer():
     )
 
     # Run meta-training
-    # train_results = meta_learner.meta_train()
+    train_results = pearl.meta_train()
 
     # Run meta-testing
     # test_results = meta_learner.meta_test()

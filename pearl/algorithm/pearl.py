@@ -11,7 +11,7 @@ from algorithm.utils.sampler import Sampler
 from algorithm.utils.buffers import MultiTaskReplayBuffer
 
 
-class MetaLearner(object):
+class PEARL(object):
     def __init__(
         self,
         env,
