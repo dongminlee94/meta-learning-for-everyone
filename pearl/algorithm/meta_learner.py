@@ -52,12 +52,12 @@ class MetaLearner(object):
         self.replay_buffer = MultiTaskReplayBuffer(
             env=env,
             tasks=train_tasks,
-            max_replay_buffer_size=config['replay_buffer_size'],
+            max_size=config['max_buffer_size'],
         )
         self.enc_replay_buffer = MultiTaskReplayBuffer(
             env=env,
             tasks=train_tasks,
-            max_replay_buffer_size=config['replay_buffer_size'],
+            max_size=config['max_buffer_size'],
         )
 
         self._total_train_steps = 0

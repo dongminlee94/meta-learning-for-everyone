@@ -54,7 +54,7 @@ config = dict(
         max_step=200,                       # default: 200
         
         # How many transitions to store
-        replay_buffer_size=int(1e6),        # default: int(1e6)
+        max_buffer_size=int(1e6),           # default: int(1e6)
         
         # number of independent evals 
         num_evals=4,                        # default: 4
