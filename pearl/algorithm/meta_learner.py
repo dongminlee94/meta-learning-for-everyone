@@ -35,7 +35,6 @@ class MetaLearner(object):
         self.num_meta_gradient = config['num_meta_gradient']
         self.meta_batch = config['meta_batch']
         self.batch_size = config['batch_size']
-        self.mini_batch_size = config['mini_batch_size']
 
         self.num_evals = config['num_evals']
         self.num_steps_per_eval = config['num_steps_per_eval']
@@ -125,17 +124,13 @@ class MetaLearner(object):
                 
                 # Sample context batch
                 context_batch = self.sample_context(indices)
-                
-                num_updates = self.batch_size // self.mini_batch_size
-                # Do this in a loop so we can truncate backprop in the recurrent encoder
-                for i in range(num_updates):
-                    context = context_batch[
-                        :, i * self.mini_batch_size: i * self.mini_batch_size + self.mini_batch_size, :
-                    ]
-                    # self.agent.train_model(indices, context)
+                context = context_batch[:, :self.batch_size, :]
 
-                    # Stop backprop
-                    self.agent.encoder.detach_z()
+                # Train the policy, Q-functions and the encoder
+                # self.agent.train_model(indices, context)
+
+                # Stop backprop
+                self.agent.encoder.detach_z()
                 
                 self._total_train_steps += 1
 

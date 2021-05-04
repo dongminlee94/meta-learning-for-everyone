@@ -1,5 +1,4 @@
-# default PEARL experiment settings
-# all experiments should modify these settings only as needed
+# PEARL cheetah-vel experiment settings
 
 config = dict(
     env_name='cheetah-dir',
@@ -26,27 +25,36 @@ config = dict(
     ),
     
     pearl_params=dict(
-        # number of tasks to average the gradient across 
-        meta_batch=4,                       # default: 4
-
         # number of data sampling / training iterates 
-        num_iterations=500,                 # default: 500
-
-        # number of meta-gradient steps taken per iteration
-        num_meta_gradient=2000,             # default: 2000
+        num_iterations=1,                 # default: 500
         
         # number of transitions collected per task before training 
-        num_init_samples=2000,              # default: 2000
-
+        num_init_samples=1,              # default: 2000
+        
         # number of sampled tasks to collect data for each iteration
-        num_task_samples=5,                 # default: 5
+        num_task_samples=1,                 # default: 5
         
         # number of transitions to collect per task with z ~ prior 
-        num_prior_samples=1000,             # default: 1000
+        num_prior_samples=10,             # default: 1000
         
         # number of transitions to collect per task with z ~ posterior 
         # that are only used to train the policy and NOT the encoder
-        num_posterior_samples=1000,         # default: 1000
+        num_posterior_samples=10,         # default: 1000
+        
+        # number of meta-gradient steps taken per iteration
+        num_meta_gradient=1,             # default: 2000
+        
+        # number of tasks to average the gradient across 
+        meta_batch=2,                       # default: 4
+
+        # number of transitions in the context batch
+        batch_size=256,                     # default: 256
+        
+        # maximum step for the environment
+        max_step=200,                       # default: 200
+        
+        # How many transitions to store
+        replay_buffer_size=int(1e6),        # default: int(1e6)
         
         # number of independent evals 
         num_evals=4,                        # default: 4
@@ -54,24 +62,8 @@ config = dict(
         # number of transitions to eval on
         num_steps_per_eval=600,             # default: 600
         
-        # maximum step for the environment
-        max_step=200,                       # default: 200
-        
-        # how often to resample the context when collecting data during training (in trajectories)
-        update_post_train=True,             # default: True
-        
         # how many exploration trajs to collect before beginning posterior sampling at test time
         num_exp_traj_eval=2,                # default: 2
-        
-        # number of transitions in the context batch
-        batch_size=256,                     # default: 256
-        
-        # number of context transitions to backprop through 
-        # (should equal the arg above except in the recurrent encoder case)
-        mini_batch_size=256,                # default: 256
-    
-        # How many transitions to store
-        replay_buffer_size=int(1e6),        # default: int(1e6)
     ),
     
     sac_params=dict(
