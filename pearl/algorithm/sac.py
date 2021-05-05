@@ -21,6 +21,7 @@ class SAC(object):
         **config,
     ):
 
+        self.device = device
         self.gamma = config['gamma']
         self.kl_lambda = config['kl_lambda']
         self.batch_size = config['batch_size']
@@ -78,7 +79,7 @@ class SAC(object):
     def get_action(self, obs, deterministic=False):
         ''' Sample action from the policy, conditioned on the task embedding '''
         z = self.encoder.z
-        obs = torch.from_numpy(obs[None]).float()
+        obs = torch.from_numpy(obs[None]).float().to(self.device)
         print(z.shape)
         print(obs.shape)
         inputs = torch.cat([obs, z], dim=-1)
