@@ -66,7 +66,7 @@ class PEARL(object):
         '''
         for iteration in range(self.num_iterations):
             if iteration == 0:
-                print("[All {0} training tasks] collecting initial trajectories".format(
+                print("[{0} training tasks] collecting initial samples with prior".format(
                     len(self.train_tasks))
                 )                
                 for index in self.train_tasks:
