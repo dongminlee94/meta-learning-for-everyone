@@ -64,9 +64,8 @@ class PEARL(object):
         
         At each iteration, we first collect data from tasks, perform meta-updates, then try to evaluate
         '''
-        for i in range(self.num_iterations):
-            print("--------------- Iteration {0} ---------------".format(i))
-            if i == 0:
+        for iteration in range(self.num_iterations):
+            if iteration == 0:
                 print("[All {0} training tasks] collecting initial trajectories".format(
                     len(self.train_tasks))
                 )                
@@ -79,6 +78,7 @@ class PEARL(object):
                         add_to_enc_buffer=True,
                     )
             
+            print("-------------------- Iteration {0} --------------------".format(iteration))
             # Sample data randomly from train tasks.
             for i in range(self.num_task_samples):
                 index = np.random.randint(len(self.train_tasks))
@@ -111,8 +111,9 @@ class PEARL(object):
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
-            print("Start meta-training of iteration {0}".format(i))
+            print("Start meta-training of iteration {0}".format(iteration))
             for i in range(self.num_meta_gradient):
+                print("---------- Meta-gradient step {0} ----------".format(self.num_meta_gradient))
                 indices = np.random.choice(self.train_tasks, self.meta_batch)
 
                 # Zero out context and hidden encoder state
