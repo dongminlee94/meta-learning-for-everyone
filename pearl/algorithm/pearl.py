@@ -152,14 +152,8 @@ class PEARL(object):
         ''' Sample batch of context from a list of tasks from the replay buffer '''
         context_batch = []
         for index in indices:
-            batch = self.encoder_replay_buffer.sample(
-                task=index, 
-                batch_size=self.batch_size, 
-            )
-            print(batch)
+            batch = self.encoder_replay_buffer.sample(task=index, batch_size=self.batch_size)
             batch = util.np_to_pytorch_batch(batch)
-            print('***'*10)
-            print(batch)
             batch = util.unpack_batch(batch)
             context_batch.append(batch)    
         
