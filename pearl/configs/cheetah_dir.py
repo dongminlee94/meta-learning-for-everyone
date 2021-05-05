@@ -42,7 +42,7 @@ config = dict(
         num_posterior_samples=10,           # default: 1000
         
         # number of meta-gradient steps taken per iteration
-        num_meta_gradient=2,                # default: 2000
+        num_meta_gradient=10,               # default: 2000
         
         # number of tasks to average the gradient across 
         meta_batch=2,                       # default: 4

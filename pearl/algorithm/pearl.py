@@ -87,7 +87,7 @@ class PEARL(object):
 
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
-                    print("[{0}/{1} sampled tasks] collecting with prior".format(
+                    print("[{0}/{1} sampled tasks] collecting samples with prior".format(
                         i+1, self.num_task_samples)
                     )
                     self.collect_data(
@@ -100,7 +100,7 @@ class PEARL(object):
                 # Even if encoder is trained only on samples from the prior r(z), 
                 # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
-                    print("[{0}/{1} sampled tasks] collecting with posterior ".format(
+                    print("[{0}/{1} sampled tasks] collecting samples with posterior".format(
                         i+1, self.num_task_samples)
                     )
                     self.collect_data(
@@ -113,7 +113,7 @@ class PEARL(object):
             # Sample train tasks and compute gradient updates on parameters.
             print("Start meta-training of iteration {0}".format(iteration))
             for i in range(self.num_meta_gradient):
-                print("---------- Meta-gradient step {0} ----------".format(self.num_meta_gradient))
+                print("[{0}/{1} meta-gradient update]".format(i, self.num_meta_gradient))
                 indices = np.random.choice(self.train_tasks, self.meta_batch)
 
                 # Zero out context and hidden encoder state
