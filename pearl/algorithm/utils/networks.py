@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -181,7 +182,7 @@ class TanhGaussianPolicy(MLP):
             #               = 2 * (log(2) - x - log(e^-2x + 1))
             #               = 2 * (log(2) - x - softplus(-2x))
             log_prob = normal.log_prob(action).sum(-1, keepdim=True)
-            correction = -2. * (torch.log(2) - action - F.softplus(-2*action)).sum(-1)
+            correction = -2. * (np.log(2) - action - F.softplus(-2*action)).sum(-1)
             log_prob += correction
 
         action = torch.tanh(action)
