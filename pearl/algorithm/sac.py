@@ -83,5 +83,5 @@ class SAC(object):
         print(z.shape)
         print(obs.shape)
         inputs = torch.cat([obs, z], dim=-1).to(self.device)
-        action = self.policy(inputs, deterministic=deterministic)
+        action, _ = self.policy(inputs, deterministic=deterministic)
         return action.detach().cpu().numpy()
