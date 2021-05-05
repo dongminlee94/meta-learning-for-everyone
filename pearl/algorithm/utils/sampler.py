@@ -69,11 +69,11 @@ class Sampler(object):
         observs = np.array(observs)
         next_observs = np.vstack((observs[1:, :], np.expand_dims(next_obs, 0)))
         return dict(
-            observs=observs,
-            actions=actions,
-            rewards=np.array(rewards).reshape(-1, 1),
-            next_observs=next_observs,
-            dones=np.array(dones).reshape(-1, 1),
+            obs=observs,
+            action=actions,
+            reward=np.array(rewards).reshape(-1, 1),
+            next_obs=next_observs,
+            done=np.array(dones).reshape(-1, 1),
         )
     
     def update_context(self, obs, action, reward):
