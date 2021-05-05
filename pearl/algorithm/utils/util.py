@@ -12,13 +12,13 @@ def soft_target_update(main, target, tau=0.005):
         target_param.data.copy_(tau*main_param.data + (1.0-tau)*target_param.data)
 
 def unpack_batch(self, batch):
-        ''' unpack a batch and return individual elements '''
-        o = batch['observations'][None, ...]
-        a = batch['actions'][None, ...]
-        r = batch['rewards'][None, ...]
-        no = batch['next_observations'][None, ...]
-        t = batch['terminals'][None, ...]
-        return [o, a, r, no, t]
+        ''' Unpack a batch and return individual elements '''
+        obs = batch['obs'][None, ...]
+        action = batch['action'][None, ...]
+        reward = batch['reward'][None, ...]
+        next_obs = batch['next_obs'][None, ...]
+        done = batch['done'][None, ...]
+        return [obs, action, reward, next_obs, done]
 
 def fanin_init(tensor):
     size = tensor.size()
