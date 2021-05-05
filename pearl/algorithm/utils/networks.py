@@ -94,7 +94,7 @@ class MLPEncoder(FlattenMLP):
             dist = torch.distributions.Normal(mu, torch.sqrt(var))
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
-        self.z = torch.stack(z)
+        self.z = torch.stack(torch.Tensor(z))
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         ''' Compute mu, sigma of product of gaussians (POG) '''
