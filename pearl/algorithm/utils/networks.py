@@ -89,7 +89,7 @@ class MLPEncoder(FlattenMLP):
 
     def sample_z(self):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
-        dists []
+        dists = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var))
             dists.append(dist)
