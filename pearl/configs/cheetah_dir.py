@@ -41,11 +41,11 @@ config = dict(
         # that are only used to train the policy and NOT the encoder
         num_posterior_samples=10,           # default: 1000
         
-        # number of meta-gradient steps taken per iteration
-        num_meta_gradient=10,               # default: 2000
+        # number of meta-training taken per iteration
+        num_meta_training=10,               # default: 2000
         
         # number of tasks to average the gradient across 
-        meta_batch=2,                       # default: 4
+        meta_batch=4,                       # default: 4
 
         # number of transitions in the context batch
         batch_size=256,                     # default: 256
