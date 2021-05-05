@@ -26,13 +26,13 @@ config = dict(
     
     pearl_params=dict(
         # number of data sampling / training iterates 
-        num_iterations=1,                 # default: 500
+        num_iterations=10,                 # default: 500
         
         # number of transitions collected per task before training 
-        num_init_samples=1,              # default: 2000
+        num_init_samples=10,              # default: 2000
         
         # number of sampled tasks to collect data for each iteration
-        num_task_samples=1,                 # default: 5
+        num_task_samples=2,                 # default: 5
         
         # number of transitions to collect per task with z ~ prior 
         num_prior_samples=10,             # default: 1000
@@ -42,7 +42,7 @@ config = dict(
         num_posterior_samples=10,         # default: 1000
         
         # number of meta-gradient steps taken per iteration
-        num_meta_gradient=1,             # default: 2000
+        num_meta_gradient=2,             # default: 2000
         
         # number of tasks to average the gradient across 
         meta_batch=2,                       # default: 4
