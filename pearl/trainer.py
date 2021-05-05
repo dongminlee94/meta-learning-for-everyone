@@ -17,6 +17,7 @@ p.add_argument(
     '--gpu_index', type=int, default=0,
     help='Set a GPU index')
 args = p.parse_args()
+device = torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu')
 
 
 def trainer():
@@ -45,7 +46,7 @@ def trainer():
         hidden_units=hidden_units,
         encoder_input_dim=encoder_input_dim,
         encoder_output_dim=encoder_output_dim,
-        device=torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available() else torch.device('cpu'),
+        device=device,
         **config['sac_params'],
     )
 
