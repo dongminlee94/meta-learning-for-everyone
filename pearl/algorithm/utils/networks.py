@@ -46,7 +46,6 @@ class MLP(nn.Module):
 
 class FlattenMLP(MLP):
     ''' If there are multiple inputs, concatenate along dim 1 '''
-
     def forward(self, *x: torch.Tensor, **kwargs) -> torch.Tensor:
         x = torch.cat(x, dim=-1)
         return super(FlattenMLP, self).forward(x, **kwargs)

@@ -20,15 +20,12 @@ class Sampler(object):
         num_trajs = 0
 
         while cur_samples < max_samples:
-            traj = self.rollout(
-                accum_context=accum_context,
-                use_rendering=use_rendering,
-            )
+            traj = self.rollout(accum_context=accum_context, use_rendering=use_rendering)
             
             # Save the latent context that generated this trajectory
             traj['context'] = self.agent.encoder.z.detach().cpu().numpy()
             trajs.append(traj)
-            cur_samples += len(traj['observs'])
+            cur_samples += len(traj['obs'])
             num_trajs += 1
 
             self.agent.encoder.sample_z()
@@ -70,9 +67,7 @@ class Sampler(object):
 
         actions = np.array(actions)
         observs = np.array(observs)
-        next_observs = np.vstack(
-            (observs[1:, :], np.expand_dims(next_obs, 0))
-        )
+        next_observs = np.vstack((observs[1:, :], np.expand_dims(next_obs, 0)))
         return dict(
             observs=observs,
             actions=actions,
@@ -86,9 +81,9 @@ class Sampler(object):
         obs = torch.from_numpy(obs[None, None, ...]).float()
         action = torch.from_numpy(action[None, None, ...]).float()
         reward = torch.from_numpy(np.array([reward])[None, None, ...]).float()
-        data = torch.cat([obs, action, reward], dim=-1)
+        transition = torch.cat([obs, action, reward], dim=-1)
         
         if self.agent.encoder.context is None:
-            self.agent.encoder.context = data
+            self.agent.encoder.context = transition
         else:
-            self.agent.encoder.context = torch.cat([self.agent.encoder.context, data], dim=1)
+            self.agent.encoder.context = torch.cat([self.agent.encoder.context, transition], dim=1)

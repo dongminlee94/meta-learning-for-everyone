@@ -73,7 +73,7 @@ class SimpleReplayBuffer(object):
         but you may want to optimize this
         """
         for i, (obs, action, reward, next_obs, done) in enumerate(zip(
-            traj["obs"], traj["action"], traj["reward"], traj["next_obs"], traj["done"])):
+            traj["observs"], traj["actions"], traj["rewards"], traj["next_observs"], traj["dones"])):
             self.add(obs, action, reward, next_obs, done)
         self.termination()
 
