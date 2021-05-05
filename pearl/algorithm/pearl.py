@@ -1,12 +1,8 @@
-import os
-import datetime
 import numpy as np
-from collections import OrderedDict
-
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-import algorithm.utils.util as util
+import algorithm.utils.torch_utils as utils
 from algorithm.utils.sampler import Sampler
 from algorithm.utils.buffers import MultiTaskReplayBuffer
 
@@ -153,8 +149,8 @@ class PEARL(object):
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample(task=index, batch_size=self.batch_size)
-            batch = util.np_to_pytorch_batch(batch)
-            batch = util.unpack_batch(batch)
+            batch = utils.np_to_pytorch_batch(batch)
+            batch = utils.unpack_batch(batch)
             context_batch.append(batch)    
         
         # Group like elements together

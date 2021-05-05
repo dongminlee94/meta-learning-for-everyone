@@ -4,8 +4,7 @@ from typing import Callable, List
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from algorithm.utils.util import *
-from algorithm.utils.networks import *
+from algorithm.utils.networks import MLP, FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC(object):
@@ -61,8 +60,8 @@ class SAC(object):
         ).to(device)
 
         # Initialize target parameters to match main parameters
-        hard_target_update(self.qf1, self.target_qf1)
-        hard_target_update(self.qf2, self.target_qf2)
+        self.hard_target_update(self.qf1, self.target_qf1)
+        self.hard_target_update(self.qf2, self.target_qf2)
 
         self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=config['policy_lr'])
         self.context_optimizer = optim.Adam(self.encoder.parameters(), lr=config['encoder_lr'])
@@ -75,6 +74,13 @@ class SAC(object):
             self.target_entropy = -np.prod((action_dim,)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
             self.alpha_optimizer = optim.Adam([self.log_alpha], lr=config['policy_lr'])
+
+    def hard_target_update(self, main, target):
+        target.load_state_dict(main.state_dict())
+
+    def soft_target_update(self, main, target, tau=0.005):
+        for main_param, target_param in zip(main.parameters(), target.parameters()):
+            target_param.data.copy_(tau*main_param.data + (1.0-tau)*target_param.data)
 
     def get_action(self, obs, deterministic=False):
         ''' Sample action from the policy, conditioned on the task embedding '''

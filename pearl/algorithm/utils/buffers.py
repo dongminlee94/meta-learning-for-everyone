@@ -1,5 +1,4 @@
 import numpy as np
-from gym.spaces import Box, Discrete, Tuple
 
 
 class MultiTaskReplayBuffer(object):

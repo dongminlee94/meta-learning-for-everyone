@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+
 class Sampler(object):
     def __init__(
         self, 
