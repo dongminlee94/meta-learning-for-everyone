@@ -52,6 +52,8 @@ class Sampler(object):
 
         while cur_step < self.max_step:
             action = self.agent.get_action(obs)
+            print(action)
+            print(action.shape)
             next_obs, reward, done, _ = self.env.step(action)
             
             # Update the agent's current context
