@@ -78,19 +78,22 @@ class MLPEncoder(FlattenMLP):
         Reset the context collected so far
         '''
         # Reset q(z|c) to the prior r(z)
-        z_mu = torch.zeros(num_tasks, self.latent_dim)
-        z_var = torch.ones(num_tasks, self.latent_dim)
+        self.z_mu = torch.zeros(num_tasks, self.latent_dim)
+        self.z_var = torch.ones(num_tasks, self.latent_dim)
         
         # Sample a new z from the prior r(z)
-        self.sample_z(z_mu, z_var)
+        self.sample_z()
         
         # Reset the context collected so far
         self.context = None
 
-    def sample_z(self, z_mu, z_var):
+    def sample_z(self):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
-        dist = [torch.distributions.Normal(mu, torch.sqrt(var)) for mu, var in zip(torch.unbind(z_mu), torch.unbind(z_var))]
-        z = [d.rsample() for d in dist]
+        dists []
+        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
+            dist = torch.distributions.Normal(mu, torch.sqrt(var))
+            dists.append(dist)
+        z = [dist.rsample() for dist in dists]
         self.z = torch.stack(z)
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
@@ -108,17 +111,26 @@ class MLPEncoder(FlattenMLP):
         # With probabilistic z, predict mean and variance of q(z | c)
         mu = params[..., :self.latent_dim]
         var = F.softplus(params[..., self.latent_dim:])
-        z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(torch.unbind(mu), torch.unbind(var))]
-        z_mu = torch.stack([p[0] for p in z_params])
-        z_std = torch.stack([p[1] for p in z_params])
 
-        self.sample_z(z_mu, z_std)
+        z_mu, z_var = [], []
+        for mu, var in zip(torch.unbind(mu), torch.unbind(var)):
+            mu, var = self.product_of_gaussians(mu, var)
+            z_mu.append(mu)
+            z_var.append(var)
+        self.z_mu = z_mu
+        self.z_var = z_var
+        self.sample_z()
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
         prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim))
-        posteriors = [torch.distributions.Normal(mu, torch.sqrt(var)) for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var))]
-        kl_div = [torch.distributions.kl.kl_divergence(post, prior) for post in posteriors]
+
+        posteriors = []
+        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
+            dist = torch.distributions.Normal(mu, torch.sqrt(var)) 
+            posteriors.append(dist)
+        
+        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
         return torch.sum(torch.stack(kl_div))
 
     def detach_z(self):

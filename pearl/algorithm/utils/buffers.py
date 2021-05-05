@@ -12,9 +12,9 @@ class MultiTaskReplayBuffer(object):
 
         self.env = env
         self.task_buffers = dict([(index, SimpleReplayBuffer(
-            max_size=max_size,
             observ_dim=env.observation_space.shape[0],
             action_dim=env.action_space.shape[0],
+            max_size=max_size,
         )) for index in tasks])
 
     def add_trajs(self, task, trajs):
@@ -29,9 +29,9 @@ class MultiTaskReplayBuffer(object):
 class SimpleReplayBuffer(object):
     def __init__(
         self, 
-        max_size, 
         observ_dim, 
         action_dim,
+        max_size, 
     ):
 
         self._obs = np.zeros((max_size, observ_dim))
