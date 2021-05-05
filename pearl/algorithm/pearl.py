@@ -156,7 +156,9 @@ class PEARL(object):
                 task=index, 
                 batch_size=self.batch_size, 
             )
+            print(batch)
             batch = util.np_to_pytorch_batch(batch)
+            print(batch)
             batch = util.unpack_batch(batch)
             context_batch.append(batch)    
         
