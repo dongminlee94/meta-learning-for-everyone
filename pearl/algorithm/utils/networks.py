@@ -116,8 +116,8 @@ class MLPEncoder(FlattenMLP):
             mu, var = self.product_of_gaussians(mu, var)
             z_mu.append(mu)
             z_var.append(var)
-        self.z_mu = z_mu
-        self.z_var = z_var
+        self.z_mu = torch.Tensor(z_mu)
+        self.z_var = torch.Tensor(z_var)
         self.sample_z()
 
     def compute_kl_div(self):
