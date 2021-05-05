@@ -8,11 +8,13 @@ class Sampler(object):
         env, 
         agent, 
         max_step,
+        device,
     ):
     
         self.env = env
         self.agent = agent
         self.max_step = max_step
+        self.device = device
 
     def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
         ''' Obtain samples up to the number of maximum samples '''
@@ -79,12 +81,12 @@ class Sampler(object):
     
     def update_context(self, obs, action, reward):
         ''' Append single transition to the current context '''
-        obs = torch.from_numpy(obs[None, None, ...]).float()
-        action = torch.from_numpy(action[None, None, ...]).float()
-        reward = torch.from_numpy(np.array([reward])[None, None, ...]).float()
-        transition = torch.cat([obs, action, reward], dim=-1)
+        obs = torch.from_numpy(obs[None, None, ...]).float().to(self.device)
+        action = torch.from_numpy(action[None, None, ...]).float().to(self.device)
+        reward = torch.from_numpy(np.array([reward])[None, None, ...]).float().to(self.device)
+        transition = torch.cat([obs, action, reward], dim=-1).to(self.device)
         
         if self.agent.encoder.context is None:
             self.agent.encoder.context = transition
         else:
-            self.agent.encoder.context = torch.cat([self.agent.encoder.context, transition], dim=1)
+            self.agent.encoder.context = torch.cat([self.agent.encoder.context, transition], dim=1).to(self.device)

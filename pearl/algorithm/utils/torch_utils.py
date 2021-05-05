@@ -2,12 +2,12 @@ import numpy as np
 import torch
 
 
-def elem_or_tuple_to_variable(elem_or_tuple):
+def elem_or_tuple_to_variable(elem_or_tuple, device):
     if isinstance(elem_or_tuple, tuple):
         return tuple(
             elem_or_tuple_to_variable(e) for e in elem_or_tuple
         )
-    return torch.from_numpy(elem_or_tuple).float()
+    return torch.from_numpy(elem_or_tuple).float().to(device)
 
 def filter_batch(np_batch):
     for k, v in np_batch.items():
@@ -16,9 +16,9 @@ def filter_batch(np_batch):
         else:
             yield k, v
 
-def np_to_pytorch_batch(np_batch):
+def np_to_pytorch_batch(np_batch, device):
     return {
-        k: elem_or_tuple_to_variable(x)
+        k: elem_or_tuple_to_variable(x, device)
         for k, x in filter_batch(np_batch)
         if x.dtype != np.dtype('O')  # ignore object (e.g. dictionaries)
     }

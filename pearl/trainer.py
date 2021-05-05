@@ -55,7 +55,8 @@ def trainer():
         agent=agent,
         train_tasks=list(tasks[:config['n_train_tasks']]),
         eval_tasks=list(tasks[-config['n_eval_tasks']:]),
-        **config['pearl_params']
+        device=device,
+        **config['pearl_params'],
     )
 
     # Run meta-training

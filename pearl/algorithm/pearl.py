@@ -14,6 +14,7 @@ class PEARL(object):
         agent,
         train_tasks,
         eval_tasks,
+        device,
         **config,
     ):
 
@@ -21,6 +22,7 @@ class PEARL(object):
         self.agent = agent
         self.train_tasks = train_tasks
         self.eval_tasks = eval_tasks
+        self.device = device
 
         self.num_iterations = config['num_iterations']
         self.num_init_samples = config['num_init_samples']
@@ -36,6 +38,7 @@ class PEARL(object):
             env=env,
             agent=agent,
             max_step=config['max_step'],
+            device=device
         )
 
         # separate replay buffers for
@@ -149,7 +152,7 @@ class PEARL(object):
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample(task=index, batch_size=self.batch_size)
-            batch = utils.np_to_pytorch_batch(batch)
+            batch = utils.np_to_pytorch_batch(np_batch=batch, device=self.device)
             batch = utils.unpack_batch(batch)
             context_batch.append(batch)    
         
@@ -160,5 +163,5 @@ class PEARL(object):
         # Full context consists of [observs, actions, rewards, next_observs, dones]
         # If dynamics don't change across tasks, don't include next_obs
         # Don't include dones in context
-        context_batch = torch.cat(context_batch[:-2], dim=2)
+        context_batch = torch.cat(context_batch[:-2], dim=2).to(self.device)
         return context_batch
