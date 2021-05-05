@@ -3,46 +3,46 @@
 config = dict(
     env_name='cheetah-dir',
     
-    n_train_tasks=2,            # default: 2
+    n_train_tasks=2,                # default: 2
     
-    n_eval_tasks=2,             # default: 2
+    n_eval_tasks=2,                 # default: 2
     
     # dimension of the latent context vector
-    latent_size=5,              # default: 5
+    latent_size=5,                  # default: 5
 
     # number of hidden units in neural networks
-    hidden_units='300,300,300',      # default: 300,300,300
+    hidden_units='300,300,300',     # default: '300,300,300'
 
     # path to pre-trained weights to load into networks
-    path_to_weights=None,       # default: None
+    path_to_weights=None,           # default: None
     
     env_params=dict(
         # number of distinct tasks in the domain, should equal sum of train and eval tasks
-        n_tasks=2,              # default: 2
+        n_tasks=2,                  # default: 2
         
         # shuffle the tasks after creating them     
-        randomize_tasks=True,   # default: True
+        randomize_tasks=True,       # default: True
     ),
     
     pearl_params=dict(
         # number of data sampling / training iterates 
-        num_iterations=10,                 # default: 500
+        num_iterations=10,                  # default: 500
         
         # number of transitions collected per task before training 
-        num_init_samples=10,              # default: 2000
+        num_init_samples=10,                # default: 2000
         
         # number of sampled tasks to collect data for each iteration
         num_task_samples=2,                 # default: 5
         
         # number of transitions to collect per task with z ~ prior 
-        num_prior_samples=10,             # default: 1000
+        num_prior_samples=10,               # default: 1000
         
         # number of transitions to collect per task with z ~ posterior 
         # that are only used to train the policy and NOT the encoder
-        num_posterior_samples=10,         # default: 1000
+        num_posterior_samples=10,           # default: 1000
         
         # number of meta-gradient steps taken per iteration
-        num_meta_gradient=2,             # default: 2000
+        num_meta_gradient=2,                # default: 2000
         
         # number of tasks to average the gradient across 
         meta_batch=2,                       # default: 4

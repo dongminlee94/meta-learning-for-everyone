@@ -3,25 +3,25 @@
 config = dict(
     env_name='cheetah-vel',
     
-    n_train_tasks=10,          # default: 100
+    n_train_tasks=10,               # default: 100
     
-    n_eval_tasks=3,            # default: 30
+    n_eval_tasks=3,                 # default: 30
     
     # dimension of the latent context vector
-    latent_size=5,              # default: 5
+    latent_size=5,                  # default: 5
     
     # number of hidden units in neural networks
-    hidden_units='300,300,300',      # default: 300,300,300
+    hidden_units='300,300,300',     # default: 300,300,300
 
     # path to pre-trained weights to load into networks
-    path_to_weights=None,       # default: None
+    path_to_weights=None,           # default: None
     
     env_params=dict(
         # number of distinct tasks in the domain, shoudl equal sum of train and eval tasks
-        n_tasks=13,            # default: 130
+        n_tasks=13,                 # default: 130
 
         # shuffle the tasks after creating them
-        randomize_tasks=True,   # default: True
+        randomize_tasks=True,       # default: True
     ),
     
     pearl_params=dict(
@@ -35,11 +35,11 @@ config = dict(
         num_task_samples=5,                 # default: 5   
         
         # number of transitions to collect per task with z ~ prior
-        num_prior_sample=400,                # default: 400
+        num_prior_sample=400,               # default: 400
 
         # number of transitions to collect per task with z ~ posterior 
         # that are only used to train the policy and NOT the encoder
-        num_posterior_sample=600,   # default: 600
+        num_posterior_sample=600,           # default: 600
         
         # number of meta-gradient steps taken per iteration
         num_meta_gradient=2000,             # default: 2000

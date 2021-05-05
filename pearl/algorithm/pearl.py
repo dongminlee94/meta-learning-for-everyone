@@ -55,8 +55,8 @@ class PEARL(object):
             max_size=config['max_buffer_size'],
         )
 
-        self._total_train_steps = 0
         self._total_samples = 0
+        self._total_train_steps = 0
     
     def meta_train(self):
         ''' 
@@ -65,7 +65,11 @@ class PEARL(object):
         At each iteration, we first collect data from tasks, perform meta-updates, then try to evaluate
         '''
         for i in range(self.num_iterations):
+            print("--------------- Iteration {0} ---------------".format(i))
             if i == 0:
+                print("[All {0} training tasks] collecting initial trajectories".format(
+                    len(self.train_tasks))
+                )                
                 for index in self.train_tasks:
                     self.env.reset_task(index)
                     self.collect_data(
@@ -83,7 +87,7 @@ class PEARL(object):
 
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
-                    print("[{0}/{1} sampled tasks] collecting with Prior".format(
+                    print("[{0}/{1} sampled tasks] collecting with prior".format(
                         i+1, self.num_task_samples)
                     )
                     self.collect_data(
@@ -96,7 +100,7 @@ class PEARL(object):
                 # Even if encoder is trained only on samples from the prior r(z), 
                 # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
-                    print("[{0}/{1} sampled tasks] collecting with Posterior updates".format(
+                    print("[{0}/{1} sampled tasks] collecting with posterior ".format(
                         i+1, self.num_task_samples)
                     )
                     self.collect_data(
@@ -107,6 +111,7 @@ class PEARL(object):
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
+            print("Start meta-training of iteration {0}".format(i))
             for i in range(self.num_meta_gradient):
                 indices = np.random.choice(self.train_tasks, self.meta_batch)
 
@@ -124,6 +129,10 @@ class PEARL(object):
                 self.agent.encoder.detach_z()
                 
                 self._total_train_steps += 1
+        return dict(
+            total_samples=self._total_samples,
+            total_train_steps=self._total_train_steps,
+        )
 
     def collect_data(self, task_index, num_samples, update_posterior, add_to_enc_buffer):
         ''' Data collecting for training '''
