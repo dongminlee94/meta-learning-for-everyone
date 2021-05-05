@@ -32,7 +32,7 @@ config = dict(
         num_init_samples=10,                # default: 2000
         
         # number of sampled tasks to collect data for each iteration
-        num_task_samples=2,                 # default: 5
+        num_task_samples=5,                 # default: 5
         
         # number of transitions to collect per task with z ~ prior 
         num_prior_samples=10,               # default: 1000
