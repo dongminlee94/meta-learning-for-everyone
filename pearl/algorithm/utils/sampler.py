@@ -26,7 +26,7 @@ class Sampler(object):
             traj = self.rollout(accum_context=accum_context, use_rendering=use_rendering)
             
             # Save the latent context that generated this trajectory
-            traj['context'] = self.agent.encoder.z.detach().cpu().numpy()
+            # traj['context'] = self.agent.encoder.z.detach().cpu().numpy()
             trajs.append(traj)
             cur_samples += len(traj['obs'])
             num_trajs += 1

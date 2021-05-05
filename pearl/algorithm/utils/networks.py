@@ -108,16 +108,12 @@ class MLPEncoder(FlattenMLP):
         params = params.view(context.size(0), -1, self.output_dim)
 
         # With probabilistic z, predict mean and variance of q(z | c)
-        mu = params[..., :self.latent_dim]
-        var = F.softplus(params[..., self.latent_dim:])
-
-        z_mu, z_var = [], []
-        for mu, var in zip(torch.unbind(mu), torch.unbind(var)):
-            mu, var = self.product_of_gaussians(mu, var)
-            z_mu.append(mu)
-            z_var.append(var)
-        self.z_mu = torch.Tensor(z_mu)
-        self.z_var = torch.Tensor(z_var)
+        z_mu = torch.unbind(params[..., :self.latent_dim])
+        z_var = torch.unbind(F.softplus(params[..., self.latent_dim:]))
+        z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mu, z_var)]
+        
+        self.z_mu = torch.stack([z_param[0] for z_param in z_params])
+        self.z_var = torch.stack([z_param[1] for z_param in z_params])
         self.sample_z()
 
     def compute_kl_div(self):
