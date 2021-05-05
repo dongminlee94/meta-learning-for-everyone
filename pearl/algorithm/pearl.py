@@ -158,6 +158,7 @@ class PEARL(object):
             )
             print(batch)
             batch = util.np_to_pytorch_batch(batch)
+            print('***'*10)
             print(batch)
             batch = util.unpack_batch(batch)
             context_batch.append(batch)    
