@@ -185,7 +185,7 @@ class TanhGaussianPolicy(MLP):
             correction = -2. * (np.log(2) - action - F.softplus(-2*action)).sum(-1)
             log_prob += correction
 
-        action = torch.tanh(action).view(-1)
+        action = torch.tanh(action)
         return action, log_prob
 
 

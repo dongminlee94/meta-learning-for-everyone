@@ -82,4 +82,4 @@ class SAC(object):
         obs = torch.from_numpy(obs[None]).float().to(self.device)
         inputs = torch.cat([obs, z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
-        return action.detach().cpu().numpy()
+        return action.view(-1).detach().cpu().numpy()
