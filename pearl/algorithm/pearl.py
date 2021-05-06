@@ -120,9 +120,9 @@ class PEARL(object):
                 
                 # Sample context batch
                 context_batch = self.sample_context(indices)
-                print(context_batch.shape)
+                print(context_batch)
                 context = context_batch[:, :self.batch_size, :]
-                print(context.shape)
+                print(context)
 
                 # Sample transition batch
                 transition_batch = self.sample_transition(indices)
