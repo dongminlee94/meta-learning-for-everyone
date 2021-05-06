@@ -104,14 +104,10 @@ class SAC(object):
         self.encoder.infer_posterior(context_batch)
         self.encoder.sample_z()
         task_z = self.encoder.z                             # torch.Size([4, 5])
-        print('task_z_1', task_z.shape)
-        task_z = [z.repeat(matrix_dim, 1) for z in task_z]
-        print('task_z_2', task_z[0].shape)
-        print('task_z_2', task_z[1].shape)
-        print('task_z_2', task_z[2].shape)
-        print('task_z_2', task_z[3].shape)
-        print('task_z_2', task_z[4].shape)
-        print('task_z_2', task_z.shape)
+        task_z = [z.repeat(matrix_dim, 1) for z in task_z]  # [torch.Size([256, 5]), 
+                                                            #  torch.Size([256, 5]),
+                                                            #  torch.Size([256, 5]),
+                                                            #  torch.Size([256, 5])]
         task_z = torch.cat(task_z, dim=0)
         print('task_z_3', task_z.shape)
         print(dones)
