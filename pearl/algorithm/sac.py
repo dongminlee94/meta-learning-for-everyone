@@ -94,7 +94,7 @@ class SAC(object):
         # Data is (task, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
 
-        if 0:
+        if 1:
             print(obs.shape)    # torch.Size([4, 256, 26])
             print(action.shape)    # torch.Size([4, 256, 6])
             print(reward.shape)    # torch.Size([4, 256, 1])
