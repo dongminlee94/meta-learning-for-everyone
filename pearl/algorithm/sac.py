@@ -90,26 +90,25 @@ class SAC(object):
         action, _ = self.policy(inputs, deterministic=deterministic)
         return action.view(-1).detach().cpu().numpy()
 
-    def train_model(self, num_tasks, meta_batch_size, batch_size, context_batch, transition_batch):
+    def train_model(self, meta_batch_size, batch_size, context_batch, transition_batch):
         # Data is (meta-batch, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
 
         # Flattens out the transition batch dimension
-        obs = obs.view(meta_batch_size * batch_size, -1)             # torch.Size([1024, 26])
-        action = action.view(meta_batch_size * batch_size, -1)       # torch.Size([1024, 6])
-        next_obs = next_obs.view(meta_batch_size * batch_size, -1)   # torch.Size([1024, 26])
-        terms_flat = terms.view(num_tasks * batch_size, -1)
+        obs = obs.view(meta_batch_size * batch_size, -1)            # torch.Size([1024, 26])
+        action = action.view(meta_batch_size * batch_size, -1)      # torch.Size([1024, 6])
+        reward = reward.view(meta_batch_size * batch_size, -1)      # torch.Size([1024, 1])
+        next_obs = next_obs.view(meta_batch_size * batch_size, -1)  # torch.Size([1024, 26])
+        done = done.view(meta_batch_size * batch_size, -1)          # torch.Size([1024, 1])
 
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
         self.encoder.sample_z()
 
-        # Flattens out the task dimension
+        # Flattens out the context batch dimension
         task_z = self.encoder.z                                     # torch.Size([4, 5])
         task_z = [task_z.repeat(batch_size, 1) for z in task_z]     # [torch.Size([256, 5]), 
                                                                     # torch.Size([256, 5]),
                                                                     # torch.Size([256, 5]), 
                                                                     # torch.Size([256, 5])]
         task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
-
-        print(dones)

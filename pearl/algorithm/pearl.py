@@ -119,25 +119,17 @@ class PEARL(object):
                 self.agent.encoder.clear_z(num_tasks=len(indices))
                 
                 # Sample context batch
-                context_batch = self.sample_context(indices)
+                context_batch = self.sample_context(indices)        # torch.Size([4, 256, 33])
 
                 # Sample transition batch
-                transition_batch = self.sample_transition(indices)
+                transition_batch = self.sample_transition(indices)  # [torch.Size([4, 256, 26]),
+                                                                    # torch.Size([4, 256, 6]),
+                                                                    # torch.Size([4, 256, 1]),
+                                                                    # torch.Size([4, 256, 26]),
+                                                                    # torch.Size([4, 256, 1])]
 
-                if 0:
-                    print(context_batch.shape)          # torch.Size([4, 256, 33])
-                    print(transition_batch[0].shape)    # torch.Size([4, 256, 26])
-                    print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
-                    print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
-                    print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
-                    print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
-                
-                print(len(indices))
-                print(self.meta_batch_size)
-                print(dones)
                 # Train the policy, Q-functions and the encoder
                 self.agent.train_model(
-                    num_tasks=len(indices),
                     meta_batch_size=self.meta_batch_size,
                     batch_size=self.batch_size,
                     context_batch=context_batch,
