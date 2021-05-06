@@ -198,5 +198,6 @@ class PEARL(object):
         transition_batch = [[transition[i] for transition in transition_batch] 
                                            for i in range(len(transition_batch[0]))]
         transition_batch = [torch.cat(transition, dim=0) for transition in transition_batch]
+        print(transition_batch)
         transition_batch = torch.Tensor(transition_batch).to(self.device)
         return transition_batch
