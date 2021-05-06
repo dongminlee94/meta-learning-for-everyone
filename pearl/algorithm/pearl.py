@@ -124,28 +124,20 @@ class PEARL(object):
                 # Sample transition batch
                 transition_batch = self.sample_transition(indices)
 
-                if 1:
-                    print(context_batch.is_cuda)          # torch.Size([4, 256, 33])
-                    print(transition_batch[0].is_cuda)    # torch.Size([4, 256, 26])
-                    # print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
-                    # print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
-                    # print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
-                    # print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
-
-                    # print(context_batch.shape)          # torch.Size([4, 256, 33])
-                    # print(transition_batch[0].shape)    # torch.Size([4, 256, 26])
-                    # print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
-                    # print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
-                    # print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
-                    # print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
-                    print(transition_batch[5].shape)    # torch.Size([4, 256, 1])
+                if 0:
+                    print(context_batch.shape)          # torch.Size([4, 256, 33])
+                    print(transition_batch[0].shape)    # torch.Size([4, 256, 26])
+                    print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
+                    print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
+                    print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
+                    print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
                 
                 # Train the policy, Q-functions and the encoder
-                # self.agent.train_model(
-                #     num_tasks=len(indices),
-                #     transition=transition_batch, 
-                #     context=context,
-                # )
+                self.agent.train_model(
+                    num_tasks=len(indices),
+                    context_batch=context_batch,
+                    transition_batch=transition_batch, 
+                )
 
                 # Stop backprop
                 self.agent.encoder.detach_z()

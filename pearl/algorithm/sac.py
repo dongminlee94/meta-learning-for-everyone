@@ -90,5 +90,16 @@ class SAC(object):
         action, _ = self.policy(inputs, deterministic=deterministic)
         return action.view(-1).detach().cpu().numpy()
 
-    def train_model(self, num_tasks, transition, context):
-        obs, action, reward, next_obs, done = transition
+    def train_model(self, num_tasks, context_batch, transition_batch):
+        # Data is (task, batch, feature)
+        obs, action, reward, next_obs, done = transition_batch
+
+        if 0:
+            print(obs.shape)    # torch.Size([4, 256, 26])
+            print(action.shape)    # torch.Size([4, 256, 6])
+            print(reward.shape)    # torch.Size([4, 256, 1])
+            print(next_obs.shape)    # torch.Size([4, 256, 26])
+            print(done.shape)    # torch.Size([4, 256, 1])
+            print(dones)
+
+
