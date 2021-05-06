@@ -120,11 +120,25 @@ class PEARL(object):
                 
                 # Sample context batch
                 context_batch = self.sample_context(indices)
-                print(context_batch.shape)
 
                 # Sample transition batch
                 transition_batch = self.sample_transition(indices)
-                print(transition_batch.shape)
+
+                if 1:
+                    print(context_batch.is_cuda)          # torch.Size([4, 256, 33])
+                    print(transition_batch[0].is_cuda)    # torch.Size([4, 256, 26])
+                    # print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
+                    # print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
+                    # print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
+                    # print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
+
+                    # print(context_batch.shape)          # torch.Size([4, 256, 33])
+                    # print(transition_batch[0].shape)    # torch.Size([4, 256, 26])
+                    # print(transition_batch[1].shape)    # torch.Size([4, 256, 6])
+                    # print(transition_batch[2].shape)    # torch.Size([4, 256, 1])
+                    # print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
+                    # print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
+                    print(transition_batch[5].shape)    # torch.Size([4, 256, 1])
                 
                 # Train the policy, Q-functions and the encoder
                 # self.agent.train_model(
@@ -198,11 +212,4 @@ class PEARL(object):
         transition_batch = [[transition[i] for transition in transition_batch] 
                                            for i in range(len(transition_batch[0]))]
         transition_batch = [torch.cat(transition, dim=0) for transition in transition_batch]
-        print(transition_batch[0].shape)
-        print(transition_batch[1].shape)
-        print(transition_batch[2].shape)
-        print(transition_batch[3].shape)
-        print(transition_batch[4].shape)
-        print(transition_batch[5].shape)
-        transition_batch = torch.Tensor(transition_batch).to(self.device)
         return transition_batch
