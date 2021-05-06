@@ -88,8 +88,6 @@ class SAC(object):
         obs = torch.from_numpy(obs[None]).float()
         inputs = torch.cat([obs, z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
-        print(action.shape)
-        print(action.view(-1).shape)
         return action.view(-1).detach().cpu().numpy()
 
     def train_model(self, num_tasks, context_batch, transition_batch):
@@ -101,4 +99,15 @@ class SAC(object):
         obs = obs.view(tensor_dim * matrix_dim, -1)             # torch.Size([1024, 26])
         action = action.view(tensor_dim * matrix_dim, -1)       # torch.Size([1024, 6])
         next_obs = next_obs.view(tensor_dim * matrix_dim, -1)   # torch.Size([1024, 26])
+
+        # Given context c, sample context variable z ~ posterior q(z|c)
+        self.encoder.infer_posterior(context_batch)
+        self.encoder.sample_z()
+        task_z = self.encoder.z
+        print('task_z_1', task_z)
+        task_z = [z.repeat(matrix_dim, 1) for z in task_z]
+        print('task_z_2', task_z)
+        task_z = torch.cat(task_z, dim=0)
+        print('task_z_3', task_z)
+        print(dones)
 
