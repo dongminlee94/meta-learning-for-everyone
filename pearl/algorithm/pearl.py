@@ -31,7 +31,7 @@ class PEARL(object):
         self.num_posterior_samples = config['num_posterior_samples']
 
         self.num_meta_training = config['num_meta_training']
-        self.meta_batch = config['meta_batch']
+        self.meta_batch_size = config['meta_batch_size']
         self.batch_size = config['batch_size']
 
         self.sampler = Sampler(
@@ -113,7 +113,7 @@ class PEARL(object):
             # Sample train tasks and compute gradient updates on parameters.
             print("Start meta-training of iteration {0}".format(iteration))
             for i in range(self.num_meta_training):
-                indices = np.random.choice(self.train_tasks, self.meta_batch)
+                indices = np.random.choice(self.train_tasks, self.meta_batch_size)
 
                 # Zero out context and hidden encoder state
                 self.agent.encoder.clear_z(num_tasks=len(indices))

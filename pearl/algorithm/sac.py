@@ -91,7 +91,7 @@ class SAC(object):
         return action.view(-1).detach().cpu().numpy()
 
     def train_model(self, num_tasks, context_batch, transition_batch):
-        # Data is (task, batch, feature)
+        # Data is (meta-batch, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
 
         # Flattens out the task dimension
@@ -103,9 +103,14 @@ class SAC(object):
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
         self.encoder.sample_z()
-        task_z = self.encoder.z
+        task_z = self.encoder.z                             # torch.Size([4, 5])
         print('task_z_1', task_z.shape)
         task_z = [z.repeat(matrix_dim, 1) for z in task_z]
+        print('task_z_2', task_z[0].shape)
+        print('task_z_2', task_z[1].shape)
+        print('task_z_2', task_z[2].shape)
+        print('task_z_2', task_z[3].shape)
+        print('task_z_2', task_z[4].shape)
         print('task_z_2', task_z.shape)
         task_z = torch.cat(task_z, dim=0)
         print('task_z_3', task_z.shape)

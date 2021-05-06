@@ -45,7 +45,7 @@ config = dict(
         num_meta_training=10,               # default: 2000
         
         # number of tasks to average the gradient across 
-        meta_batch=4,                       # default: 4
+        meta_batch_size=4,                  # default: 4
 
         # number of transitions in the context batch
         batch_size=256,                     # default: 256
