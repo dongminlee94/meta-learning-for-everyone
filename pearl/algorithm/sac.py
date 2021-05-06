@@ -88,27 +88,17 @@ class SAC(object):
         obs = torch.from_numpy(obs[None]).float()
         inputs = torch.cat([obs, z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
+        print(action.shape)
+        print(action.view(-1).shape)
         return action.view(-1).detach().cpu().numpy()
 
     def train_model(self, num_tasks, context_batch, transition_batch):
         # Data is (task, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
 
-        if 0:
-            print(obs.shape)    # torch.Size([4, 256, 26])
-            print(action.shape)    # torch.Size([4, 256, 6])
-            print(reward.shape)    # torch.Size([4, 256, 1])
-            print(next_obs.shape)    # torch.Size([4, 256, 26])
-            print(done.shape)    # torch.Size([4, 256, 1])
-
         # Flattens out the task dimension
-        tensor_dim, matrix_dim, _ = obs.size()
-        # print(obs.size())   # torch.Size([4, 256, 26])
-        # print(t, m)         # 4 256
+        tensor_dim, matrix_dim, _ = obs.size()                  # torch.Size([4, 256, 26])
+        obs = obs.view(tensor_dim * matrix_dim, -1)             # torch.Size([1024, 26])
+        action = action.view(tensor_dim * matrix_dim, -1)       # torch.Size([1024, 6])
+        next_obs = next_obs.view(tensor_dim * matrix_dim, -1)   # torch.Size([1024, 26])
 
-        obs = obs.view(tensor_dim * matrix_dim, -1)
-        action = action.view(tensor_dim * matrix_dim, -1)
-        next_obs = next_obs.view(tensor_dim * matrix_dim, -1)
-        print(obs.shape)
-        print(action.shape)
-        print(next_obs.shape)
