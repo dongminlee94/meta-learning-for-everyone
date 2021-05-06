@@ -84,30 +84,32 @@ class SAC(object):
 
     def get_action(self, obs, deterministic=False):
         ''' Sample action from the policy, conditioned on the task embedding '''
-        z = self.encoder.z
+        task_z = self.encoder.z
         obs = torch.from_numpy(obs[None]).float()
-        inputs = torch.cat([obs, z], dim=-1).to(self.device)
+        inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
         return action.view(-1).detach().cpu().numpy()
 
-    def train_model(self, num_tasks, context_batch, transition_batch):
+    def train_model(self, num_tasks, meta_batch_size, batch_size, context_batch, transition_batch):
         # Data is (meta-batch, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
 
-        # Flattens out the task dimension
-        tensor_dim, matrix_dim, _ = obs.size()                  # torch.Size([4, 256, 26])
-        obs = obs.view(tensor_dim * matrix_dim, -1)             # torch.Size([1024, 26])
-        action = action.view(tensor_dim * matrix_dim, -1)       # torch.Size([1024, 6])
-        next_obs = next_obs.view(tensor_dim * matrix_dim, -1)   # torch.Size([1024, 26])
+        # Flattens out the transition batch dimension
+        obs = obs.view(meta_batch_size * batch_size, -1)             # torch.Size([1024, 26])
+        action = action.view(meta_batch_size * batch_size, -1)       # torch.Size([1024, 6])
+        next_obs = next_obs.view(meta_batch_size * batch_size, -1)   # torch.Size([1024, 26])
+        terms_flat = terms.view(num_tasks * batch_size, -1)
 
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
         self.encoder.sample_z()
 
-
-        z = self.encoder.z                          # torch.Size([4, 5])
-        z = [z.repeat(matrix_dim, 1) for z in z]    # [torch.Size([256, 5]), torch.Size([256, 5]),
-                                                    #  torch.Size([256, 5]), torch.Size([256, 5])]
-        z = torch.cat(z, dim=0)                     # torch.Size([1024, 5])
+        # Flattens out the task dimension
+        task_z = self.encoder.z                                     # torch.Size([4, 5])
+        task_z = [task_z.repeat(batch_size, 1) for z in task_z]     # [torch.Size([256, 5]), 
+                                                                    # torch.Size([256, 5]),
+                                                                    # torch.Size([256, 5]), 
+                                                                    # torch.Size([256, 5])]
+        task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
 
         print(dones)

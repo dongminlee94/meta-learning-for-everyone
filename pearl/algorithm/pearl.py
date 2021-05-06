@@ -132,9 +132,14 @@ class PEARL(object):
                     print(transition_batch[3].shape)    # torch.Size([4, 256, 26])
                     print(transition_batch[4].shape)    # torch.Size([4, 256, 1])
                 
+                print(len(indices))
+                print(self.meta_batch_size)
+                print(dones)
                 # Train the policy, Q-functions and the encoder
                 self.agent.train_model(
                     num_tasks=len(indices),
+                    meta_batch_size=self.meta_batch_size,
+                    batch_size=self.batch_size,
                     context_batch=context_batch,
                     transition_batch=transition_batch, 
                 )
