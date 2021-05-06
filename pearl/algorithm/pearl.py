@@ -120,10 +120,20 @@ class PEARL(object):
                 
                 # Sample context batch
                 context_batch = self.sample_context(indices)
+                print(context_batch)
                 context = context_batch[:, :self.batch_size, :]
+                print(context)
 
+                # Sample transition batch
+                transition_batch = self.sample_transition(indices)
+                print(transition_batch)
+                
                 # Train the policy, Q-functions and the encoder
-                # self.agent.train_model(indices, context)
+                # self.agent.train_model(
+                #     num_tasks=len(indices),
+                #     transition=transition_batch, 
+                #     context=context,
+                # )
 
                 # Stop backprop
                 self.agent.encoder.detach_z()
@@ -158,6 +168,7 @@ class PEARL(object):
 
     def sample_context(self, indices):
         ''' Sample batch of context from a list of tasks from the replay buffer '''
+        # This batch consists of context sampled randomly from encoder's replay buffer
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample(task=index, batch_size=self.batch_size)
@@ -166,11 +177,27 @@ class PEARL(object):
             context_batch.append(batch)    
         
         # Group like elements together
-        context_batch = [[x[i] for x in context_batch] for i in range(len(context_batch[0]))]
-        context_batch = [torch.cat(x, dim=0) for x in context_batch]
+        context_batch = [[context[i] for context in context_batch] 
+                                     for i in range(len(context_batch[0]))]
+        context_batch = [torch.cat(context, dim=0) for context in context_batch]
         
-        # Full context consists of [observs, actions, rewards, next_observs, dones]
-        # If dynamics don't change across tasks, don't include next_obs
-        # Don't include dones in context
+        # Full context consists of [obs, action, reward, next_obs, done]
+        # If dynamics don't change across tasks, don't include next_obs and done in context
         context_batch = torch.cat(context_batch[:-2], dim=2).to(self.device)
         return context_batch
+
+    def sample_transition(self, indices):
+        ''' Sample batch of transitions from a list of tasks for training the actor-critic '''
+        # This batch consists of transitions sampled randomly from RL's replay buffer
+        transition_batch = []
+        for index in indices:
+            batch = self.rl_replay_buffer.sample(task=index, batch_size=self.batch_size)
+            batch = utils.np_to_pytorch_batch(np_batch=batch, device=self.device)
+            batch = utils.unpack_batch(batch)
+            transition_batch.append(batch)
+        
+        # Group like elements together
+        transition_batch = [[transition[i] for transition in transition_batch] 
+                                           for i in range(len(transition_batch[0]))]
+        transition_batch = [torch.cat(transition, dim=0) for transition in transition_batch]
+        return transition_batch

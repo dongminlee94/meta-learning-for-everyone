@@ -89,3 +89,6 @@ class SAC(object):
         inputs = torch.cat([obs, z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
         return action.view(-1).detach().cpu().numpy()
+
+    def train_model(self, num_tasks, transition, context):
+        obs, action, reward, next_obs, done = transition
