@@ -106,9 +106,9 @@ class SAC(object):
         # print(obs.size())   # torch.Size([4, 256, 26])
         # print(t, m)         # 4 256
 
-        obs = obs.view(t * m, -1)
-        action = actions.view(t * m, -1)
-        next_obs = next_obs.view(t * m, -1)
+        obs = obs.view(tensor_dim * matrix_dim, -1)
+        action = actions.view(tensor_dim * matrix_dim, -1)
+        next_obs = next_obs.view(tensor_dim * matrix_dim, -1)
         print(obs.shape)
         print(action.shape)
         print(next_obs.shape)
