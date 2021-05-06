@@ -120,13 +120,13 @@ class PEARL(object):
                 
                 # Sample context batch
                 context_batch = self.sample_context(indices)
-                print(context_batch)
+                print(context_batch.shape)
                 context = context_batch[:, :self.batch_size, :]
-                print(context)
+                print(context.shape)
 
                 # Sample transition batch
                 transition_batch = self.sample_transition(indices)
-                print(transition_batch)
+                print(transition_batch.shape)
                 
                 # Train the policy, Q-functions and the encoder
                 # self.agent.train_model(
