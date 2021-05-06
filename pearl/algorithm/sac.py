@@ -102,10 +102,13 @@ class SAC(object):
             print(done.shape)    # torch.Size([4, 256, 1])
 
         # Flattens out the task dimension
-        t, m, _ = obs.size()
-        print(obs.size())
-        print(t, m)
-        # obs = obs.view(t * m, -1)
-        # action = actions.view(t * m, -1)
-        # next_obs = next_obs.view(t * m, -1)
+        tensor_dim, matrix_dim, _ = obs.size()
+        # print(obs.size())   # torch.Size([4, 256, 26])
+        # print(t, m)         # 4 256
 
+        obs = obs.view(t * m, -1)
+        action = actions.view(t * m, -1)
+        next_obs = next_obs.view(t * m, -1)
+        print(obs.shape)
+        print(action.shape)
+        print(next_obs.shape)
