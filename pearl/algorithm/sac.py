@@ -103,12 +103,11 @@ class SAC(object):
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
         self.encoder.sample_z()
-        task_z = self.encoder.z                             # torch.Size([4, 5])
-        task_z = [z.repeat(matrix_dim, 1) for z in task_z]  # [torch.Size([256, 5]), 
-                                                            #  torch.Size([256, 5]),
-                                                            #  torch.Size([256, 5]),
-                                                            #  torch.Size([256, 5])]
-        task_z = torch.cat(task_z, dim=0)
-        print('task_z_3', task_z.shape)
-        print(dones)
 
+
+        z = self.encoder.z                          # torch.Size([4, 5])
+        z = [z.repeat(matrix_dim, 1) for z in z]    # [torch.Size([256, 5]), torch.Size([256, 5]),
+                                                    #  torch.Size([256, 5]), torch.Size([256, 5])]
+        z = torch.cat(z, dim=0)                     # torch.Size([1024, 5])
+
+        print(dones)
