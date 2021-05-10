@@ -1,9 +1,9 @@
-from envs.robot_bases import XmlBasedRobot, MJCFBasedRobot, URDFBasedRobot
+from .robot_bases import XmlBasedRobot, MJCFBasedRobot, URDFBasedRobot
 import numpy as np
 import pybullet
 import os
 import pybullet_data
-from envs.robot_bases import BodyPart
+from .robot_bases import BodyPart
 
 
 class WalkerBase(MJCFBasedRobot):

@@ -1,7 +1,8 @@
 import numpy as np
 
-from .gym_locomotion_envs import HalfCheetahBulletEnv
-from .robot_locomotors import HalfCheetah
+import pybullet_envs
+from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+from pybullet_envs.robot_locomotors import HalfCheetah
 from . import register_env
 
 
