@@ -114,59 +114,61 @@ class SAC(object):
 
         # Flattens out the context batch dimension
         task_z = self.encoder.z                                     # torch.Size([4, 5])
-        task_z = [task_z.repeat(batch_size, 1) for z in task_z]     # [torch.Size([256, 5]), 
+        task_z = [z.repeat(batch_size, 1) for z in task_z]          # [torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5]),
                                                                     #  torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5])]
+        print(task_z.shape)
         task_z = torch.cat(task_z, dim=0)                           #  torch.Size([1024, 5])
+        print(task_z.shape)
 
         # Target for Q regression
-        with torch.no_grad():
-            next_inputs = torch.cat([next_obs, task_z], dim=1)
-            next_pi, next_log_pi = self.policy(next_inputs)
-            min_target_q = torch.min(
-                self.target_qf1(next_obs, next_pi, task_z), 
-                self.target_qf2(next_obs, next_pi, task_z)
-            )
-            target_q = reward + self.gamma*(1-done)*(min_target_q - self.alpha * next_log_pi)
-            target_q.to(self.device)
+        # with torch.no_grad():
+        #     next_inputs = torch.cat([next_obs, task_z], dim=-1)
+        #     next_pi, next_log_pi = self.policy(next_inputs)
+        #     min_target_q = torch.min(
+        #         self.target_qf1(next_obs, next_pi, task_z), 
+        #         self.target_qf2(next_obs, next_pi, task_z)
+        #     )
+        #     target_q = reward + self.gamma*(1-done)*(min_target_q - self.alpha * next_log_pi)
+        #     target_q.to(self.device)
 
-        # Q-functions losses
-        q1 = self.qf1(obs, action, task_z)
-        q2 = self.qf2(obs, action, task_z)
-        qf1_loss = F.mse_loss(q1, target_q)
-        qf2_loss = F.mse_loss(q2, target_q)
-        qf_loss = qf1_loss + qf2_loss
+        # # Q-functions losses
+        # q1 = self.qf1(obs, action, task_z)
+        # q2 = self.qf2(obs, action, task_z)
+        # qf1_loss = F.mse_loss(q1, target_q)
+        # qf2_loss = F.mse_loss(q2, target_q)
+        # qf_loss = qf1_loss + qf2_loss
         
-        # Two Q-networks update
-        # self.qf_optimizer.zero_grad()
-        # qf_loss.backward()
-        # self.qf_optimizer.step()
+        # # Two Q-networks update
+        # # self.qf_optimizer.zero_grad()
+        # # qf_loss.backward()
+        # # self.qf_optimizer.step()
 
-        # Policy loss
-        inputs = torch.cat([obs, task_z.detach()], dim=-1)
-        pi, log_pi = self.policy(inputs)
-        min_pi_q = torch.min(
-                self.qf1(obs, pi, task_z.detach()), 
-                self.qf2(obs, pi, task_z.detach())
-        )
-        policy_loss = (self.alpha*log_pi - min_pi_q).mean()
+        # # Policy loss
+        # inputs = torch.cat([obs, task_z.detach()], dim=-1)
+        # pi, log_pi = self.policy(inputs)
+        # min_pi_q = torch.min(
+        #         self.qf1(obs, pi, task_z.detach()), 
+        #         self.qf2(obs, pi, task_z.detach())
+        # )
+        # policy_loss = (self.alpha*log_pi - min_pi_q).mean()
 
-        # Policy network update
-        # self.policy_optimizer.zero_grad()
-        # policy_loss.backward()
-        # self.policy_optimizer.step()
+        # # Policy network update
+        # # self.policy_optimizer.zero_grad()
+        # # policy_loss.backward()
+        # # self.policy_optimizer.step()
 
-        # Temperature parameter alpha update
-        alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
-        # self.alpha_optimizer.zero_grad()
-        # alpha_loss.backward()
-        # self.alpha_optimizer.step()
-        self.alpha = self.log_alpha.exp()
+        # # Temperature parameter alpha update
+        # alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
+        # # self.alpha_optimizer.zero_grad()
+        # # alpha_loss.backward()
+        # # self.alpha_optimizer.step()
+        # self.alpha = self.log_alpha.exp()
 
-        # Polyak averaging for target parameter
-        self.soft_target_update(self.qf1, self.target_qf1)
-        self.soft_target_update(self.qf2, self.target_qf2)
+        # # Polyak averaging for target parameter
+        # self.soft_target_update(self.qf1, self.target_qf1)
+        # self.soft_target_update(self.qf2, self.target_qf2)
     
     def save(self, path, net_dict=None):
         if net_dict is None:
