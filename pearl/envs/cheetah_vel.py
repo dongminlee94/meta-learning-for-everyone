@@ -1,5 +1,4 @@
 import numpy as np
-
 import pybullet_envs
 from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from pybullet_envs.robot_locomotors import HalfCheetah
