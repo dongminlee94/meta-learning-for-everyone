@@ -89,9 +89,6 @@ config = dict(
 
         # Policy network's learning rate
         policy_lr=3e-4,                 # default: 3e-4
-
-        # If automatic entropy tuning is True, update alpha
-        automatic_entropy_tuning=True,  # default: True
     ),
 )
 

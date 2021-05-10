@@ -46,9 +46,9 @@ class MLP(nn.Module):
 
 class FlattenMLP(MLP):
     ''' If there are multiple inputs, concatenate along dim 1 '''
-    def forward(self, *x: torch.Tensor, **kwargs) -> torch.Tensor:
+    def forward(self, *x: torch.Tensor) -> torch.Tensor:
         x = torch.cat(x, dim=-1)
-        return super(FlattenMLP, self).forward(x, **kwargs)
+        return super(FlattenMLP, self).forward(x)
 
 
 class MLPEncoder(FlattenMLP):
@@ -171,11 +171,11 @@ class TanhGaussianPolicy(MLP):
         std = torch.exp(log_std)
 
         if deterministic:
-            action = torch.tanh(mu)
+            pi = torch.tanh(mu)
         else:
             normal = Normal(mu, std)
             # If reparameterize, use reparameterization trick (mean + std * N(0,1))
-            action = normal.rsample() if reparameterize else normal.sample()
+            pi = normal.rsample() if reparameterize else normal.sample()
             
             # Compute logprob from Gaussian, and then apply correction for Tanh squashing.
             # NOTE: The correction formula is a little bit magic. To get an understanding 
@@ -188,11 +188,11 @@ class TanhGaussianPolicy(MLP):
             #               = 2 * log(2e^-x / (e^-2x + 1))
             #               = 2 * (log(2) - x - log(e^-2x + 1))
             #               = 2 * (log(2) - x - softplus(-2x))
-            log_prob = normal.log_prob(action).sum(-1, keepdim=True)
-            correction = -2. * (np.log(2) - action - F.softplus(-2*action)).sum(-1)
-            log_prob += correction
+            log_pi = normal.log_prob(pi).sum(-1, keepdim=True)
+            correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
+            log_pi += correction
 
-        action = torch.tanh(action)
-        return action, log_prob
+        pi = torch.tanh(pi)
+        return pi, log_pi
 
 

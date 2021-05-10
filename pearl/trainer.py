@@ -3,7 +3,7 @@ import torch
 import argparse
 import numpy as np
 
-from pybullet_envs import *
+from envs import *
 from algorithm.sac import SAC
 from algorithm.pearl import PEARL
 from configs import cheetah_dir, cheetah_vel
