@@ -122,9 +122,9 @@ class SAC(object):
         print(task_z[1].shape)
         print(task_z[2].shape)
         print(task_z[3].shape)
-        print(task_z[4].shape)
         task_z = torch.cat(task_z, dim=0)                           #  torch.Size([1024, 5])
         print(task_z.shape)
+        print(dones)
 
         # Target for Q regression
         # with torch.no_grad():
