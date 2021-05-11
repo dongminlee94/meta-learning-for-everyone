@@ -134,10 +134,8 @@ class SAC(object):
             target_q = reward + self.gamma * (1-done) * target_v    # torch.Size([1024, 1])
 
         # Q-functions losses
-        q1 = self.qf1(obs, action, task_z)
-        q2 = self.qf2(obs, action, task_z)
-        print(q1.shape)
-        print(q2.shape)
+        q1 = self.qf1(obs, action, task_z)                          # torch.Size([1024, 1])
+        q2 = self.qf2(obs, action, task_z)                          # torch.Size([1024, 1])
         qf1_loss = F.mse_loss(q1, target_q)
         qf2_loss = F.mse_loss(q2, target_q)
         qf_loss = qf1_loss + qf2_loss
