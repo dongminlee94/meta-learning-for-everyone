@@ -123,10 +123,10 @@ class PEARL(object):
 
                 # Sample transition batch
                 transition_batch = self.sample_transition(indices)  # [torch.Size([4, 256, 26]),
-                                                                    # torch.Size([4, 256, 6]),
-                                                                    # torch.Size([4, 256, 1]),
-                                                                    # torch.Size([4, 256, 26]),
-                                                                    # torch.Size([4, 256, 1])]
+                                                                    #  torch.Size([4, 256, 6]),
+                                                                    #  torch.Size([4, 256, 1]),
+                                                                    #  torch.Size([4, 256, 26]),
+                                                                    #  torch.Size([4, 256, 1])]
 
                 # Train the policy, Q-functions and the encoder
                 self.agent.train_model(

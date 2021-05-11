@@ -121,8 +121,10 @@ class SAC(object):
         task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
 
         # Target for Q regression
-        # with torch.no_grad():
-        #     next_inputs = torch.cat([next_obs, task_z], dim=-1)
+        with torch.no_grad():
+            print(next_obs.shape)
+            print(task_z.shape)
+            next_inputs = torch.cat([next_obs, task_z], dim=1)
         #     next_pi, next_log_pi = self.policy(next_inputs)
         #     min_target_q = torch.min(
         #         self.target_qf1(next_obs, next_pi, task_z), 
