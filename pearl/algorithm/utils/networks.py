@@ -193,9 +193,9 @@ class TanhGaussianPolicy(MLP):
             correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
             print('b', correction.shape)
             log_pi += correction
-            print('c', log_pi)
+            print('c', log_pi.shape)
             log_pi = log_pi.sum(-1, keepdim=True)
-            print('d', log_pi)
+            print('d', log_pi.shape)
 
         pi = torch.tanh(pi)
         return pi, log_pi
