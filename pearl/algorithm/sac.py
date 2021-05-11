@@ -2,9 +2,8 @@ import numpy as np
 from typing import Callable, List
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
-# import torch.nn.functional as F
+import torch.nn.functional as F
 from algorithm.utils.networks import MLP, FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
@@ -126,15 +125,14 @@ class SAC(object):
         with torch.no_grad():
             next_inputs = torch.cat([next_obs, task_z], dim=-1)     # torch.Size([1024, 31])
             next_pi, next_log_pi = self.policy(next_inputs)         # torch.Size([1024, 6])
-                                                                    # torch.Size([1024])
-            print(next_pi.shape)
-            print(next_log_pi.shape)
+                                                                    # torch.Size([1024, 1])
             min_target_q = torch.min(                               # torch.Size([1024, 1])
                 self.target_qf1(next_obs, next_pi, task_z), 
                 self.target_qf2(next_obs, next_pi, task_z)
             )
-            print(min_target_q.shape)
-            target_q = reward + self.gamma*(1-done)*(min_target_q - self.alpha * next_log_pi)
+            target_v = min_target_q - self.alpha * next_log_pi
+            print(target_v.shape)
+            target_q = reward + self.gamma * (1-done) * target_v
             print(target_q.shape)
 
         # # Q-functions losses
