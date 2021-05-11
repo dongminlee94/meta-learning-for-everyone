@@ -1,50 +1,60 @@
-# default PEARL experiment settings
-# all experiments should modify these settings only as needed
+# PEARL cheetah-vel experiment settings
+
 config = dict(
     env_name='cheetah-vel',
     
-    n_train_tasks=10,          # default: 100
+    n_train_tasks=10,               # default: 100
     
-    n_eval_tasks=3,            # default: 30
+    n_eval_tasks=3,                 # default: 30
     
     # dimension of the latent context vector
-    latent_size=5,              # default: 5
+    latent_size=5,                  # default: 5
     
     # number of hidden units in neural networks
-    hidden_units='300,300,300',      # default: 300,300,300
+    hidden_units='300,300,300',     # default: 300,300,300
 
     # path to pre-trained weights to load into networks
-    path_to_weights=None,       # default: None
+    path_to_weights=None,           # default: None
     
     env_params=dict(
-        # number of distinct tasks in this domain, shoudl equal sum of train and eval tasks
-        n_tasks=13,            # default: 130
+        # number of distinct tasks in the domain, shoudl equal sum of train and eval tasks
+        n_tasks=13,                 # default: 130
 
         # shuffle the tasks after creating them
-        randomize_tasks=True,   # default: True
+        randomize_tasks=True,       # default: True
     ),
     
     pearl_params=dict(
-        # number of tasks to average the gradient across
-        meta_batch=16,                      # default: 16
-
         # number of data sampling / training iterates
         num_iterations=500,                 # default: 500
-
+        
         # number of transitions collected per task before training
-        num_initial_steps=2000,             # default: 2000
-
-        # number of randomly sampled tasks to collect data for each iteration
-        num_tasks_sample=5,                 # default: 5   
-
+        num_init_samples=2000,              # default: 2000
+        
+        # number of sampled tasks to collect data for each iteration
+        num_task_samples=5,                 # default: 5   
+        
         # number of transitions to collect per task with z ~ prior
-        num_steps_prior=400,                # default: 400
+        num_prior_sample=400,               # default: 400
 
-        # number of additional transitions to collect per task with z ~ posterior that are only used to train the policy and NOT the encoder
-        num_extra_rl_steps_posterior=600,   # default: 600
+        # number of transitions to collect per task with z ~ posterior 
+        # that are only used to train the policy and NOT the encoder
+        num_posterior_sample=600,           # default: 600
+        
+        # number of meta-training steps taken per iteration
+        num_meta_training=2000,             # default: 2000
+        
+        # number of tasks to average the gradient across
+        meta_batch_size=16,                 # default: 16
 
-        # number of meta-gradient steps taken per iteration
-        num_train_steps_per_itr=2000,       # default: 2000
+        # number of transitions in the context batch
+        batch_size=100,                     # default: 100
+
+        # maximum step for the environment
+        max_step=200,                       # default: 200
+
+        # How many transitions to store
+        max_buffer_size=int(1e6),           # default: int(1e6)
 
         # number of independent evals
         num_evals=1,                        # default: 1
@@ -52,20 +62,9 @@ config = dict(
         # number of transitions to eval on
         num_steps_per_eval=600,             # default: 600
 
-        # max path length for this environment
-        max_path_length=200,                # default: 200
-
-        # how often to resample the context when collecting data during training (in trajectories)
-        update_post_train=True,             # default: True 
-
         # how many exploration trajs to collect before beginning posterior sampling at test time
         num_exp_traj_eval=2,                # default: 2
 
-        # number of transitions in the context batch
-        embedding_batch_size=100,           # default: 100
-
-        # number of context transitions to backprop through (should equal the arg above except in the recurrent encoder case)
-        embedding_mini_batch_size=100,      # default: 100
     ),
     
     sac_params=dict(
@@ -78,7 +77,8 @@ config = dict(
         # number of transitions in the RL batch
         batch_size=256,                 # default: 256
 
-        # scale rewards before constructing Bellman update, effectively controls weight on the entropy of the policy
+        # scale rewards before constructing Bellman update, 
+        # effectively controls weight on the entropy of the policy
         reward_scale=5.,                # default: 5.
 
         # Q-function network's learning rate
@@ -89,9 +89,6 @@ config = dict(
 
         # Policy network's learning rate
         policy_lr=3e-4,                 # default: 3e-4
-
-        # If automatic entropy tuning is True, update alpha
-        automatic_entropy_tuning=True,  # default: True
     ),
 )
 
