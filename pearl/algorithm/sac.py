@@ -122,8 +122,7 @@ class SAC(object):
 
         # Target for Q regression
         with torch.no_grad():
-            next_inputs = torch.cat([next_obs, task_z], dim=-1)
-            print(next_inputs.shape)
+            next_inputs = torch.cat([next_obs, task_z], dim=-1)     # torch.Size([1024, 31])
             next_pi, next_log_pi = self.policy(next_inputs)
             print(next_pi.shape)
             print(next_log_pi.shape)
