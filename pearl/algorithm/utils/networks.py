@@ -177,7 +177,7 @@ class TanhGaussianPolicy(MLP):
             # If reparameterize, use reparameterization trick (mean + std * N(0,1))
             pi = normal.rsample() if reparameterize else normal.sample()
             
-            # Compute logprob from Gaussian, and then apply correction for Tanh squashing.
+            # Compute log prob from Gaussian, and then apply correction for Tanh squashing.
             # NOTE: The correction formula is a little bit magic.  
             # To get an understanding of where it comes from, check out the original SAC paper
             # (https://arxiv.org/abs/1801.01290) and look in appendix C.
@@ -189,21 +189,8 @@ class TanhGaussianPolicy(MLP):
             #               = sum(2 * log(2e^-x / (e^-2x + 1)))
             #               = sum(2 * (log(2) - x - log(e^-2x + 1)))
             #               = sum(2 * (log(2) - x - softplus(-2x)))
-            log_pi = normal.log_prob(pi)
-            print('a', log_pi)
-            print('a', log_pi.shape)
-            correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)) #.sum(-1)
-            print('b', correction)
-            print('b', correction.shape)
-            log_pi += correction
-
-            e = torch.log(1 - pi.pow(2))
-            print('b-1', e.shape)
-
-            print('c', log_pi)
-            print('c', log_pi.shape)
-            log_pi = log_pi.sum(-1, keepdim=True)
-            print('d', log_pi.shape)
+            log_pi = normal.log_prob(pi).sum(-1)
+            log_pi -= 2 * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
 
         pi = torch.tanh(pi)
         return pi, log_pi
