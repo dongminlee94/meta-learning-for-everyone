@@ -125,20 +125,20 @@ class SAC(object):
             print(next_obs.shape)
             print(task_z.shape)
             next_inputs = torch.cat([next_obs, task_z], dim=-1)
-        #     next_pi, next_log_pi = self.policy(next_inputs)
-        #     min_target_q = torch.min(
-        #         self.target_qf1(next_obs, next_pi, task_z), 
-        #         self.target_qf2(next_obs, next_pi, task_z)
-        #     )
-        #     target_q = reward + self.gamma*(1-done)*(min_target_q - self.alpha * next_log_pi)
-        #     target_q.to(self.device)
+            next_pi, next_log_pi = self.policy(next_inputs)
+            min_target_q = torch.min(
+                self.target_qf1(next_obs, next_pi, task_z), 
+                self.target_qf2(next_obs, next_pi, task_z)
+            )
+            target_q = reward + self.gamma*(1-done)*(min_target_q - self.alpha * next_log_pi)
+            target_q.to(self.device)
 
         # # Q-functions losses
-        # q1 = self.qf1(obs, action, task_z)
-        # q2 = self.qf2(obs, action, task_z)
-        # qf1_loss = F.mse_loss(q1, target_q)
-        # qf2_loss = F.mse_loss(q2, target_q)
-        # qf_loss = qf1_loss + qf2_loss
+        q1 = self.qf1(obs, action, task_z)
+        q2 = self.qf2(obs, action, task_z)
+        qf1_loss = F.mse_loss(q1, target_q)
+        qf2_loss = F.mse_loss(q2, target_q)
+        qf_loss = qf1_loss + qf2_loss
         
         # # Two Q-networks update
         # # self.qf_optimizer.zero_grad()
