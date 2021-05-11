@@ -188,11 +188,13 @@ class TanhGaussianPolicy(MLP):
             #               = 2 * log(2e^-x / (e^-2x + 1))
             #               = 2 * (log(2) - x - log(e^-2x + 1))
             #               = 2 * (log(2) - x - softplus(-2x))
-            log_pi = normal.log_prob(pi).sum(-1, keepdim=True)
+            log_pi = normal.log_prob(pi)
             print(log_pi.shape)
             correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
             print(correction.shape)
             log_pi += correction
+            print(dones)
+            # log_pi = log_pi.sum(-1, keepdim=True)
 
         pi = torch.tanh(pi)
         return pi, log_pi
