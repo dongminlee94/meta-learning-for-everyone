@@ -124,8 +124,8 @@ class SAC(object):
         with torch.no_grad():
             next_inputs = torch.cat([next_obs, task_z], dim=-1)     # torch.Size([1024, 31])
             next_pi, next_log_pi = self.policy(next_inputs)
-            print(next_pi.shape)
-            print(next_log_pi.shape)
+            # print(next_pi.shape)
+            # print(next_log_pi.shape)
             min_target_q = torch.min(
                 self.target_qf1(next_obs, next_pi, task_z), 
                 self.target_qf2(next_obs, next_pi, task_z)
