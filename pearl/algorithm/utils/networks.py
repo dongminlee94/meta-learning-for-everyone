@@ -196,6 +196,10 @@ class TanhGaussianPolicy(MLP):
             print('b', correction)
             print('b', correction.shape)
             log_pi += correction
+
+            e = torch.log(1 - pi.pow(2))
+            print('b-1', e.shape)
+
             print('c', log_pi)
             print('c', log_pi.shape)
             log_pi = log_pi.sum(-1, keepdim=True)
