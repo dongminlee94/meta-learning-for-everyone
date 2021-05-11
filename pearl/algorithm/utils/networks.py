@@ -189,10 +189,13 @@ class TanhGaussianPolicy(MLP):
             #               = 2 * (log(2) - x - log(e^-2x + 1))
             #               = 2 * (log(2) - x - softplus(-2x))
             log_pi = normal.log_prob(pi)
+            print('a', log_pi)
             print('a', log_pi.shape)
             correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
+            print('b', correction)
             print('b', correction.shape)
             log_pi += correction
+            print('c', log_pi)
             print('c', log_pi.shape)
             log_pi = log_pi.sum(-1, keepdim=True)
             print('d', log_pi.shape)
