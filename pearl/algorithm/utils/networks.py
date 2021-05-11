@@ -178,20 +178,21 @@ class TanhGaussianPolicy(MLP):
             pi = normal.rsample() if reparameterize else normal.sample()
             
             # Compute logprob from Gaussian, and then apply correction for Tanh squashing.
-            # NOTE: The correction formula is a little bit magic. To get an understanding 
-            # of where it comes from, check out the original SAC paper (arXiv 1801.01290) 
-            # and look in appendix C. This is a more numerically-stable equivalent to Eq 21.
+            # NOTE: The correction formula is a little bit magic.  
+            # To get an understanding of where it comes from, check out the original SAC paper
+            # (https://arxiv.org/abs/1801.01290) and look in appendix C.
+            # This is a more numerically-stable equivalent to Eq 21.
             # Derivation:
-            #               log(1 - tanh(x)^2)
-            #               = log(sech(x)^2)
-            #               = 2 * log(sech(x))
-            #               = 2 * log(2e^-x / (e^-2x + 1))
-            #               = 2 * (log(2) - x - log(e^-2x + 1))
-            #               = 2 * (log(2) - x - softplus(-2x))
+            #               sum(log(1 - tanh(x)^2))
+            #               = sum(log(sech(x)^2))
+            #               = sum(2 * log(sech(x)))
+            #               = sum(2 * log(2e^-x / (e^-2x + 1)))
+            #               = sum(2 * (log(2) - x - log(e^-2x + 1)))
+            #               = sum(2 * (log(2) - x - softplus(-2x)))
             log_pi = normal.log_prob(pi)
             print('a', log_pi)
             print('a', log_pi.shape)
-            correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)).sum(-1)
+            correction = -2. * (np.log(2) - pi - F.softplus(-2*pi)) #.sum(-1)
             print('b', correction)
             print('b', correction.shape)
             log_pi += correction
