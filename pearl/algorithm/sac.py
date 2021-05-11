@@ -133,9 +133,11 @@ class SAC(object):
             target_v = min_target_q - self.alpha * next_log_pi      # torch.Size([1024, 1])
             target_q = reward + self.gamma * (1-done) * target_v    # torch.Size([1024, 1])
 
-        # # Q-functions losses
+        # Q-functions losses
         q1 = self.qf1(obs, action, task_z)
         q2 = self.qf2(obs, action, task_z)
+        print(q1.shape)
+        print(q2.shape)
         qf1_loss = F.mse_loss(q1, target_q)
         qf2_loss = F.mse_loss(q2, target_q)
         qf_loss = qf1_loss + qf2_loss
@@ -145,17 +147,24 @@ class SAC(object):
         # qf_loss.backward()
         # self.qf_optimizer.step()
 
+        # Encoder loss using KL divergence on z
+        kl_div = self.encoder.compute_kl_div()
+        print(kl_div.shape)
+        kl_loss = self.kl_lambda * kl_div
+        
+        # Encoder network update
+        # self.encoder_optimizer.zero_grad()
+        # encoder_loss.backward()
+        # self.encoder_optimizer.step()
+
         # Policy loss
-        inputs = torch.cat([obs, task_z.detach()], dim=-1)
-        print(inputs.shape)
-        pi, log_pi = self.policy(inputs)
-        print(pi.shape)
-        print(log_pi.shape)
-        min_pi_q = torch.min(
+        inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
+        pi, log_pi = self.policy(inputs)                            # torch.Size([1024, 6])
+                                                                    # torch.Size([1024, 1])
+        min_pi_q = torch.min(                                       # torch.Size([1024, 1])
                 self.qf1(obs, pi, task_z.detach()), 
                 self.qf2(obs, pi, task_z.detach())
         )
-        print(min_pi_q.shape)
         policy_loss = (self.alpha * log_pi - min_pi_q).mean()
 
         # Policy network update
