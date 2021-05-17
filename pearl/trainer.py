@@ -29,6 +29,7 @@ def trainer():
         NotImplementedError
 
     # Create a multi-task environment and sample tasks
+    print(config['env_name'])
     env = envs[config['env_name']](**config['env_params'])
     tasks = env.get_all_task_idx()
 
