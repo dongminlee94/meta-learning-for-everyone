@@ -147,11 +147,11 @@ class SAC(object):
         self.qf_optimizer.step()
 
         # Encoder loss using KL divergence on z
+        self.encoder_optimizer.zero_grad()
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
 
         # Encoder network update
-        self.encoder_optimizer.zero_grad()
         encoder_loss.backward(retain_graph=True)
         self.encoder_optimizer.step()
 
