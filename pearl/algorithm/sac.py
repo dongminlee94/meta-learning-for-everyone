@@ -122,6 +122,15 @@ class SAC(object):
                                                                     #  torch.Size([256, 5])]
         task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
 
+        # Encoder loss using KL divergence on z
+        kl_div = self.encoder.compute_kl_div()                      
+        encoder_loss = self.kl_lambda * kl_div
+
+        # Encoder network update
+        self.encoder_optimizer.zero_grad()
+        encoder_loss.backward(retain_graph=True)
+        self.encoder_optimizer.step()
+
         # Target for Q regression
         with torch.no_grad():
             next_inputs = torch.cat([next_obs, task_z], dim=-1)     # torch.Size([1024, 31])
@@ -145,15 +154,6 @@ class SAC(object):
         self.qf_optimizer.zero_grad()
         qf_loss.backward()
         self.qf_optimizer.step()
-
-        # Encoder loss using KL divergence on z
-        self.encoder_optimizer.zero_grad()
-        kl_div = self.encoder.compute_kl_div()                      
-        encoder_loss = self.kl_lambda * kl_div
-
-        # Encoder network update
-        encoder_loss.backward(retain_graph=True)
-        self.encoder_optimizer.step()
 
         # Policy loss
         inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
