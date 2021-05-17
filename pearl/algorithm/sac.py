@@ -129,7 +129,7 @@ class SAC(object):
         # Encoder network update
         self.encoder_optimizer.zero_grad()
         encoder_loss.backward(retain_graph=True)
-        self.encoder_optimizer.step()
+        
 
         # Target for Q regression
         with torch.no_grad():
@@ -154,6 +154,7 @@ class SAC(object):
         self.qf_optimizer.zero_grad()
         qf_loss.backward()
         self.qf_optimizer.step()
+        self.encoder_optimizer.step()
 
         # Policy loss
         inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
