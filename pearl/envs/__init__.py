@@ -1,11 +1,10 @@
 import os
 import importlib
-from collections import defaultdict
 
 import gym
 from gym.envs.registration import registry, make, spec
 
-envs = defaultdict()
+envs = {}
 
 def register(id, *args, **kvargs):
     if id in registry.env_specs:
