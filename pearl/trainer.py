@@ -21,13 +21,13 @@ device = torch.device('cuda', index=args.gpu_index) if torch.cuda.is_available()
 
 
 def trainer():
-    # Create a multi-task environment and sample tasks
     if args.env == 'dir':
         config = cheetah_dir.config
-        env = envs['cheetah-dir'](**config['env_params'])
     elif args.env == 'vel':
         config = cheetah_vel.config
-        env = envs['cheetah-vel'](**config['env_params'])
+    
+    # Create a multi-task environment and sample tasks
+    env = envs[config['env_name']](**config['env_params'])
     tasks = env.get_all_task_idx()
 
     observ_dim = env.observation_space.shape[0]
