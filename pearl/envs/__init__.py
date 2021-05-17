@@ -1,16 +1,17 @@
 import os
 import importlib
+from collections import defaultdict
 
 import gym
 from gym.envs.registration import registry, make, spec
 
-envs = {}
+envs = defaultdict()
 
 def register(id, *args, **kvargs):
-  if id in registry.env_specs:
-    return
-  else:
-    return gym.envs.registration.register(id, *args, **kvargs)
+    if id in registry.env_specs:
+        return
+    else:
+        return gym.envs.registration.register(id, *args, **kvargs)
 
 def register_env(name):
     def register_env_fn(fn):
