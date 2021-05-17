@@ -81,7 +81,7 @@ class MLPEncoder(FlattenMLP):
         # Reset q(z|c) to the prior r(z)
         self.z_mu = torch.zeros(num_tasks, self.latent_dim)
         self.z_var = torch.ones(num_tasks, self.latent_dim)
-        print(self.z_mu.is_cuda)
+        print("1", self.z_mu.is_cuda)
         
         # Sample a new z from the prior r(z)
         self.sample_z()
@@ -97,7 +97,7 @@ class MLPEncoder(FlattenMLP):
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
         self.z = torch.stack(z)
-        print(self.z.is_cuda)
+        print("2", self.z.is_cuda)
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         ''' Compute mu, sigma of product of gaussians (POG) '''
@@ -118,7 +118,7 @@ class MLPEncoder(FlattenMLP):
         
         self.z_mu = torch.stack([z_param[0] for z_param in z_params])
         self.z_var = torch.stack([z_param[1] for z_param in z_params])
-        print(self.z_mu.is_cuda)
+        print("3", self.z_mu.is_cuda)
         self.sample_z()
 
     def compute_kl_div(self):
