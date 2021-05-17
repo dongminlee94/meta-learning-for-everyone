@@ -92,7 +92,7 @@ class MLPEncoder(FlattenMLP):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
         dists = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
-            dist = torch.distributions.Normal(mu, torch.sqrt(var).to(self.device)).to(self.device)
+            dist = torch.distributions.Normal(mu, torch.sqrt(var).to(self.device))
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
         self.z = torch.stack(z).to(self.device)
@@ -120,14 +120,16 @@ class MLPEncoder(FlattenMLP):
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
-        prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim)).to(self.device)
+        prior = torch.distributions.Normal(
+            torch.zeros(self.latent_dim).to(self.device), torch.ones(self.latent_dim).to(self.device)
+        )
 
         posteriors = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
-            dist = torch.distributions.Normal(mu, torch.sqrt(var)).to(self.device)
+            dist = torch.distributions.Normal(mu, torch.sqrt(var))
             posteriors.append(dist)
         
-        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior).to(self.device) for posterior in posteriors]
+        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
         return torch.sum(torch.stack(kl_div)).to(self.device)
 
     def detach_z(self):
