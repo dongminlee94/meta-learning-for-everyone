@@ -91,7 +91,7 @@ class MLPEncoder(FlattenMLP):
     def sample_z(self):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
         dists = []
-        for mu, var in zip(torch.unbind(self.z_mu).to(self.device), torch.unbind(self.z_var).to(self.device)):
+        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var).to(self.device)).to(self.device)
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
@@ -110,8 +110,8 @@ class MLPEncoder(FlattenMLP):
         params = params.view(context.size(0), -1, self.output_dim).to(self.device)
 
         # With probabilistic z, predict mean and variance of q(z | c)
-        z_mu = torch.unbind(params[..., :self.latent_dim]).to(self.device)
-        z_var = torch.unbind(F.softplus(params[..., self.latent_dim:])).to(self.device)
+        z_mu = torch.unbind(params[..., :self.latent_dim])
+        z_var = torch.unbind(F.softplus(params[..., self.latent_dim:]))
         z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mu, z_var)]
         
         self.z_mu = torch.stack([z_param[0] for z_param in z_params]).to(self.device)
@@ -123,7 +123,7 @@ class MLPEncoder(FlattenMLP):
         prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim)).to(self.device)
 
         posteriors = []
-        for mu, var in zip(torch.unbind(self.z_mu).to(self.device), torch.unbind(self.z_var).to(self.device)):
+        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var)).to(self.device)
             posteriors.append(dist)
         
