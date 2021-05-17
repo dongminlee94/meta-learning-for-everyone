@@ -132,7 +132,7 @@ class MLPEncoder(FlattenMLP):
         
         kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
         kl_div = torch.stack(kl_div).to(self.device)
-        return kl_div.sum(-1)
+        return kl_div.sum(-1, keepdim=True)
 
     def detach_z(self):
         ''' Disable backprop through z '''
