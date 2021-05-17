@@ -111,31 +111,30 @@ class SAC(object):
         done = done.view(meta_batch_size * batch_size, -1)          # torch.Size([1024, 1])
 
         # Given context c, sample context variable z ~ posterior q(z|c)
-
-        # Flattens out the context batch dimension
         self.encoder.infer_posterior(context_batch)
-        q_z = self.encoder.z                                        # torch.Size([4, 5])
-        q_z = [z.repeat(batch_size, 1) for z in q_z]                # [torch.Size([256, 5]), 
+        # Flattens out the context batch dimension
+        task_z = self.encoder.z                                     # torch.Size([4, 5])
+        task_z = [z.repeat(batch_size, 1) for z in task_z]          # [torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5]),
                                                                     #  torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5])]
-        q_z = torch.cat(q_z, dim=0)                                 # torch.Size([1024, 5])
+        task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
 
         # Target for Q regression
         with torch.no_grad():
-            next_inputs = torch.cat([next_obs, q_z], dim=-1)        # torch.Size([1024, 31])
+            next_inputs = torch.cat([next_obs, task_z], dim=-1)     # torch.Size([1024, 31])
             next_pi, next_log_pi = self.policy(next_inputs)         # torch.Size([1024, 6])
                                                                     # torch.Size([1024, 1])
             min_target_q = torch.min(                               # torch.Size([1024, 1])
-                self.target_qf1(next_obs, next_pi, q_z), 
-                self.target_qf2(next_obs, next_pi, q_z)
+                self.target_qf1(next_obs, next_pi, task_z), 
+                self.target_qf2(next_obs, next_pi, task_z)
             )
             target_v = min_target_q - self.alpha * next_log_pi      # torch.Size([1024, 1])
             target_q = reward + self.gamma * (1-done) * target_v    # torch.Size([1024, 1])
 
         # Q-functions losses
-        q1 = self.qf1(obs, action, q_z)                             # torch.Size([1024, 1])
-        q2 = self.qf2(obs, action, q_z)                             # torch.Size([1024, 1])
+        q1 = self.qf1(obs, action, task_z)                          # torch.Size([1024, 1])
+        q2 = self.qf2(obs, action, task_z)                          # torch.Size([1024, 1])
         qf1_loss = F.mse_loss(q1, target_q)
         qf2_loss = F.mse_loss(q2, target_q)
         qf_loss = qf1_loss + qf2_loss
@@ -145,8 +144,9 @@ class SAC(object):
         qf_loss.backward()
         self.qf_optimizer.step()
 
-        # Encoder loss using KL divergence on z
+        # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
+        # Encoder loss using KL divergence on z
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
 
@@ -156,12 +156,12 @@ class SAC(object):
         self.encoder_optimizer.step()
 
         # Policy loss
-        inputs = torch.cat([obs, q_z.detach()], dim=-1)          # torch.Size([1024, 31])
+        inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
         pi, log_pi = self.policy(inputs)                            # torch.Size([1024, 6])
                                                                     # torch.Size([1024, 1])
         min_pi_q = torch.min(                                       # torch.Size([1024, 1])
-                self.qf1(obs, pi, q_z.detach()), 
-                self.qf2(obs, pi, q_z.detach())
+                self.qf1(obs, pi, task_z.detach()), 
+                self.qf2(obs, pi, task_z.detach())
         )
         policy_loss = (self.alpha * log_pi - min_pi_q).mean()
 
