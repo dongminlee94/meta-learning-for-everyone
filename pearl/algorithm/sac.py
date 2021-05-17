@@ -37,6 +37,7 @@ class SAC(object):
             output_dim=encoder_output_dim,
             latent_dim=latent_dim,
             hidden_units=hidden_units,
+            device=device,
         ).to(device)
         self.qf1 = FlattenMLP(
             input_dim=observ_dim + action_dim + latent_dim,

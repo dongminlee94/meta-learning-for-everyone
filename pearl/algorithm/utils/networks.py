@@ -59,6 +59,7 @@ class MLPEncoder(FlattenMLP):
         output_dim: int,
         latent_dim: int,
         hidden_units: List[int],
+        device,
     ):  
         super(MLPEncoder, self).__init__(
             input_dim=input_dim, 
@@ -68,6 +69,7 @@ class MLPEncoder(FlattenMLP):
 
         self.output_dim = output_dim
         self.latent_dim = latent_dim
+        self.device = device
         self.clear_z()
 
     def clear_z(self, num_tasks: int = 1):
@@ -79,6 +81,7 @@ class MLPEncoder(FlattenMLP):
         # Reset q(z|c) to the prior r(z)
         self.z_mu = torch.zeros(num_tasks, self.latent_dim)
         self.z_var = torch.ones(num_tasks, self.latent_dim)
+        print(self.z_mu.is_cuda)
         
         # Sample a new z from the prior r(z)
         self.sample_z()
@@ -94,6 +97,7 @@ class MLPEncoder(FlattenMLP):
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
         self.z = torch.stack(z)
+        print(self.z.is_cuda)
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         ''' Compute mu, sigma of product of gaussians (POG) '''
@@ -114,14 +118,15 @@ class MLPEncoder(FlattenMLP):
         
         self.z_mu = torch.stack([z_param[0] for z_param in z_params])
         self.z_var = torch.stack([z_param[1] for z_param in z_params])
+        print(self.z_mu.is_cuda)
         self.sample_z()
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
-        print(torch.zeros(self.latent_dim).is_cuda)
+        # print(torch.zeros(self.latent_dim).is_cuda)
         prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim))
 
-        print(torch.unbind(self.z_mu).is_cuda)
+        # print(torch.unbind(self.z_mu).is_cuda)
         posteriors = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var)) 
