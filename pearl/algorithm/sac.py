@@ -112,6 +112,7 @@ class SAC(object):
 
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
+        print(self.encoder.z)
         # Flattens out the context batch dimension
         task_z = self.encoder.z                                     # torch.Size([4, 5])
         task_z = [z.repeat(batch_size, 1) for z in task_z]          # [torch.Size([256, 5]), 
@@ -144,9 +145,9 @@ class SAC(object):
         qf_loss.backward()
         self.qf_optimizer.step()
 
-        # Given context c, sample context variable z ~ posterior q(z|c)
-        self.encoder.infer_posterior(context_batch)
         # Encoder loss using KL divergence on z
+        self.encoder.infer_posterior(context_batch)
+        print(self.encoder.z)
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
 
