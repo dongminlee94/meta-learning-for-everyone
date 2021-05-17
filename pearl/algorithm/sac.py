@@ -148,6 +148,7 @@ class SAC(object):
 
         # Encoder loss using KL divergence on z
         kl_div = self.encoder.compute_kl_div()                      # torch.Size([4, 1])
+        print(kl_div.shape)
         encoder_loss = self.kl_lambda * kl_div
         print(encoder_loss.shape)
 
