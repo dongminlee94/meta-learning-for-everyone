@@ -149,7 +149,7 @@ class SAC(object):
         # Encoder loss using KL divergence on z
         kl_div = self.encoder.compute_kl_div()
         print(kl_div.shape)
-        kl_loss = self.kl_lambda * kl_div
+        encoder_loss = self.kl_lambda * kl_div
         
         # Encoder network update
         # self.encoder_optimizer.zero_grad()
