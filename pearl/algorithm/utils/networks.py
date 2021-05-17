@@ -92,16 +92,16 @@ class MLPEncoder(FlattenMLP):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
         dists = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
-            dist = torch.distributions.Normal(mu, torch.sqrt(var).to(self.device))
+            dist = torch.distributions.Normal(mu, torch.sqrt(var))
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
         self.z = torch.stack(z).to(self.device)
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         ''' Compute mu, sigma of product of gaussians (POG) '''
-        var = torch.clamp(var, min=1e-7).to(self.device)
-        pog_var = 1. / torch.sum(torch.reciprocal(var), dim=0).to(self.device)
-        pog_mu = pog_var * torch.sum(mu / var, dim=0).to(self.device)
+        var = torch.clamp(var, min=1e-7)
+        pog_var = 1. / torch.sum(torch.reciprocal(var), dim=0)
+        pog_mu = pog_var * torch.sum(mu / var, dim=0)
         return pog_mu, pog_var
 
     def infer_posterior(self, context: torch.Tensor):
@@ -121,7 +121,8 @@ class MLPEncoder(FlattenMLP):
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
         prior = torch.distributions.Normal(
-            torch.zeros(self.latent_dim).to(self.device), torch.ones(self.latent_dim).to(self.device)
+            torch.zeros(self.latent_dim).to(self.device), 
+            torch.ones(self.latent_dim).to(self.device)
         )
 
         posteriors = []
