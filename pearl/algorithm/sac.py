@@ -146,7 +146,7 @@ class SAC(object):
         self.qf_optimizer.step()
 
         # Encoder loss using KL divergence on z
-        # self.encoder.infer_posterior(context_batch)
+        self.encoder.infer_posterior(context_batch)
         task_z = self.encoder.z
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
