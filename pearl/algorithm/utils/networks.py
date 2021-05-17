@@ -79,9 +79,8 @@ class MLPEncoder(FlattenMLP):
         Reset the context collected so far
         '''
         # Reset q(z|c) to the prior r(z)
-        self.z_mu = torch.zeros(num_tasks, self.latent_dim)
-        self.z_var = torch.ones(num_tasks, self.latent_dim)
-        print("1", self.z_mu.is_cuda)
+        self.z_mu = torch.zeros(num_tasks, self.latent_dim).to(self.device)
+        self.z_var = torch.ones(num_tasks, self.latent_dim).to(self.device)
         
         # Sample a new z from the prior r(z)
         self.sample_z()
@@ -92,48 +91,44 @@ class MLPEncoder(FlattenMLP):
     def sample_z(self):
         ''' Sample z ~ r(z) or z ~ q(z|c) '''
         dists = []
-        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
-            dist = torch.distributions.Normal(mu, torch.sqrt(var))
+        for mu, var in zip(torch.unbind(self.z_mu).to(self.device), torch.unbind(self.z_var).to(self.device)):
+            dist = torch.distributions.Normal(mu, torch.sqrt(var).to(self.device)).to(self.device)
             dists.append(dist)
         z = [dist.rsample() for dist in dists]
-        self.z = torch.stack(z)
-        print("2", self.z.is_cuda)
+        self.z = torch.stack(z).to(self.device)
 
     def product_of_gaussians(self, mu: torch.Tensor, var: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         ''' Compute mu, sigma of product of gaussians (POG) '''
-        var = torch.clamp(var, min=1e-7)
-        pog_var = 1. / torch.sum(torch.reciprocal(var), dim=0)
-        pog_mu = pog_var * torch.sum(mu / var, dim=0)
+        var = torch.clamp(var, min=1e-7).to(self.device)
+        pog_var = 1. / torch.sum(torch.reciprocal(var), dim=0).to(self.device)
+        pog_mu = pog_var * torch.sum(mu / var, dim=0).to(self.device)
         return pog_mu, pog_var
 
     def infer_posterior(self, context: torch.Tensor):
         ''' Compute q(z|c) as a function of input context and sample new z from it '''
         params = self.forward(context)
-        params = params.view(context.size(0), -1, self.output_dim)
+        params = params.view(context.size(0), -1, self.output_dim).to(self.device)
 
         # With probabilistic z, predict mean and variance of q(z | c)
-        z_mu = torch.unbind(params[..., :self.latent_dim])
-        z_var = torch.unbind(F.softplus(params[..., self.latent_dim:]))
+        z_mu = torch.unbind(params[..., :self.latent_dim]).to(self.device)
+        z_var = torch.unbind(F.softplus(params[..., self.latent_dim:])).to(self.device)
         z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mu, z_var)]
         
-        self.z_mu = torch.stack([z_param[0] for z_param in z_params])
-        self.z_var = torch.stack([z_param[1] for z_param in z_params])
-        print("3", self.z_mu.is_cuda)
+        self.z_mu = torch.stack([z_param[0] for z_param in z_params]).to(self.device)
+        self.z_var = torch.stack([z_param[1] for z_param in z_params]).to(self.device)
         self.sample_z()
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
-        # print(torch.zeros(self.latent_dim).is_cuda)
-        prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim))
+        prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim)).to(self.device)
 
-        # print(torch.unbind(self.z_mu).is_cuda)
         posteriors = []
-        for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
-            dist = torch.distributions.Normal(mu, torch.sqrt(var)) 
+        for mu, var in zip(torch.unbind(self.z_mu).to(self.device), torch.unbind(self.z_var).to(self.device)):
+            dist = torch.distributions.Normal(mu, torch.sqrt(var)).to(self.device)
             posteriors.append(dist)
         
-        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
-        return torch.sum(torch.stack(kl_div))
+        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior).to(self.device) for posterior in posteriors]
+        return torch.sum(torch.stack(kl_div)).to(self.device)
 
     def detach_z(self):
         ''' Disable backprop through z '''
