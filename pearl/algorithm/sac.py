@@ -147,8 +147,6 @@ class SAC(object):
 
         # Encoder loss using KL divergence on z
         self.encoder.infer_posterior(context_batch)
-        task_z = self.encoder.z
-        print(task_z.shape)
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
 
@@ -158,12 +156,12 @@ class SAC(object):
         self.encoder_optimizer.step()
 
         # Policy loss
-        inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
+        inputs = torch.cat([obs, q_z.detach()], dim=-1)          # torch.Size([1024, 31])
         pi, log_pi = self.policy(inputs)                            # torch.Size([1024, 6])
                                                                     # torch.Size([1024, 1])
         min_pi_q = torch.min(                                       # torch.Size([1024, 1])
-                self.qf1(obs, pi, task_z.detach()), 
-                self.qf2(obs, pi, task_z.detach())
+                self.qf1(obs, pi, q_z.detach()), 
+                self.qf2(obs, pi, q_z.detach())
         )
         policy_loss = (self.alpha * log_pi - min_pi_q).mean()
 
