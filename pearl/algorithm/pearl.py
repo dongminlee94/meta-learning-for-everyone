@@ -137,7 +137,7 @@ class PEARL(object):
                 )
 
                 # Stop backprop
-                self.agent.encoder.detach_z()
+                self.agent.encoder.z.detach()
                 
                 self._total_train_steps += 1
         return dict(

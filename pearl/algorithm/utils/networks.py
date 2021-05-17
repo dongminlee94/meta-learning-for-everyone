@@ -134,10 +134,6 @@ class MLPEncoder(FlattenMLP):
         kl_div = torch.stack(kl_div).sum().to(self.device)
         return kl_div
 
-    def detach_z(self):
-        ''' Disable backprop through z '''
-        self.z = self.z.detach()
-
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
