@@ -3,10 +3,10 @@ import torch
 import argparse
 import numpy as np
 
+from envs import *
 from algorithm.sac import SAC
 from algorithm.pearl import PEARL
 from configs import cheetah_dir, cheetah_vel
-from envs import half_cheetah_dir, half_cheetah_vel
 
 p = argparse.ArgumentParser()
 p.add_argument(
