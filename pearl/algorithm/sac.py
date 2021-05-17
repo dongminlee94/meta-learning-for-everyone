@@ -94,7 +94,7 @@ class SAC(object):
     def get_action(self, obs, deterministic=False):
         ''' Sample action from the policy, conditioned on the task embedding '''
         task_z = self.encoder.z
-        obs = torch.from_numpy(obs[None]).float()
+        obs = torch.from_numpy(obs[None]).float().to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
         action, _ = self.policy(inputs, deterministic=deterministic)
         return action.view(-1).detach().cpu().numpy()
