@@ -112,14 +112,20 @@ class SAC(object):
 
         # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
-        print(self.encoder.z)
-        # Flattens out the context batch dimension
         task_z = self.encoder.z                                     # torch.Size([4, 5])
+        
+        # Flattens out the context batch dimension
         task_z = [z.repeat(batch_size, 1) for z in task_z]          # [torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5]),
                                                                     #  torch.Size([256, 5]), 
                                                                     #  torch.Size([256, 5])]
         task_z = torch.cat(task_z, dim=0)                           # torch.Size([1024, 5])
+
+        # Encoder loss using KL divergence on z
+        kl_div = self.encoder.compute_kl_div()                      
+        encoder_loss = self.kl_lambda * kl_div
+        self.encoder_optimizer.zero_grad()
+        encoder_loss.backward(retain_graph=True)
 
         # Target for Q regression
         with torch.no_grad():
@@ -133,27 +139,17 @@ class SAC(object):
             target_v = min_target_q - self.alpha * next_log_pi      # torch.Size([1024, 1])
             target_q = reward + self.gamma * (1-done) * target_v    # torch.Size([1024, 1])
 
-        # Q-functions losses
+        # Q-function loss
         q1 = self.qf1(obs, action, task_z)                          # torch.Size([1024, 1])
         q2 = self.qf2(obs, action, task_z)                          # torch.Size([1024, 1])
         qf1_loss = F.mse_loss(q1, target_q)
         qf2_loss = F.mse_loss(q2, target_q)
         qf_loss = qf1_loss + qf2_loss
-        
-        # Two Q-networks update
         self.qf_optimizer.zero_grad()
         qf_loss.backward()
+
+        # Update two Q-network parameters and encoder network parameters
         self.qf_optimizer.step()
-
-        # Encoder loss using KL divergence on z
-        self.encoder.infer_posterior(context_batch)
-        print(self.encoder.z)
-        kl_div = self.encoder.compute_kl_div()                      
-        encoder_loss = self.kl_lambda * kl_div
-
-        # Encoder network update
-        self.encoder_optimizer.zero_grad()
-        encoder_loss.backward()
         self.encoder_optimizer.step()
 
         # Policy loss
@@ -165,8 +161,6 @@ class SAC(object):
                 self.qf2(obs, pi, task_z.detach())
         )
         policy_loss = (self.alpha * log_pi - min_pi_q).mean()
-
-        # Policy network update
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
