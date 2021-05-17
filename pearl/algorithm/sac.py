@@ -148,6 +148,7 @@ class SAC(object):
         # Encoder loss using KL divergence on z
         self.encoder.infer_posterior(context_batch)
         task_z = self.encoder.z
+        print(task_z.shape)
         kl_div = self.encoder.compute_kl_div()                      
         encoder_loss = self.kl_lambda * kl_div
 
