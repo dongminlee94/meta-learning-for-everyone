@@ -124,9 +124,9 @@ class MLPEncoder(FlattenMLP):
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var)) 
             posteriors.append(dist)
-        print(prior.type)
-        print(posteriors[0].type)
-        print(posteriors[1].type)
+        print(prior.type())
+        print(posteriors[0].type())
+        print(posteriors[1].type())
         
         
         kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
