@@ -142,19 +142,18 @@ class SAC(object):
         qf_loss = qf1_loss + qf2_loss
         
         # Two Q-networks update
-        # self.qf_optimizer.zero_grad()
-        # qf_loss.backward()
-        # self.qf_optimizer.step()
+        self.qf_optimizer.zero_grad()
+        qf_loss.backward()
+        self.qf_optimizer.step()
 
         # Encoder loss using KL divergence on z
-        kl_div = self.encoder.compute_kl_div()
-        print(kl_div.shape)
+        kl_div = self.encoder.compute_kl_div()                      # torch.Size([4, 1])
         encoder_loss = self.kl_lambda * kl_div
         
         # Encoder network update
-        # self.encoder_optimizer.zero_grad()
-        # encoder_loss.backward()
-        # self.encoder_optimizer.step()
+        self.encoder_optimizer.zero_grad()
+        encoder_loss.backward()
+        self.encoder_optimizer.step()
 
         # Policy loss
         inputs = torch.cat([obs, task_z.detach()], dim=-1)          # torch.Size([1024, 31])
@@ -167,15 +166,15 @@ class SAC(object):
         policy_loss = (self.alpha * log_pi - min_pi_q).mean()
 
         # Policy network update
-        # self.policy_optimizer.zero_grad()
-        # policy_loss.backward()
-        # self.policy_optimizer.step()
+        self.policy_optimizer.zero_grad()
+        policy_loss.backward()
+        self.policy_optimizer.step()
 
         # Temperature parameter alpha update
         alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
-        # self.alpha_optimizer.zero_grad()
-        # alpha_loss.backward()
-        # self.alpha_optimizer.step()
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
         self.alpha = self.log_alpha.exp()
 
         # Polyak averaging for target parameter
