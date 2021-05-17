@@ -118,14 +118,14 @@ class MLPEncoder(FlattenMLP):
 
     def compute_kl_div(self):
         ''' Compute KL( q(z|c) || r(z) ) '''
+        print(torch.zeros(self.latent_dim).is_cuda)
         prior = torch.distributions.Normal(torch.zeros(self.latent_dim), torch.ones(self.latent_dim))
 
+        print(torch.unbind(self.z_mu).is_cuda)
         posteriors = []
         for mu, var in zip(torch.unbind(self.z_mu), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mu, torch.sqrt(var)) 
             posteriors.append(dist)
-        print(prior.is_cuda)
-        print(posteriors.is_cuda)
         
         kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
         return torch.sum(torch.stack(kl_div))
