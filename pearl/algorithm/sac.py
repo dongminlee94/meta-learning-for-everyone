@@ -152,7 +152,7 @@ class SAC(object):
         
         # Encoder network update
         self.encoder_optimizer.zero_grad()
-        encoder_loss.backward() # retain_graph=True
+        encoder_loss.backward(retain_graph=True)
         self.encoder_optimizer.step()
 
         # Policy loss
