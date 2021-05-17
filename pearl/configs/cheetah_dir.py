@@ -72,7 +72,7 @@ config = dict(
         gamma=0.99,                     # default: 0.99
         
         # weight on KL divergence term in encoder loss
-        kl_lambda=.1,                   # default: .1
+        kl_lambda=0.1,                   # default: 0.1
         
         # number of transitions in the RL batch
         batch_size=256,                 # default: 256
