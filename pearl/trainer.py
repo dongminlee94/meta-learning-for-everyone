@@ -4,9 +4,9 @@ import argparse
 import numpy as np
 
 from pearl.envs import *
-from algorithm.sac import SAC
-from algorithm.pearl import PEARL
-from configs import cheetah_dir, cheetah_vel
+from pearl.algorithm.sac import SAC
+from pearl.algorithm.pearl import PEARL
+from pearl.configs import cheetah_dir, cheetah_vel
 
 p = argparse.ArgumentParser()
 p.add_argument(
