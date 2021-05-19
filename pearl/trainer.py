@@ -11,10 +11,12 @@ from pearl.algorithm.sac import SAC  # pylint: disable=import-error
 from pearl.configs import cheetah_dir, cheetah_vel  # pylint: disable=import-error
 from pearl.envs import envs  # pylint: disable=import-error
 
-p = argparse.ArgumentParser()
-p.add_argument("--env", type=str, default="dir", help="Env to use: default cheetah-dir")
-p.add_argument("--gpu_index", type=int, default=0, help="Set a GPU index")
-args = p.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--env", type=str, default="dir", help="Env to use: default cheetah-dir"
+)
+parser.add_argument("--gpu_index", type=int, default=0, help="Set a GPU index")
+args = parser.parse_args()
 
 
 if __name__ == "__main__":

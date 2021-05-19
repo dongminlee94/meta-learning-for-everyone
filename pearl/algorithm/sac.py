@@ -7,8 +7,8 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from pearl.algorithm.utils.networks import (FlattenMLP,  # pylint: disable=import-error
-                                            MLPEncoder, TanhGaussianPolicy)
+# pylint: disable=import-error
+from pearl.algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
