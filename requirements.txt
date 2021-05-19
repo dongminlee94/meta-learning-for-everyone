@@ -1,0 +1,10 @@
+black==20.8b1
+isort==5.6.4
+numpy==1.19.2
+torch==1.7.1
+gym==0.18.0
+pybullet==3.1.7
+pytest==6.2.2
+pytest-flake8==1.0.6
+pytest-mypy==0.7.0
+pytest-pylint==0.18.0
