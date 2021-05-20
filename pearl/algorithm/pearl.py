@@ -5,12 +5,9 @@ Meta-train and meta-test codes with PEARL algorithm
 
 import numpy as np
 import torch
-
-from pearl.algorithm.utils.buffers import \
-    MultiTaskReplayBuffer  # pylint: disable=import-error
-from pearl.algorithm.utils.sampler import Sampler  # pylint: disable=import-error
-from pearl.algorithm.utils.torch_utils import (  # pylint: disable=import-error
-    np_to_torch_batch, unpack_batch)
+from algorithm.utils.buffers import MultiTaskReplayBuffer
+from algorithm.utils.sampler import Sampler
+from algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 
 # from torch.utils.tensorboard import SummaryWriter
 

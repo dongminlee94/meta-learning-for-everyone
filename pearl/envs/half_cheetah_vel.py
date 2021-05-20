@@ -3,9 +3,7 @@ Half-cheetah environment code with velocity target reward
 """
 
 import numpy as np
-from gym.utils import seeding
 from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
-from pybullet_envs.robot_locomotors import HalfCheetah
 
 from . import register_env
 
@@ -20,7 +18,7 @@ class HalfCheetahVelEnv(
 
     def __init__(self, num_tasks=2, seed=0):
 
-        super().__init__(HalfCheetah())
+        super().__init__(render=False)
 
         self.tasks = self.sample_tasks(num_tasks)
         self._goal_vel = self.tasks[0].get("velocity", 0.0)
@@ -33,8 +31,7 @@ class HalfCheetahVelEnv(
 
     def seed(self, seed=None):
         """Set environment random seed"""
-        _, seed = seeding.np_random(seed)
-        return [seed]
+        self.env.seed(seed)
 
     def step(self, a):
         # If multiplayer, action first applied to all robots,

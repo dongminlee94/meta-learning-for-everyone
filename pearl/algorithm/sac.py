@@ -6,9 +6,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-
-from pearl.algorithm.utils.networks import (FlattenMLP,  # pylint: disable=import-error
-                                            MLPEncoder, TanhGaussianPolicy)
+from algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
@@ -108,12 +106,12 @@ class SAC:  # pylint: disable=too-many-instance-attributes
                 tau * main_param.data + (1.0 - tau) * target_param.data
             )
 
-    def get_action(self, obs, deterministic=False):
+    def get_action(self, obs):
         """Sample action from the policy"""
         task_z = self.encoder.task_z
         obs = torch.from_numpy(obs[None]).float().to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
-        action, _ = self.policy(inputs, deterministic=deterministic)
+        action, _ = self.policy(inputs)
         return action.view(-1).detach().cpu().numpy()
 
     def train_model(
