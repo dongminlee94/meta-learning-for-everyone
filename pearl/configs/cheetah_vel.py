@@ -6,6 +6,8 @@ config = dict(
     env_name="cheetah-vel",
     n_train_tasks=10,  # default: 100
     n_eval_tasks=3,  # default: 30
+    # number of random seed
+    seed=0,
     # dimension of the latent context vector
     latent_size=5,  # default: 5
     # number of hidden units in neural networks
@@ -16,8 +18,6 @@ config = dict(
         # number of distinct tasks in the domain,
         # should equal sum of train and eval tasks
         num_tasks=13,  # default: 130
-        # number of random seed
-        seed=0,
     ),
     pearl_params=dict(
         # number of data sampling / training iterates

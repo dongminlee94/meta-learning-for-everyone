@@ -3,9 +3,7 @@ Half-cheetah environment with direction target reward
 """
 
 import numpy as np
-from gym.utils import seeding
 from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
-from pybullet_envs.robot_locomotors import HalfCheetah
 
 from . import register_env
 
@@ -20,8 +18,7 @@ class HalfCheetahDirEnv(
 
     def __init__(self, seed=0):
 
-        super().__init__(HalfCheetah())
-
+        super().__init__(render=False)
         directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
         self._goal_dir = None
@@ -31,11 +28,6 @@ class HalfCheetahDirEnv(
         self.rewards = None
         self.potential = None
         self.seed(seed)
-
-    def seed(self, seed=None):
-        """Set environment random seed"""
-        _, seed = seeding.np_random(seed)
-        return [seed]
 
     def step(self, a):
         # If multiplayer, action first applied to all robots,
