@@ -5,7 +5,7 @@ Proximal Policy Optimization algorithm code for training when meta-train
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from utils.networks import MLP, GaussianPolicy
+from algorithm.utils.networks import MLP, GaussianPolicy
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes
