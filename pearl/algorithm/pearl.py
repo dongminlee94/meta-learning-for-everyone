@@ -71,8 +71,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         for iteration in range(self.num_iterations):
             if iteration == 0:
                 print(
-                    "[{0}] collecting initial samples with prior".format(
-                        len(self.train_tasks)
+                    "[{0}/{1}] collecting initial samples with prior".format(
+                        len(self.train_tasks), len(self.train_tasks)
                     )
                 )
                 for index in self.train_tasks:
@@ -143,7 +143,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 )
 
                 # Stop backprop
-                self.agent.encoder.z.detach()
+                self.agent.encoder.task_z.detach()
 
                 self._total_train_steps += 1
         return dict(
