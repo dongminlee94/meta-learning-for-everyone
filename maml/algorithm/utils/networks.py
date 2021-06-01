@@ -87,9 +87,9 @@ class GaussianPolicy(MLP):
     def forward(self, x, is_deterministic=False):
         normal, mean = self.get_normal_dist(x)
         if is_deterministic:
-            policy = mean
+            action = mean
             log_prob = None
         else:
-            policy = normal.sample()
-            log_prob = normal.log_prob(policy).sum(dim=-1)
-        return policy, log_prob
+            action = normal.sample()
+            log_prob = normal.log_prob(action).sum(dim=-1)
+        return action, log_prob
