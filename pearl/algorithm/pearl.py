@@ -71,7 +71,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         for iteration in range(self.num_iterations):
             if iteration == 0:
                 print(
-                    "[{0} training tasks] collecting initial samples with prior".format(
+                    "[{0}] collecting initial samples with prior".format(
                         len(self.train_tasks)
                     )
                 )
