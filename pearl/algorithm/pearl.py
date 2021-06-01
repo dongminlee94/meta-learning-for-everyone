@@ -94,7 +94,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
                     print(
-                        "[{0}/{1} sampled tasks] collecting samples with prior".format(
+                        "[{0}/{1}] collecting samples with prior".format(
                             i + 1, self.num_task_samples
                         )
                     )
@@ -109,7 +109,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
                     print(
-                        "[{0}/{1} sampled tasks] collecting samples with post".format(
+                        "[{0}/{1}] collecting samples with posterior".format(
                             i + 1, self.num_task_samples
                         )
                     )
