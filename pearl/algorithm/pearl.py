@@ -94,8 +94,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
                     print(
-                        "[{0}/{1} sampled tasks] \
-                            collecting samples with prior".format(
+                        "[{0}/{1} sampled tasks] collecting samples with prior".format(
                             i + 1, self.num_task_samples
                         )
                     )
@@ -110,8 +109,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
                     print(
-                        "[{0}/{1} sampled tasks] \
-                            collecting samples with posterior".format(
+                        "[{0}/{1} sampled tasks] collecting samples with post".format(
                             i + 1, self.num_task_samples
                         )
                     )
@@ -220,6 +218,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             for i in range(len(transition_batch[0]))
         ]
         transition_batch = [
-            torch.cat(transition, dim=0) for transition in transition_batch
+            torch.cat(transition, dim=0).to(self.device)
+            for transition in transition_batch
         ]
-        return transition_batch.to(self.device)
+        return transition_batch
