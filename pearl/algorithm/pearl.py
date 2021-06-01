@@ -5,9 +5,10 @@ Meta-train and meta-test codes with PEARL algorithm
 
 import numpy as np
 import torch
-from utils.buffers import MultiTaskReplayBuffer
-from utils.sampler import Sampler
-from utils.torch_utils import np_to_torch_batch, unpack_batch
+
+from pearl.algorithm.utils.buffers import MultiTaskReplayBuffer
+from pearl.algorithm.utils.sampler import Sampler
+from pearl.algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 
 # from torch.utils.tensorboard import SummaryWriter
 

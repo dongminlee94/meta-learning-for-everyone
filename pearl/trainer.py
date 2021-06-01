@@ -5,11 +5,12 @@ PEARL trainer based on half-cheetah environment
 import argparse
 
 import torch
-from algorithm.pearl import PEARL
-from algorithm.sac import SAC
-from configs.cheetah_dir import config as dir_config
-from configs.cheetah_vel import config as vel_config
-from envs import ENVS
+
+from pearl.algorithm.pearl import PEARL
+from pearl.algorithm.sac import SAC
+from pearl.configs.cheetah_dir import config as dir_config
+from pearl.configs.cheetah_vel import config as vel_config
+from pearl.envs import ENVS
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

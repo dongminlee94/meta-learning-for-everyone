@@ -6,7 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
+
+from pearl.algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
