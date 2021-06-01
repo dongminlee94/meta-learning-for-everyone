@@ -37,7 +37,7 @@ class Sampler:
             )
 
             trajs.append(traj)
-            cur_samples += len(traj["obs"])
+            cur_samples += len(traj["curr_obs"])
             num_trajs += 1
 
             self.agent.encoder.sample_z()
