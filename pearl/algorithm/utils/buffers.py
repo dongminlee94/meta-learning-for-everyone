@@ -47,11 +47,11 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         max_size,
     ):
 
-        self._obs = np.zeros((max_size, observ_dim))
+        self._curr_obs = np.zeros((max_size, observ_dim))
+        self._actions = np.zeros((max_size, action_dim))
+        self._rewards = np.zeros((max_size, 1))
         self._next_obs = np.zeros((max_size, observ_dim))
-        self._action = np.zeros((max_size, action_dim))
-        self._reward = np.zeros((max_size, 1))
-        self._done = np.zeros((max_size, 1), dtype="uint8")
+        self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._max_size = max_size
 
         self._top = None
@@ -71,11 +71,11 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self, obs, action, reward, next_obs, done
     ):  # pylint: disable=too-many-arguments
         """Add transition to replay buffer"""
-        self._obs[self._top] = obs
-        self._action[self._top] = action
-        self._reward[self._top] = reward
+        self._curr_obs[self._top] = obs
+        self._actions[self._top] = action
+        self._rewards[self._top] = reward
         self._next_obs[self._top] = next_obs
-        self._done[self._top] = done
+        self._dones[self._top] = done
 
         self._top = (self._top + 1) % self._max_size
         if self._size < self._max_size:
@@ -89,11 +89,11 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
     def add_traj(self, traj):
         """Add trajectory to replay buffer"""
         for (obs, action, reward, next_obs, done) in zip(
-            traj["obs"],
-            traj["action"],
-            traj["reward"],
+            traj["curr_obs"],
+            traj["actions"],
+            traj["rewards"],
             traj["next_obs"],
-            traj["done"],
+            traj["dones"],
         ):
             self.add(obs, action, reward, next_obs, done)
         self.termination()
@@ -102,9 +102,9 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         """Sample batch in replay buffer"""
         indices = np.random.randint(0, self._size, batch_size)
         return dict(
-            obs=self._obs[indices],
-            action=self._action[indices],
-            reward=self._reward[indices],
+            curr_obs=self._curr_obs[indices],
+            actions=self._actions[indices],
+            rewards=self._rewards[indices],
             next_obs=self._next_obs[indices],
-            done=self._done[indices],
+            dones=self._dones[indices],
         )

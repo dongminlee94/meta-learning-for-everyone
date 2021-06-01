@@ -41,12 +41,12 @@ class MLP(nn.Module):
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
-    def forward(self, inputs):
+    def forward(self, x):
         """Get output when input is given"""
         for fc_layer in self.fc_layers:
-            inputs = self.hidden_activation(fc_layer(inputs))
-        outputs = self.last_fc_layer(inputs)
-        return outputs
+            x = self.hidden_activation(fc_layer(x))
+        x = self.last_fc_layer(x)
+        return x
 
 
 class FlattenMLP(MLP):
@@ -55,9 +55,9 @@ class FlattenMLP(MLP):
     If there are multiple inputs, concatenate along dim -1
     """
 
-    def forward(self, *inputs):
-        inputs = torch.cat(inputs, dim=-1)
-        return super().forward(inputs)
+    def forward(self, *x):
+        x = torch.cat(x, dim=-1)
+        return super().forward(x)
 
 
 class MLPEncoder(FlattenMLP):
@@ -184,21 +184,21 @@ class TanhGaussianPolicy(MLP):
         self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
         self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
 
-    def forward(self, inputs):
+    def forward(self, x):
         for fc_layer in self.fc_layers:
-            inputs = self.hidden_activation(fc_layer(inputs))
+            x = self.hidden_activation(fc_layer(x))
 
-        mean = self.last_fc_layer(inputs)
-        log_std = self.last_fc_log_std(inputs)
+        mean = self.last_fc_layer(x)
+        log_std = self.last_fc_log_std(x)
         log_std = torch.clamp(log_std, LOG_SIG_MIN, LOG_SIG_MAX)
         std = torch.exp(log_std)
 
         if self.is_deterministic:
-            policy = torch.tanh(mean)
+            action = torch.tanh(mean)
         else:
             normal = Normal(mean, std)
             # If reparameterize, use reparameterization trick (mean + std * N(0,1))
-            policy = normal.rsample()
+            action = normal.rsample()
 
             # Compute log prob from Gaussian,
             # and then apply correction for Tanh squashing.
@@ -214,9 +214,9 @@ class TanhGaussianPolicy(MLP):
             #               = 2 * log(2e^-x / (e^-2x + 1)))
             #               = 2 * (log(2) - x - log(e^-2x + 1)))
             #               = 2 * (log(2) - x - softplus(-2x)))
-            log_policy = normal.log_prob(policy)
-            log_policy -= 2 * (np.log(2) - policy - F.softplus(-2 * policy))
-            log_policy = log_policy.sum(-1, keepdim=True)
+            log_prob = normal.log_prob(action)
+            log_prob -= 2 * (np.log(2) - action - F.softplus(-2 * action))
+            log_prob = log_prob.sum(-1, keepdim=True)
 
-        policy = torch.tanh(policy)
-        return policy, log_policy
+        action = torch.tanh(action)
+        return action, log_prob

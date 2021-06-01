@@ -9,7 +9,7 @@ from algorithm.pearl import PEARL
 from algorithm.sac import SAC
 from configs.cheetah_dir import config as dir_config
 from configs.cheetah_vel import config as vel_config
-from envs import envs
+from envs import ENVS
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -23,10 +23,10 @@ if __name__ == "__main__":
     # Create a multi-task environment and sample tasks
     if args.env == "dir":
         config = dir_config
-        env = envs[config["env_name"]]()
+        env = ENVS[config["env_name"]]()
     elif args.env == "vel":
         config = vel_config
-        env = envs[config["env_name"]](**config["env_params"])
+        env = ENVS[config["env_name"]](**config["env_params"])
     env.seed(config["seed"])
     tasks = env.get_all_task_idx()
 

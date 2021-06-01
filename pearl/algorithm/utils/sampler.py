@@ -23,7 +23,7 @@ class Sampler:
         self.max_step = max_step
         self.device = device
 
-    def obtain_samples(
+    def obtain_trajs(
         self, max_samples, min_trajs, accum_context=True, use_rendering=False
     ):
         """Obtain samples up to the number of maximum samples"""
@@ -48,7 +48,7 @@ class Sampler:
 
     def rollout(self, accum_context=True, use_rendering=False):
         """Rollout up to maximum trajectory length"""
-        observs = []
+        curr_obs = []
         actions = []
         rewards = []
         dones = []
@@ -67,7 +67,7 @@ class Sampler:
             if accum_context:
                 self.update_context(obs, action, reward)
 
-            observs.append(obs)
+            curr_obs.append(obs)
             actions.append(action)
             rewards.append(reward)
             dones.append(done)
@@ -77,15 +77,17 @@ class Sampler:
             if done:
                 break
 
+        curr_obs = np.array(curr_obs)
         actions = np.array(actions)
-        observs = np.array(observs)
-        next_observs = np.vstack((observs[1:, :], np.expand_dims(next_obs, 0)))
+        rewards = np.array(rewards).reshape(-1, 1)
+        next_obs = np.vstack((curr_obs[1:, :], np.expand_dims(next_obs, 0)))
+        dones = np.array(dones).reshape(-1, 1)
         return dict(
-            obs=observs,
-            action=actions,
-            reward=np.array(rewards).reshape(-1, 1),
-            next_obs=next_observs,
-            done=np.array(dones).reshape(-1, 1),
+            curr_obs=curr_obs,
+            actions=actions,
+            rewards=rewards,
+            next_obs=next_obs,
+            dones=dones,
         )
 
     def update_context(self, obs, action, reward):

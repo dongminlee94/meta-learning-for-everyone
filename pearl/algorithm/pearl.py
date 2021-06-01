@@ -133,7 +133,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 transition_batch = self.sample_transition(indices)
 
                 # Train the policy, Q-functions and the encoder
-                self.agent.train_model(
+                self.agent.train(
                     meta_batch_size=self.meta_batch_size,
                     batch_size=self.batch_size,
                     context_batch=context_batch,
@@ -157,7 +157,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
         cur_samples = 0
         while cur_samples < num_samples:
-            trajs, samples = self.sampler.obtain_samples(
+            trajs, samples = self.sampler.obtain_trajs(
                 max_samples=num_samples - cur_samples,
                 min_trajs=int(update_posterior),
                 accum_context=False,
