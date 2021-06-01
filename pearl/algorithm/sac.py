@@ -114,9 +114,8 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         action, _ = self.policy(inputs)
         return action.view(-1).detach().cpu().numpy()
 
-    def train_model(
-        self, meta_batch_size, batch_size, context_batch, transition_batch
-    ):  # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals
+    def train(self, meta_batch_size, batch_size, context_batch, transition_batch):
         """Train models according to training method of SAC algorithm"""
         # Data is (meta-batch, batch, feature)
         obs, action, reward, next_obs, done = transition_batch
