@@ -4,8 +4,8 @@ Meta-train and meta-test codes with MAML algorithm
 
 # import numpy as np
 # import torch
-from utils.buffer import Buffer
-from utils.sampler import Sampler
+from algorithm.utils.buffer import Buffer
+from algorithm.utils.sampler import Sampler
 
 
 class MAML:  # pylint: disable=too-many-instance-attributes
