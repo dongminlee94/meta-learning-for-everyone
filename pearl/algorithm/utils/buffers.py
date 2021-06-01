@@ -11,18 +11,17 @@ class MultiTaskReplayBuffer:
 
     def __init__(
         self,
-        env,
+        observ_dim,
+        action_dim,
         tasks,
         max_size,
     ):
 
-        self.env = env
         self.task_buffers = {}
-
         for i in tasks:
             self.task_buffers[i] = SimpleReplayBuffer(
-                observ_dim=env.observation_space.shape[0],
-                action_dim=env.action_space.shape[0],
+                observ_dim=observ_dim,
+                action_dim=action_dim,
                 max_size=max_size,
             )
 

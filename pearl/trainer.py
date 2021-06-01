@@ -54,6 +54,8 @@ if __name__ == "__main__":
     pearl = PEARL(
         env=env,
         agent=agent,
+        observ_dim=observ_dim,
+        action_dim=action_dim,
         train_tasks=list(tasks[: config["n_train_tasks"]]),
         eval_tasks=list(tasks[-config["n_eval_tasks"] :]),
         device=device,

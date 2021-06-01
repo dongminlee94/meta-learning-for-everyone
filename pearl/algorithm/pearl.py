@@ -19,6 +19,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self,
         env,
         agent,
+        observ_dim,
+        action_dim,
         train_tasks,
         eval_tasks,
         device,
@@ -49,12 +51,14 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # - training RL update
         # - training encoder update
         self.rl_replay_buffer = MultiTaskReplayBuffer(
-            env=env,
+            observ_dim=observ_dim,
+            action_dim=action_dim,
             tasks=train_tasks,
             max_size=config["max_buffer_size"],
         )
         self.encoder_replay_buffer = MultiTaskReplayBuffer(
-            env=env,
+            observ_dim=observ_dim,
+            action_dim=action_dim,
             tasks=train_tasks,
             max_size=config["max_buffer_size"],
         )
