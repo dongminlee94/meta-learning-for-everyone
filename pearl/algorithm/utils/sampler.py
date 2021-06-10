@@ -23,28 +23,28 @@ class Sampler:
         self.max_step = max_step
         self.device = device
 
-    def obtain_trajs(
+    def obtain_samples(
         self, max_samples, min_trajs, accum_context=True, use_rendering=False
     ):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        cur_samples = 0
+        num_samples = 0
         num_trajs = 0
 
-        while cur_samples < max_samples:
+        while num_samples < max_samples:
             traj = self.rollout(
                 accum_context=accum_context, use_rendering=use_rendering
             )
 
             trajs.append(traj)
-            cur_samples += len(traj["curr_obs"])
+            num_samples += len(traj["curr_obs"])
             num_trajs += 1
 
             self.agent.encoder.sample_z()
 
             if min_trajs == 1:
                 break
-        return trajs, cur_samples
+        return trajs, num_samples
 
     def rollout(self, accum_context=True, use_rendering=False):
         """Rollout up to maximum trajectory length"""

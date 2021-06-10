@@ -115,7 +115,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         return action.view(-1).detach().cpu().numpy()
 
     # pylint: disable=too-many-locals
-    def train(self, meta_batch_size, batch_size, context_batch, transition_batch):
+    def train_model(self, meta_batch_size, batch_size, context_batch, transition_batch):
         """Train models according to training method of SAC algorithm"""
         # Data is (meta-batch, batch, feature)
         curr_obs, actions, rewards, next_obs, dones = transition_batch
@@ -189,6 +189,14 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         # Polyak averaging for target parameter
         self.soft_target_update(self.qf1, self.target_qf1)
         self.soft_target_update(self.qf2, self.target_qf2)
+        return dict(
+            policy_loss=policy_loss.item(),
+            qf1_loss=qf1_loss.item(),
+            qf2_loss=qf2_loss.item(),
+            alpha_loss=alpha_loss.item(),
+            z_mean=np.mean(np.abs(self.encoder.z_mean.detach().cpu().numpy())),
+            z_var=np.mean(self.encoder.z_var.detach().cpu().numpy()),
+        )
 
     def save(self, path, net_dict=None):
         """Save data related to models in path"""

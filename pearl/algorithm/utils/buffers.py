@@ -30,7 +30,7 @@ class MultiTaskReplayBuffer:
         for traj in trajs:
             self.task_buffers[task].add_traj(traj)
 
-    def sample(self, task, batch_size):
+    def sample_batch(self, task, batch_size):
         """Sample batch of the task in multi-task replay buffer"""
         batch = self.task_buffers[task].sample(batch_size)
         return batch
