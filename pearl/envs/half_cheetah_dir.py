@@ -21,8 +21,8 @@ class HalfCheetahDirEnv(
         super().__init__(render=False)
         directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
-        self._goal_dir = None
         self._goal = None
+        self._goal_dir = None
         self._task = None
         self._alive = None
         self.rewards = None
@@ -93,8 +93,3 @@ class HalfCheetahDirEnv(
         self._goal_dir = self._task["direction"]
         self._goal = self._goal_dir
         self.reset()
-
-    # def set_task(self, goal_coeff):
-    #     self._task = {"direction": goal_coeff}
-    #     self._goal_dir = self._task["direction"]
-    #     self._goal = self._goal_dir

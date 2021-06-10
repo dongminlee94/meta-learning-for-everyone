@@ -15,11 +15,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--env", type=str, default="dir", help="Env to use: default cheetah-dir"
 )
-parser.add_argument("--gpu_index", type=int, default=0, help="Set a GPU index")
-args = parser.parse_args()
+parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
+parser.add_argument("--filename", type=str, default="exp", help="Set a file name")
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
     # Create a multi-task environment and sample tasks
     if args.env == "dir":
         config = dir_config
@@ -57,13 +59,11 @@ if __name__ == "__main__":
         observ_dim=observ_dim,
         action_dim=action_dim,
         train_tasks=list(tasks[: config["n_train_tasks"]]),
-        eval_tasks=list(tasks[-config["n_eval_tasks"] :]),
+        test_tasks=list(tasks[-config["n_test_tasks"] :]),
+        filename=args.filename,
         device=device,
         **config["pearl_params"],
     )
 
-    # Run meta-train
-    pearl.meta_train()
-
-    # Run meta-test
-    # test_results = meta_learner.meta_test()
+    # Run PEARL training
+    pearl.train()

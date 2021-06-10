@@ -105,9 +105,3 @@ class HalfCheetahVelEnv(
         self._goal_vel = self._task["velocity"]
         self._goal = self._goal_vel
         self.reset()
-
-    # def set_task(self, goal_coeff):
-    #     """"""
-    #     self._task = {"velocity": goal_coeff}
-    #     self._goal_vel = self._task["velocity"]
-    #     self._goal = self._goal_vel
