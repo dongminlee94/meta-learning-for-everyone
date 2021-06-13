@@ -190,10 +190,10 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.soft_target_update(self.qf1, self.target_qf1)
         self.soft_target_update(self.qf2, self.target_qf2)
         return dict(
-            policy_loss=policy_loss.item(),
-            qf1_loss=qf1_loss.item(),
-            qf2_loss=qf2_loss.item(),
-            alpha_loss=alpha_loss.item(),
+            policy_loss=round(policy_loss.item(), 2),
+            qf1_loss=round(qf1_loss.item(), 2),
+            qf2_loss=round(qf2_loss.item(), 2),
+            alpha_loss=round(alpha_loss.item(), 2),
             z_mean=np.mean(np.abs(self.encoder.z_mean.detach().cpu().numpy())),
             z_var=np.mean(self.encoder.z_var.detach().cpu().numpy()),
         )

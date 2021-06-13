@@ -66,4 +66,4 @@ if __name__ == "__main__":
     )
 
     # Run PEARL training
-    pearl.train()
+    pearl.meat_train()

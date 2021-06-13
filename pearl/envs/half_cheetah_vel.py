@@ -91,7 +91,7 @@ class HalfCheetahVelEnv(
     @classmethod
     def sample_tasks(cls, num_tasks):
         """Sample tasks as many as num_tasks"""
-        velocities = np.random.uniform(0.0, 1.5, size=(num_tasks,))
+        velocities = np.random.uniform(0.5, 1.5, size=(num_tasks,))
         tasks = [{"velocity": velocity} for velocity in velocities]
         return tasks
 
