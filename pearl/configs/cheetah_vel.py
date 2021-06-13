@@ -4,8 +4,8 @@ PEARL cheetah-vel experiment settings
 
 config = dict(
     env_name="cheetah-vel",
-    n_train_tasks=10,  # default: 100
-    n_test_tasks=3,  # default: 30
+    n_train_tasks=50,  # default: 100
+    n_test_tasks=15,  # default: 30
     # number of random seed
     seed=0,
     # dimension of the latent context vector
@@ -17,7 +17,7 @@ config = dict(
     env_params=dict(
         # number of distinct tasks in the domain,
         # should equal sum of train and test tasks
-        num_tasks=13,  # default: 130
+        num_tasks=65,  # default: 130
     ),
     pearl_params=dict(
         # number of data sampling / training iterates
@@ -38,13 +38,13 @@ config = dict(
         # number of transitions in the context batch
         batch_size=100,  # default: 100
         # maximum step for the environment
-        max_step=1000,  # default: 200
+        max_step=200,  # default: 200
         # How many transitions to store
         max_buffer_size=int(1e6),  # default: int(1e6)
         # number of independent testing
-        test_iters=1,  # default: 1
+        test_iters=2,  # default: 1
         # number of transitions to test
-        test_samples=600,  # default: 600
+        test_samples=200,  # default: 600
     ),
     sac_params=dict(
         # RL discount factor

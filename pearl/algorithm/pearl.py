@@ -97,7 +97,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                         add_to_enc_buffer=True,
                     )
 
-            print("=============== Iteration {0} ===============".format(iteration))
+            print("=============== Iteration {} ===============".format(iteration))
             # Sample data randomly from train tasks.
             for i in range(self.train_task_iters):
                 index = np.random.randint(len(self.train_tasks))
@@ -134,7 +134,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
-            print("Start meta-gradient of iteration {0}".format(iteration))
+            print("Start meta-gradient of iteration {}".format(iteration))
             for i in range(self.meta_grad_iters):
                 indices = np.random.choice(self.train_tasks, self.meta_batch_size)
 
@@ -265,11 +265,11 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             test_iters_return = 0
             for _ in self.test_iters:
                 trajs = self.collect_trajs(index)
-                test_iters_return += np.mean(sum(traj["rewards"]) for traj in trajs)
+                test_iters_return += np.mean([sum(traj["rewards"]) for traj in trajs])
 
             test_tasks_return += test_iters_return / self.test_iters
 
-        self.test_results["return"] = test_tasks_return / len(self.test_tasks)
+        self.test_results["return"] = round(test_tasks_return / len(self.test_tasks), 2)
         self.test_results["policy_loss"] = self.log_value["policy_loss"]
         self.test_results["qf1_loss"] = self.log_value["qf1_loss"]
         self.test_results["qf2_loss"] = self.log_value["qf2_loss"]
@@ -279,10 +279,18 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.test_results["time_per_iter"] = time.time() - start_time
 
         # Logging
-        # TBU
-        # print(
-        #     "Iteration: {0}\n".format(iteration)
-        # )
+        print(
+            f"------------------------------ \n"
+            f'return: {self.test_results["return"]} \n'
+            f'policy_loss: {self.test_results["policy_loss"]} \n'
+            f'qf1_loss: {self.test_results["qf1_loss"]} \n'
+            f'qf2_loss: {self.test_results["qf2_loss"]} \n'
+            f'alpha_loss: {self.test_results["alpha_loss"]} \n'
+            f'z_mean: {self.test_results["z_mean"]} \n'
+            f'z_var: {self.test_results["z_var"]} \n'
+            f'time_per_iter: {self.test_results["time_per_iter"]} \n'
+            f"------------------------------ \n"
+        )
 
         # Tensorboard
         self.writer.add_scalar("return", self.test_results["return"], iteration)
