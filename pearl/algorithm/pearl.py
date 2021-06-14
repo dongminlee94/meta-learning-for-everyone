@@ -71,9 +71,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             max_size=config["max_buffer_size"],
         )
 
-        self.writer = SummaryWriter(log_dir=os.path.join(".", "runs", filename))
+        self.writer = SummaryWriter(log_dir=os.path.join(".", "results", filename))
 
-        self.log_value = None
         self.train_total_samples = 0
         self.train_total_steps = 0
         self.test_results = {}
@@ -148,7 +147,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 transition_batch = self.sample_transition(indices)
 
                 # Train the policy, Q-functions and the encoder
-                self.log_value = self.agent.train_model(
+                log_values = self.agent.train_model(
                     meta_batch_size=self.meta_batch_size,
                     batch_size=self.batch_size,
                     context_batch=context_batch,
@@ -161,7 +160,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 self.train_total_steps += 1
 
             # Evaluate on test tasks
-            self.meta_test(iteration, start_time)
+            self.meta_test(iteration, start_time, log_values)
 
     def collect_data(
         self, task_index, max_samples, update_posterior, add_to_enc_buffer
@@ -252,58 +251,64 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             )
             traj_batch += trajs
             curr_samples += num_samples
-            self.agent.infer_posterior(self.agent.encoder.context)
+            self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return traj_batch
 
-    def meta_test(self, iteration, start_time):
+    def meta_test(self, iteration, start_time, log_values):
         """PEARL meta-testing"""
         self.test_results = {}
 
-        print("Evaluating on {0} test tasks".format(len(self.test_tasks)))
+        print("Evaluating on {} test tasks".format(len(self.test_tasks)))
         test_tasks_return = 0
         for index in self.test_tasks:
             test_iters_return = 0
-            for _ in self.test_iters:
+            for _ in range(self.test_iters):
                 trajs = self.collect_trajs(index)
                 test_iters_return += np.mean([sum(traj["rewards"]) for traj in trajs])
 
             test_tasks_return += test_iters_return / self.test_iters
 
-        self.test_results["return"] = round(test_tasks_return / len(self.test_tasks), 2)
-        self.test_results["policy_loss"] = self.log_value["policy_loss"]
-        self.test_results["qf1_loss"] = self.log_value["qf1_loss"]
-        self.test_results["qf2_loss"] = self.log_value["qf2_loss"]
-        self.test_results["alpha_loss"] = self.log_value["alpha_loss"]
-        self.test_results["z_mean"] = self.log_value["z_mean"]
-        self.test_results["z_var"] = self.log_value["z_var"]
+        self.test_results["return"] = test_tasks_return / len(self.test_tasks)
+        self.test_results["policy_loss"] = log_values["policy_loss"]
+        self.test_results["qf1_loss"] = log_values["qf1_loss"]
+        self.test_results["qf2_loss"] = log_values["qf2_loss"]
+        self.test_results["alpha_loss"] = log_values["alpha_loss"]
+        self.test_results["z_mean"] = log_values["z_mean"]
+        self.test_results["z_var"] = log_values["z_var"]
         self.test_results["time_per_iter"] = time.time() - start_time
+
+        # Tensorboard
+        self.writer.add_scalar("eval/return", self.test_results["return"], iteration)
+        self.writer.add_scalar(
+            "train/policy_loss", self.test_results["policy_loss"], iteration
+        )
+        self.writer.add_scalar(
+            "train/qf1_loss", self.test_results["qf1_loss"], iteration
+        )
+        self.writer.add_scalar(
+            "train/qf2_loss", self.test_results["qf2_loss"], iteration
+        )
+        self.writer.add_scalar(
+            "train/alpha_loss", self.test_results["alpha_loss"], iteration
+        )
+        self.writer.add_scalar("train/z_mean", self.test_results["z_mean"], iteration)
+        self.writer.add_scalar("train/z_var", self.test_results["z_var"], iteration)
+        self.writer.add_scalar(
+            "time_per_iter", self.test_results["time_per_iter"], iteration
+        )
 
         # Logging
         print(
-            f"------------------------------ \n"
-            f'return: {self.test_results["return"]} \n'
-            f'policy_loss: {self.test_results["policy_loss"]} \n'
-            f'qf1_loss: {self.test_results["qf1_loss"]} \n'
-            f'qf2_loss: {self.test_results["qf2_loss"]} \n'
-            f'alpha_loss: {self.test_results["alpha_loss"]} \n'
+            f"--------------------------------------- \n"
+            f'return: {round(self.test_results["return"], 2)} \n'
+            f'policy_loss: {round(self.test_results["policy_loss"], 2)} \n'
+            f'qf1_loss: {round(self.test_results["qf1_loss"], 2)} \n'
+            f'qf2_loss: {round(self.test_results["qf2_loss"], 2)} \n'
+            f'alpha_loss: {round(self.test_results["alpha_loss"], 2)} \n'
             f'z_mean: {self.test_results["z_mean"]} \n'
             f'z_var: {self.test_results["z_var"]} \n'
-            f'time_per_iter: {self.test_results["time_per_iter"]} \n'
-            f"------------------------------ \n"
-        )
-
-        # Tensorboard
-        self.writer.add_scalar("return", self.test_results["return"], iteration)
-        self.writer.add_scalar(
-            "policy_loss", self.test_results["policy_loss"], iteration
-        )
-        self.writer.add_scalar("qf1_loss", self.test_results["qf1_loss"], iteration)
-        self.writer.add_scalar("qf2_loss", self.test_results["qf2_loss"], iteration)
-        self.writer.add_scalar("alpha_loss", self.test_results["alpha_loss"], iteration)
-        self.writer.add_scalar("z_mean", self.test_results["z_mean"], iteration)
-        self.writer.add_scalar("z_var", self.test_results["z_var"], iteration)
-        self.writer.add_scalar(
-            "time_per_iter", self.test_results["time_per_iter"], iteration
+            f'time_per_iter: {round(self.test_results["time_per_iter"], 2)} \n'
+            f"--------------------------------------- \n"
         )
 
         # Save the trained model

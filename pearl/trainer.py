@@ -16,7 +16,7 @@ parser.add_argument(
     "--env", type=str, default="dir", help="Env to use: default cheetah-dir"
 )
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
-parser.add_argument("--filename", type=str, default="exp", help="Set a file name")
+parser.add_argument("--filename", type=str, default="exp-1", help="Set a file name")
 
 
 if __name__ == "__main__":
