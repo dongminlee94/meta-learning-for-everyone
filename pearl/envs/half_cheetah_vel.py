@@ -29,10 +29,6 @@ class HalfCheetahVelEnv(
         self.potential = None
         self.seed(seed)
 
-    def seed(self, seed=None):
-        """Set environment random seed"""
-        self.env.seed(seed)
-
     def step(self, a):
         # If multiplayer, action first applied to all robots,
         # then global step() called, then _step() for all robots with the same actions

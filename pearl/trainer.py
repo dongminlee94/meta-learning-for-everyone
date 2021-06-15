@@ -4,6 +4,7 @@ PEARL trainer based on half-cheetah environment
 
 import argparse
 
+import numpy as np
 import torch
 from algorithm.pearl import PEARL
 from algorithm.sac import SAC
@@ -12,11 +13,9 @@ from configs.cheetah_vel import config as vel_config
 from envs import ENVS
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--env", type=str, default="dir", help="Env to use: default cheetah-dir"
-)
+parser.add_argument("--env", type=str, default="vel", help="Set an env to use")
+parser.add_argument("--filename", type=str, default="exp-3", help="Set a file name")
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
-parser.add_argument("--filename", type=str, default="exp-1", help="Set a file name")
 
 
 if __name__ == "__main__":
@@ -30,6 +29,8 @@ if __name__ == "__main__":
         config = vel_config
         env = ENVS[config["env_name"]](**config["env_params"])
     env.seed(config["seed"])
+    np.random.seed(config["seed"])
+    torch.manual_seed(config["seed"])
     tasks = env.get_all_task_idx()
 
     observ_dim = env.observation_space.shape[0]

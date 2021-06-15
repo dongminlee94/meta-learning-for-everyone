@@ -79,6 +79,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
     def meat_train(self):
         """PEARL meta-training"""
+        total_start_time = time.time()
         for iteration in range(self.train_iters):
             start_time = time.time()
             if iteration == 0:
@@ -160,7 +161,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 self.train_total_steps += 1
 
             # Evaluate on test tasks
-            self.meta_test(iteration, start_time, log_values)
+            self.meta_test(iteration, total_start_time, start_time, log_values)
 
     def collect_data(
         self, task_index, max_samples, update_posterior, add_to_enc_buffer
@@ -254,7 +255,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return traj_batch
 
-    def meta_test(self, iteration, start_time, log_values):
+    def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         self.test_results = {}
 
@@ -275,6 +276,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.test_results["alpha_loss"] = log_values["alpha_loss"]
         self.test_results["z_mean"] = log_values["z_mean"]
         self.test_results["z_var"] = log_values["z_var"]
+        self.test_results["total_time"] = time.time() - total_start_time
         self.test_results["time_per_iter"] = time.time() - start_time
 
         # Tensorboard
@@ -294,7 +296,10 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("train/z_mean", self.test_results["z_mean"], iteration)
         self.writer.add_scalar("train/z_var", self.test_results["z_var"], iteration)
         self.writer.add_scalar(
-            "time_per_iter", self.test_results["time_per_iter"], iteration
+            "time/total_time", self.test_results["total_time"], iteration
+        )
+        self.writer.add_scalar(
+            "time/time_per_iter", self.test_results["time_per_iter"], iteration
         )
 
         # Logging
@@ -308,6 +313,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             f'z_mean: {self.test_results["z_mean"]} \n'
             f'z_var: {self.test_results["z_var"]} \n'
             f'time_per_iter: {round(self.test_results["time_per_iter"], 2)} \n'
+            f'total_time: {round(self.test_results["total_time"], 2)} \n'
             f"--------------------------------------- \n"
         )
 

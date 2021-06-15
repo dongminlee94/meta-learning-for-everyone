@@ -16,7 +16,7 @@ config = dict(
     path_to_weights=None,  # default: None
     pearl_params=dict(
         # number of data sampling / training iterates
-        train_iters=500,  # default: 500
+        train_iters=200,  # default: 500
         # number of sampled tasks to collect data for each iteration
         train_task_iters=5,  # default: 5
         # number of transitions collected per task before training
