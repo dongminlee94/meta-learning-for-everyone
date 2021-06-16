@@ -273,7 +273,9 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.test_results["policy_loss"] = log_values["policy_loss"]
         self.test_results["qf1_loss"] = log_values["qf1_loss"]
         self.test_results["qf2_loss"] = log_values["qf2_loss"]
+        self.test_results["encoder_loss"] = log_values["encoder_loss"]
         self.test_results["alpha_loss"] = log_values["alpha_loss"]
+        self.test_results["alpha"] = log_values["alpha"]
         self.test_results["z_mean"] = log_values["z_mean"]
         self.test_results["z_var"] = log_values["z_var"]
         self.test_results["total_time"] = time.time() - total_start_time
@@ -291,8 +293,12 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             "train/qf2_loss", self.test_results["qf2_loss"], iteration
         )
         self.writer.add_scalar(
+            "train/encoder_loss", self.test_results["encoder_loss"], iteration
+        )
+        self.writer.add_scalar(
             "train/alpha_loss", self.test_results["alpha_loss"], iteration
         )
+        self.writer.add_scalar("train/alpha", self.test_results["alpha"], iteration)
         self.writer.add_scalar("train/z_mean", self.test_results["z_mean"], iteration)
         self.writer.add_scalar("train/z_var", self.test_results["z_var"], iteration)
         self.writer.add_scalar(
@@ -309,7 +315,9 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             f'policy_loss: {round(self.test_results["policy_loss"], 2)} \n'
             f'qf1_loss: {round(self.test_results["qf1_loss"], 2)} \n'
             f'qf2_loss: {round(self.test_results["qf2_loss"], 2)} \n'
+            f'encoder_loss: {round(self.test_results["encoder_loss"], 2)} \n'
             f'alpha_loss: {round(self.test_results["alpha_loss"], 2)} \n'
+            f'alpha: {round(self.test_results["alpha"], 2)} \n'
             f'z_mean: {self.test_results["z_mean"]} \n'
             f'z_var: {self.test_results["z_var"]} \n'
             f'time_per_iter: {round(self.test_results["time_per_iter"], 2)} \n'

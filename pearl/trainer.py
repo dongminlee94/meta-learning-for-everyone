@@ -14,7 +14,7 @@ from envs import ENVS
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", type=str, default="vel", help="Set an env to use")
-parser.add_argument("--filename", type=str, default="exp-3", help="Set a file name")
+parser.add_argument("--filename", type=str, default="exp-4", help="Set a file name")
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
 
 
