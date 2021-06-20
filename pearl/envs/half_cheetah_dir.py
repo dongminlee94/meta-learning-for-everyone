@@ -81,7 +81,12 @@ class HalfCheetahDirEnv(
 
         self.HUD(state, a, done)
         self.reward += sum(self.rewards)
-        return state, sum(self.rewards), bool(done), {}
+
+        info = {}
+        info["alive"] = self._alive
+        info["run_cost"] = run_cost
+
+        return state, sum(self.rewards), bool(done), info
 
     def get_all_task_idx(self):
         """Get index of all the tasks"""
