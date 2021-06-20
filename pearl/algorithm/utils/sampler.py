@@ -52,6 +52,7 @@ class Sampler:
         actions = []
         rewards = []
         dones = []
+        infos = []
 
         obs = self.env.reset()
         cur_step = 0
@@ -61,7 +62,7 @@ class Sampler:
 
         while cur_step < self.max_step:
             action = self.agent.get_action(obs)
-            next_obs, reward, done, _ = self.env.step(action)
+            next_obs, reward, done, info = self.env.step(action)
 
             # Update the agent's current context
             if accum_context:
@@ -71,6 +72,7 @@ class Sampler:
             actions.append(action)
             rewards.append(reward)
             dones.append(done)
+            infos.append(info)
 
             cur_step += 1
             obs = next_obs
@@ -82,12 +84,14 @@ class Sampler:
         rewards = np.array(rewards).reshape(-1, 1)
         next_obs = np.vstack((curr_obs[1:, :], np.expand_dims(next_obs, 0)))
         dones = np.array(dones).reshape(-1, 1)
+        infos = np.array(infos)
         return dict(
             curr_obs=curr_obs,
             actions=actions,
             rewards=rewards,
             next_obs=next_obs,
             dones=dones,
+            infos=infos,
         )
 
     def update_context(self, obs, action, reward):

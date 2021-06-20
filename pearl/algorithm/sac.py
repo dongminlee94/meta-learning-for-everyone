@@ -194,7 +194,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
             qf2_loss=qf2_loss.item(),
             encoder_loss=encoder_loss.item(),
             alpha_loss=alpha_loss.item(),
-            alpha=self.alphaitem(),
+            alpha=self.alpha.item(),
             z_mean=np.mean(self.encoder.z_mean.detach().cpu().numpy()),
             z_var=np.mean(self.encoder.z_var.detach().cpu().numpy()),
         )

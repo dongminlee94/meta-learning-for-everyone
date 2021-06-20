@@ -82,7 +82,11 @@ class HalfCheetahVelEnv(
         self.HUD(state, a, done)
         self.reward += sum(self.rewards)
 
-        return state, sum(self.rewards), bool(done), {}
+        info = {}
+        info["alive"] = self._alive
+        info["run_cost"] = run_cost
+
+        return state, sum(self.rewards), bool(done), info
 
     @classmethod
     def sample_tasks(cls, num_tasks):

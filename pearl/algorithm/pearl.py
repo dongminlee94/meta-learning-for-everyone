@@ -75,7 +75,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
         self.train_total_samples = 0
         self.train_total_steps = 0
-        self.test_results = {}
 
     def meat_train(self):
         """PEARL meta-training"""
@@ -257,71 +256,76 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
-        self.test_results = {}
-
         print("Evaluating on {} test tasks".format(len(self.test_tasks)))
+
+        test_results = {}
         test_tasks_return = 0
+        test_tasks_diff = 0
+
         for index in self.test_tasks:
             test_iters_return = 0
+            test_iters_diff = 0
+
             for _ in range(self.test_iters):
                 trajs = self.collect_trajs(index)
                 test_iters_return += np.mean([sum(traj["rewards"]) for traj in trajs])
+                test_iters_diff += np.mean(
+                    [sum(traj["infos"]["run_cost"]) for traj in trajs]
+                )
 
             test_tasks_return += test_iters_return / self.test_iters
+            test_tasks_diff += test_iters_diff / self.test_iters
 
-        self.test_results["return"] = test_tasks_return / len(self.test_tasks)
-        self.test_results["policy_loss"] = log_values["policy_loss"]
-        self.test_results["qf1_loss"] = log_values["qf1_loss"]
-        self.test_results["qf2_loss"] = log_values["qf2_loss"]
-        self.test_results["encoder_loss"] = log_values["encoder_loss"]
-        self.test_results["alpha_loss"] = log_values["alpha_loss"]
-        self.test_results["alpha"] = log_values["alpha"]
-        self.test_results["z_mean"] = log_values["z_mean"]
-        self.test_results["z_var"] = log_values["z_var"]
-        self.test_results["total_time"] = time.time() - total_start_time
-        self.test_results["time_per_iter"] = time.time() - start_time
+        test_results["return"] = test_tasks_return / len(self.test_tasks)
+        test_results["difference"] = test_tasks_diff / len(self.test_tasks)
+        test_results["policy_loss"] = log_values["policy_loss"]
+        test_results["qf1_loss"] = log_values["qf1_loss"]
+        test_results["qf2_loss"] = log_values["qf2_loss"]
+        test_results["encoder_loss"] = log_values["encoder_loss"]
+        test_results["alpha_loss"] = log_values["alpha_loss"]
+        test_results["alpha"] = log_values["alpha"]
+        test_results["z_mean"] = log_values["z_mean"]
+        test_results["z_var"] = log_values["z_var"]
+        test_results["total_time"] = time.time() - total_start_time
+        test_results["time_per_iter"] = time.time() - start_time
 
         # Tensorboard
-        self.writer.add_scalar("eval/return", self.test_results["return"], iteration)
+        self.writer.add_scalar("eval/return", test_results["return"], iteration)
+        self.writer.add_scalar("eval/difference", test_results["difference"], iteration)
         self.writer.add_scalar(
-            "train/policy_loss", self.test_results["policy_loss"], iteration
+            "train/policy_loss", test_results["policy_loss"], iteration
+        )
+        self.writer.add_scalar("train/qf1_loss", test_results["qf1_loss"], iteration)
+        self.writer.add_scalar("train/qf2_loss", test_results["qf2_loss"], iteration)
+        self.writer.add_scalar(
+            "train/encoder_loss", test_results["encoder_loss"], iteration
         )
         self.writer.add_scalar(
-            "train/qf1_loss", self.test_results["qf1_loss"], iteration
+            "train/alpha_loss", test_results["alpha_loss"], iteration
         )
+        self.writer.add_scalar("train/alpha", test_results["alpha"], iteration)
+        self.writer.add_scalar("train/z_mean", test_results["z_mean"], iteration)
+        self.writer.add_scalar("train/z_var", test_results["z_var"], iteration)
+        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
         self.writer.add_scalar(
-            "train/qf2_loss", self.test_results["qf2_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/encoder_loss", self.test_results["encoder_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/alpha_loss", self.test_results["alpha_loss"], iteration
-        )
-        self.writer.add_scalar("train/alpha", self.test_results["alpha"], iteration)
-        self.writer.add_scalar("train/z_mean", self.test_results["z_mean"], iteration)
-        self.writer.add_scalar("train/z_var", self.test_results["z_var"], iteration)
-        self.writer.add_scalar(
-            "time/total_time", self.test_results["total_time"], iteration
-        )
-        self.writer.add_scalar(
-            "time/time_per_iter", self.test_results["time_per_iter"], iteration
+            "time/time_per_iter", test_results["time_per_iter"], iteration
         )
 
         # Logging
         print(
             f"--------------------------------------- \n"
-            f'return: {round(self.test_results["return"], 2)} \n'
-            f'policy_loss: {round(self.test_results["policy_loss"], 2)} \n'
-            f'qf1_loss: {round(self.test_results["qf1_loss"], 2)} \n'
-            f'qf2_loss: {round(self.test_results["qf2_loss"], 2)} \n'
-            f'encoder_loss: {round(self.test_results["encoder_loss"], 2)} \n'
-            f'alpha_loss: {round(self.test_results["alpha_loss"], 2)} \n'
-            f'alpha: {round(self.test_results["alpha"], 2)} \n'
-            f'z_mean: {self.test_results["z_mean"]} \n'
-            f'z_var: {self.test_results["z_var"]} \n'
-            f'time_per_iter: {round(self.test_results["time_per_iter"], 2)} \n'
-            f'total_time: {round(self.test_results["total_time"], 2)} \n'
+            f'return: {round(test_results["return"], 2)} \n'
+            f'difference: {round(test_results["difference"], 2)} \n'
+            f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
+            f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
+            f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'
+            f'encoder_loss: {round(test_results["encoder_loss"], 2)} \n'
+            f'alpha_loss: {round(test_results["alpha_loss"], 2)} \n'
+            f'alpha: {round(test_results["alpha"], 2)} \n'
+            f'z_mean: {test_results["z_mean"]} \n'
+            f'z_var: {test_results["z_var"]} \n'
+            f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
+            f'total_time: {round(test_results["total_time"], 2)} \n'
             f"--------------------------------------- \n"
         )
 
