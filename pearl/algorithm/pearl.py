@@ -3,6 +3,7 @@ Meta-train and meta-test codes with PEARL algorithm
 """
 
 
+import datetime
 import os
 import time
 
@@ -71,7 +72,13 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             max_size=config["max_buffer_size"],
         )
 
-        self.writer = SummaryWriter(log_dir=os.path.join(".", "results", filename))
+        self.writer = SummaryWriter(
+            log_dir=os.path.join(
+                ".",
+                "results",
+                filename + "_" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+            )
+        )
 
         self.train_total_samples = 0
         self.train_total_steps = 0
@@ -82,11 +89,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         for iteration in range(self.train_iters):
             start_time = time.time()
             if iteration == 0:
-                print(
-                    "[{0}/{1}] collecting initial samples with prior".format(
-                        len(self.train_tasks), len(self.train_tasks)
-                    )
-                )
                 for index in self.train_tasks:
                     self.env.reset_task(index)
                     self.collect_data(
@@ -254,30 +256,39 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return traj_batch
 
+    # pylint: disable=too-many-locals
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         print("Evaluating on {} test tasks".format(len(self.test_tasks)))
 
         test_results = {}
         test_tasks_return = 0
-        test_tasks_diff = 0
+        test_tasks_alive = 0
+        test_tasks_cost = 0
 
         for index in self.test_tasks:
             test_iters_return = 0
-            test_iters_diff = 0
+            test_iters_alive = 0
+            test_iters_cost = 0
 
             for _ in range(self.test_iters):
                 trajs = self.collect_trajs(index)
                 test_iters_return += np.mean([sum(traj["rewards"]) for traj in trajs])
-                test_iters_diff += np.mean(
-                    [sum(traj["infos"]["run_cost"]) for traj in trajs]
-                )
+
+                info_alive_sum, info_cost_sum = [], []
+                for info in trajs[0]["infos"]:
+                    info_alive_sum.append(info["alive"])
+                    info_cost_sum.append(info["run_cost"])
+                test_iters_alive += np.mean(info_alive_sum)
+                test_iters_cost += np.mean(info_cost_sum)
 
             test_tasks_return += test_iters_return / self.test_iters
-            test_tasks_diff += test_iters_diff / self.test_iters
+            test_tasks_alive += test_iters_alive / self.test_iters
+            test_tasks_cost += test_iters_cost / self.test_iters
 
         test_results["return"] = test_tasks_return / len(self.test_tasks)
-        test_results["difference"] = test_tasks_diff / len(self.test_tasks)
+        test_results["alive"] = test_tasks_alive / len(self.test_tasks)
+        test_results["run_cost"] = test_tasks_cost / len(self.test_tasks)
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -291,7 +302,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
         # Tensorboard
         self.writer.add_scalar("eval/return", test_results["return"], iteration)
-        self.writer.add_scalar("eval/difference", test_results["difference"], iteration)
+        self.writer.add_scalar("eval/alive", test_results["alive"], iteration)
+        self.writer.add_scalar("eval/run_cost", test_results["run_cost"], iteration)
         self.writer.add_scalar(
             "train/policy_loss", test_results["policy_loss"], iteration
         )
@@ -315,7 +327,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         print(
             f"--------------------------------------- \n"
             f'return: {round(test_results["return"], 2)} \n'
-            f'difference: {round(test_results["difference"], 2)} \n'
+            f'alive: {round(test_results["alive"], 2)} \n'
+            f'run_cost: {round(test_results["run_cost"], 2)} \n'
             f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
             f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
             f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'

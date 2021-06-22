@@ -42,15 +42,15 @@ config = dict(
         # How many transitions to store
         max_buffer_size=int(1e6),  # default: int(1e6)
         # number of independent testing
-        test_iters=2,  # default: 1
+        test_iters=2,  # default: 2
         # number of transitions to test
-        test_samples=200,  # default: 600
+        test_samples=200,  # default: 200
     ),
     sac_params=dict(
         # RL discount factor
         gamma=0.99,  # default: 0.99
         # weight on KL divergence term in encoder loss
-        kl_lambda=0.1,  # default: 0.1
+        kl_lambda=1.0,  # default: 0.1
         # number of transitions in the RL batch
         batch_size=256,  # default: 256
         # Q-function network's learning rate
