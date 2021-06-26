@@ -21,7 +21,7 @@ config = dict(
     ),
     pearl_params=dict(
         # number of data sampling / training iterates
-        train_iters=500,  # default: 500
+        train_iters=300,  # default: 500
         # number of sampled tasks to collect data for each iteration
         train_task_iters=5,  # default: 5
         # number of transitions collected per task before training
@@ -50,7 +50,7 @@ config = dict(
         # RL discount factor
         gamma=0.99,  # default: 0.99
         # weight on KL divergence term in encoder loss
-        kl_lambda=1.0,  # default: 0.1
+        kl_lambda=0.5,  # default: 0.1
         # number of transitions in the RL batch
         batch_size=256,  # default: 256
         # Q-function network's learning rate

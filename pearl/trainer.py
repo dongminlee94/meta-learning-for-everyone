@@ -6,16 +6,17 @@ import argparse
 
 import numpy as np
 import torch
-from algorithm.pearl import PEARL
-from algorithm.sac import SAC
-from configs.cheetah_dir import config as dir_config
-from configs.cheetah_vel import config as vel_config
-from envs import ENVS
+
+from pearl.algorithm.pearl import PEARL
+from pearl.algorithm.sac import SAC
+from pearl.configs.cheetah_dir import config as dir_config
+from pearl.configs.cheetah_vel import config as vel_config
+from pearl.envs import ENVS
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", type=str, default="vel", help="Set an env to use")
 parser.add_argument(
-    "--filename", type=str, default="exp_2_vel_kl_coeff_10", help="Set a file name"
+    "--filename", type=str, default="exp_1_vel_kl_coeff_5", help="Set a file name"
 )
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
 

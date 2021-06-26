@@ -9,10 +9,11 @@ import time
 
 import numpy as np
 import torch
-from algorithm.utils.buffers import MultiTaskReplayBuffer
-from algorithm.utils.sampler import Sampler
-from algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 from torch.utils.tensorboard import SummaryWriter
+
+from pearl.algorithm.utils.buffers import MultiTaskReplayBuffer
+from pearl.algorithm.utils.sampler import Sampler
+from pearl.algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 
 
 class PEARL:  # pylint: disable=too-many-instance-attributes
@@ -259,8 +260,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-locals
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
-        print("Evaluating on {} test tasks".format(len(self.test_tasks)))
-
         test_results = {}
         test_tasks_return = 0
         test_tasks_alive = 0
