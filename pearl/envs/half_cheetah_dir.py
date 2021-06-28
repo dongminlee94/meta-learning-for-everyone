@@ -83,7 +83,6 @@ class HalfCheetahDirEnv(
         self.reward += sum(self.rewards)
 
         info = {}
-        info["alive"] = self._alive
         info["run_cost"] = run_cost
 
         return state, sum(self.rewards), bool(done), info

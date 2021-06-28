@@ -52,7 +52,8 @@ class HalfCheetahVelEnv(
         potential_old = self.potential
         self.potential = self.robot.calc_potential()
         progress = float(self.potential - potential_old)
-        run_cost = -5.0 * abs(progress - self._goal_vel)
+        run_cost = abs(progress - self._goal_vel)
+        scaled_run_cost = -5.0 * run_cost
 
         feet_collision_cost = 0.0
         for i, feet in enumerate(self.robot.feet):
@@ -73,7 +74,7 @@ class HalfCheetahVelEnv(
 
         self.rewards = [
             self._alive,
-            run_cost,
+            scaled_run_cost,
             electricity_cost,
             joints_at_limit_cost,
             feet_collision_cost,
@@ -83,7 +84,6 @@ class HalfCheetahVelEnv(
         self.reward += sum(self.rewards)
 
         info = {}
-        info["alive"] = self._alive
         info["run_cost"] = run_cost
 
         return state, sum(self.rewards), bool(done), info
