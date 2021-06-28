@@ -50,6 +50,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.meta_batch_size = config["meta_batch_size"]
         self.batch_size = config["batch_size"]
 
+        self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
 
         self.sampler = Sampler(
@@ -89,15 +90,15 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         """Data collecting for meta-train"""
         self.agent.encoder.clear_z()
 
-        curr_samples = 0
+        cur_samples = 0
         self.agent.policy.is_deterministic = False
-        while curr_samples < max_samples:
+        while cur_samples < max_samples:
             trajs, num_samples = self.sampler.obtain_samples(
-                max_samples=max_samples - curr_samples,
+                max_samples=max_samples - cur_samples,
                 min_trajs=int(update_posterior),
                 accum_context=False,
             )
-            curr_samples += num_samples
+            cur_samples += num_samples
 
             self.rl_replay_buffer.add_trajs(task_index, trajs)
             if add_to_enc_buffer:
@@ -241,26 +242,27 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         """Data collecting for meta-test"""
         self.agent.encoder.clear_z()
 
-        traj_batch = []
-        curr_samples = 0
+        cur_trajs = []
+        cur_samples = 0
         self.agent.policy.is_deterministic = True
-        while curr_samples < max_samples:
+        while cur_samples < max_samples:
             trajs, num_samples = self.sampler.obtain_samples(
-                max_samples=max_samples - curr_samples,
+                max_samples=max_samples - cur_samples,
                 min_trajs=int(update_posterior),
                 accum_context=True,
             )
-            traj_batch += trajs
-            curr_samples += num_samples
+            cur_trajs += trajs
+            cur_samples += num_samples
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
-        return traj_batch
+        return cur_trajs
 
     # pylint: disable=too-many-locals
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         test_results = {}
         test_tasks_return = 0
-        test_tasks_run_cost = np.zeros(self.test_samples)
+        run_cost_before_infer = np.zeros(self.max_step)
+        run_cost_after_infer = np.zeros(self.max_step)
 
         for index in self.test_tasks:
             self.env.reset_task(index)
@@ -269,11 +271,17 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 update_posterior=True,
             )
             test_tasks_return += sum(trajs[0]["rewards"])[0]
-            for step, info in enumerate(trajs[0]["infos"]):
-                test_tasks_run_cost[step] += info["run_cost"]
+            for i in range(self.max_step):
+                run_cost_before_infer[i] += trajs[0]["infos"][i]
+                run_cost_after_infer[i] += trajs[1]["infos"][i]
 
         test_results["return"] = test_tasks_return / len(self.test_tasks)
-        test_results["run_cost"] = test_tasks_run_cost / len(self.test_tasks)
+        test_results["run_cost_before_infer"] = run_cost_before_infer / len(
+            self.test_tasks
+        )
+        test_results["run_cost_after_infer"] = run_cost_after_infer / len(
+            self.test_tasks
+        )
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -287,8 +295,17 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
 
         # Tensorboard
         self.writer.add_scalar("eval/return", test_results["return"], iteration)
-        for step, run_cost in enumerate(test_results["run_cost"]):
-            self.writer.add_scalar("eval/run_cost", run_cost, step)
+        for step in range(len(test_results["run_cost_before_infer"])):
+            self.writer.add_scalar(
+                "eval/run_cost_before_infer",
+                test_results["run_cost_before_infer"][step],
+                step,
+            )
+            self.writer.add_scalar(
+                "eval/run_cost_after_infer",
+                test_results["run_cost_after_infer"][step],
+                step,
+            )
         self.writer.add_scalar(
             "train/policy_loss", test_results["policy_loss"], iteration
         )
@@ -312,7 +329,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         print(
             f"--------------------------------------- \n"
             f'return: {round(test_results["return"], 2)} \n'
-            f'run_cost: {round(np.mean(test_results["run_cost"]), 2)} \n'
             f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
             f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
             f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'

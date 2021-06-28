@@ -195,6 +195,7 @@ class TanhGaussianPolicy(MLP):
 
         if self.is_deterministic:
             action = torch.tanh(mean)
+            log_prob = None
         else:
             normal = Normal(mean, std)
             # If reparameterize, use reparameterization trick (mean + std * N(0,1))
