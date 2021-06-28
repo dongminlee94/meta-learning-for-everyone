@@ -46,7 +46,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         max_size,
     ):
 
-        self._curr_obs = np.zeros((max_size, observ_dim))
+        self._cur_obs = np.zeros((max_size, observ_dim))
         self._actions = np.zeros((max_size, action_dim))
         self._rewards = np.zeros((max_size, 1))
         self._next_obs = np.zeros((max_size, observ_dim))
@@ -70,7 +70,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self, obs, action, reward, next_obs, done
     ):  # pylint: disable=too-many-arguments
         """Add transition to replay buffer"""
-        self._curr_obs[self._top] = obs
+        self._cur_obs[self._top] = obs
         self._actions[self._top] = action
         self._rewards[self._top] = reward
         self._next_obs[self._top] = next_obs
@@ -88,7 +88,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
     def add_traj(self, traj):
         """Add trajectory to replay buffer"""
         for (obs, action, reward, next_obs, done) in zip(
-            traj["curr_obs"],
+            traj["cur_obs"],
             traj["actions"],
             traj["rewards"],
             traj["next_obs"],
@@ -101,7 +101,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         """Sample batch in replay buffer"""
         indices = np.random.randint(0, self._size, batch_size)
         return dict(
-            curr_obs=self._curr_obs[indices],
+            cur_obs=self._cur_obs[indices],
             actions=self._actions[indices],
             rewards=self._rewards[indices],
             next_obs=self._next_obs[indices],

@@ -37,7 +37,7 @@ class Sampler:
             )
 
             trajs.append(traj)
-            num_samples += len(traj["curr_obs"])
+            num_samples += len(traj["cur_obs"])
             num_trajs += 1
 
             self.agent.encoder.sample_z()
@@ -48,7 +48,7 @@ class Sampler:
 
     def rollout(self, accum_context=True, use_rendering=False):
         """Rollout up to maximum trajectory length"""
-        curr_obs = []
+        cur_obs = []
         actions = []
         rewards = []
         dones = []
@@ -68,25 +68,25 @@ class Sampler:
             if accum_context:
                 self.update_context(obs, action, reward)
 
-            curr_obs.append(obs)
+            cur_obs.append(obs)
             actions.append(action)
             rewards.append(reward)
             dones.append(done)
-            infos.append(info)
+            infos.append(info["run_cost"])
 
             cur_step += 1
             obs = next_obs
             if done:
                 break
 
-        curr_obs = np.array(curr_obs)
+        cur_obs = np.array(cur_obs)
         actions = np.array(actions)
         rewards = np.array(rewards).reshape(-1, 1)
-        next_obs = np.vstack((curr_obs[1:, :], np.expand_dims(next_obs, 0)))
+        next_obs = np.vstack((cur_obs[1:, :], np.expand_dims(next_obs, 0)))
         dones = np.array(dones).reshape(-1, 1)
         infos = np.array(infos)
         return dict(
-            curr_obs=curr_obs,
+            cur_obs=cur_obs,
             actions=actions,
             rewards=rewards,
             next_obs=next_obs,
