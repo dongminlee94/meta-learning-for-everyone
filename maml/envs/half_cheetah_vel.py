@@ -29,10 +29,6 @@ class HalfCheetahVelEnv(
         self.potential = None
         self.seed(seed)
 
-    def seed(self, seed=None):
-        """Set environment random seed"""
-        self.env.seed(seed)
-
     def step(self, a):
         # If multiplayer, action first applied to all robots,
         # then global step() called, then _step() for all robots with the same actions
@@ -56,7 +52,8 @@ class HalfCheetahVelEnv(
         potential_old = self.potential
         self.potential = self.robot.calc_potential()
         progress = float(self.potential - potential_old)
-        run_cost = -5.0 * abs(progress - self._goal_vel)
+        run_cost = abs(progress - self._goal_vel)
+        scaled_run_cost = -5.0 * run_cost
 
         feet_collision_cost = 0.0
         for i, feet in enumerate(self.robot.feet):
@@ -77,7 +74,7 @@ class HalfCheetahVelEnv(
 
         self.rewards = [
             self._alive,
-            run_cost,
+            scaled_run_cost,
             electricity_cost,
             joints_at_limit_cost,
             feet_collision_cost,
@@ -86,7 +83,10 @@ class HalfCheetahVelEnv(
         self.HUD(state, a, done)
         self.reward += sum(self.rewards)
 
-        return state, sum(self.rewards), bool(done), {}
+        info = {}
+        info["run_cost"] = run_cost
+
+        return state, sum(self.rewards), bool(done), info
 
     @classmethod
     def sample_tasks(cls, num_tasks):

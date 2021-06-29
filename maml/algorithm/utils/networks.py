@@ -58,6 +58,7 @@ class GaussianPolicy(MLP):
         output_dim,
         hidden_units,
         env_target,
+        is_deterministic=False,
         init_w=1e-3,
     ):
         super().__init__(
@@ -72,6 +73,7 @@ class GaussianPolicy(MLP):
         elif env_target == "cheetah-vel":
             self.log_std = -1.0 * np.ones(output_dim, dtype=np.float32)
         self.log_std = torch.nn.Parameter(torch.Tensor(self.log_std))
+        self.is_deterministic = is_deterministic
 
     def get_normal_dist(self, x):
         """Get Gaussian distribtion"""
@@ -84,9 +86,9 @@ class GaussianPolicy(MLP):
         normal, _ = self.get_normal_dist(obs)
         return normal.log_prob(action).sum(dim=-1)
 
-    def forward(self, x, is_deterministic=False):
+    def forward(self, x):
         normal, mean = self.get_normal_dist(x)
-        if is_deterministic:
+        if self.is_deterministic:
             action = mean
             log_prob = None
         else:

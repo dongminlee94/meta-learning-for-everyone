@@ -2,10 +2,18 @@
 Meta-train and meta-test codes with MAML algorithm
 """
 
+
+import datetime
+import os
+
 # import numpy as np
 # import torch
-from algorithm.utils.buffer import Buffer
-from algorithm.utils.sampler import Sampler
+from torch.utils.tensorboard import SummaryWriter
+
+from maml.algorithm.utils.buffer import Buffer
+from maml.algorithm.utils.sampler import Sampler
+
+# import time
 
 
 class MAML:  # pylint: disable=too-many-instance-attributes
@@ -19,17 +27,22 @@ class MAML:  # pylint: disable=too-many-instance-attributes
         action_dim,
         train_tasks,
         eval_tasks,
+        exp_name,
+        file_name,
         device,
         **config,
     ):
 
+        self.env = env
         self.agent = agent
         self.train_tasks = train_tasks
         self.eval_tasks = eval_tasks
+        self.device = device
 
         self.num_iterations = config["num_iterations"]
         self.num_outer_optim = config["num_outer_optim"]
         self.num_inner_adapt = config["num_inner_adapt"]
+        self.max_step = config["max_step"]
 
         self.sampler = Sampler(env=env, agent=agent, max_step=config["max_step"])
 
@@ -40,11 +53,16 @@ class MAML:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        self._total_samples = 0
-        self._total_train_steps = 0
-
-    # def compute_loss(self):
-    #     pass
+        if file_name is None:
+            file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.writer = SummaryWriter(
+            log_dir=os.path.join(
+                ".",
+                "results",
+                exp_name,
+                file_name,
+            )
+        )
 
     def meta_train(self):
         """Meta-train loop"""

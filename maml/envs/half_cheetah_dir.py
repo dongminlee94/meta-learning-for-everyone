@@ -21,8 +21,8 @@ class HalfCheetahDirEnv(
         super().__init__(render=False)
         directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
-        self._goal_dir = None
         self._goal = None
+        self._goal_dir = None
         self._task = None
         self._alive = None
         self.rewards = None
@@ -81,7 +81,11 @@ class HalfCheetahDirEnv(
 
         self.HUD(state, a, done)
         self.reward += sum(self.rewards)
-        return state, sum(self.rewards), bool(done), {}
+
+        info = {}
+        info["run_cost"] = run_cost
+
+        return state, sum(self.rewards), bool(done), info
 
     def get_all_task_idx(self):
         """Get index of all the tasks"""

@@ -31,6 +31,11 @@ def trainer():
     env = envs[config['env_name']](**config['env_params'])
     tasks = env.get_all_task_idx()
 
+    # Set a random seed
+    env.seed(config["seed"])
+    np.random.seed(config["seed"])
+    torch.manual_seed(config["seed"])
+
     observ_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     latent_dim = config['latent_size']
