@@ -19,7 +19,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         lamda=0.97,
     ):
 
-        self._curr_obs = np.zeros((max_size, observ_dim))
+        self._cur_obs = np.zeros((max_size, observ_dim))
         self._actions = np.zeros((max_size, action_dim))
         self._rewards = np.zeros((max_size, 1))
         self._next_obs = np.zeros((max_size, observ_dim))
@@ -45,7 +45,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
     def add(self, obs, action, reward, next_obs, done, value, log_prob):
         """Add transition, value, and log_prob to buffer"""
         assert self._size < self._max_size
-        self._curr_obs[self._top] = obs
+        self._cur_obs[self._top] = obs
         self._actions[self._top] = action
         self._rewards[self._top] = reward
         self._next_obs[self._top] = next_obs
@@ -61,7 +61,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         """Add trajectories to buffer"""
         for traj in trajs:
             for (obs, action, reward, next_obs, done, value, log_prob) in zip(
-                traj["curr_obs"],
+                traj["cur_obs"],
                 traj["actions"],
                 traj["rewards"],
                 traj["next_obs"],
@@ -105,7 +105,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         assert self._size == self._max_size
         self.compute_gae()
         batch = dict(
-            obs=self._curr_obs,
+            obs=self._cur_obs,
             actions=self._actions,
             returns=self._returns,
             advants=self._advants,
