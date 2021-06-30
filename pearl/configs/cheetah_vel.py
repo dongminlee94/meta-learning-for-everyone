@@ -4,7 +4,7 @@ PEARL cheetah-vel experiment settings
 
 config = dict(
     env_name="cheetah-vel",
-    train_tasks=50,
+    train_tasks=15,
     test_tasks=15,
     # number of random seed
     seed=0,
@@ -37,7 +37,7 @@ config = dict(
         # How many transitions to store
         max_buffer_size=int(1e6),  # default: int(1e6)
         # number of transitions to test
-        test_samples=200,
+        test_samples=400,
     ),
     sac_params=dict(
         # RL discount factor

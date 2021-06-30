@@ -1,5 +1,5 @@
 """
-Meta-train and meta-test codes with PEARL algorithm
+Meta-train and meta-test implementations with PEARL algorithm
 """
 
 
@@ -211,7 +211,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
-            print("Start meta-gradient of iteration {}".format(iteration))
+            print("Start meta-gradient updates of iteration {}".format(iteration))
             for i in range(self.meta_grad_iters):
                 indices = np.random.choice(self.train_tasks, self.meta_batch_size)
 
@@ -270,11 +270,12 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 max_samples=self.test_samples,
                 update_posterior=True,
             )
-            test_tasks_return += sum(trajs[0]["rewards"])[0]
+            test_tasks_return += sum(trajs[1]["rewards"])[0]
             for i in range(self.max_step):
                 run_cost_before_infer[i] += trajs[0]["infos"][i]
                 run_cost_after_infer[i] += trajs[1]["infos"][i]
 
+        # Collect meta-test results
         test_results["return"] = test_tasks_return / len(self.test_tasks)
         test_results["run_cost_before_infer"] = run_cost_before_infer / len(
             self.test_tasks
@@ -294,15 +295,15 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         test_results["time_per_iter"] = time.time() - start_time
 
         # Tensorboard
-        self.writer.add_scalar("eval/return", test_results["return"], iteration)
+        self.writer.add_scalar("test/return", test_results["return"], iteration)
         for step in range(len(test_results["run_cost_before_infer"])):
             self.writer.add_scalar(
-                "eval/run_cost_before_infer",
+                "test/run_cost_before_infer",
                 test_results["run_cost_before_infer"][step],
                 step,
             )
             self.writer.add_scalar(
-                "eval/run_cost_after_infer",
+                "test/run_cost_after_infer",
                 test_results["run_cost_after_infer"][step],
                 step,
             )

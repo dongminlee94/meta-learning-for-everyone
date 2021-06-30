@@ -1,5 +1,5 @@
 """
-Sample collection code through interaction between agent and environment
+Sample collection implementation through interaction between agent and environment
 """
 
 

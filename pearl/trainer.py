@@ -14,13 +14,11 @@ from pearl.configs.cheetah_vel import config as vel_config
 from pearl.envs import ENVS
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--env", type=str, default="vel", help="Set an environment to use")
+parser.add_argument("--env", type=str, default="dir", help="Set an environment to use")
 parser.add_argument(
-    "--exp-name", type=str, default="exp_2", help="Set an experiment name"
+    "--exp-name", type=str, default="exp_1", help="Set an experiment name"
 )
-parser.add_argument(
-    "--file-name", type=str, default="num_tasks_65", help="Set a file name"
-)
+parser.add_argument("--file-name", type=str, default=None, help="Set a file name")
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
 
 

@@ -1,5 +1,5 @@
 """
-Multi-task replay buffer code
+Multi-task replay buffer implementation
 """
 
 

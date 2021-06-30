@@ -1,5 +1,5 @@
 """
-Registration code for Half-cheetah environments
+Registration for Half-cheetah environments
 """
 
 import importlib

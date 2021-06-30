@@ -1,5 +1,5 @@
 """
-Soft Actor-Critic algorithm code for training when meta-train
+Soft Actor-Critic algorithm implementation for training when meta-train
 """
 
 import numpy as np

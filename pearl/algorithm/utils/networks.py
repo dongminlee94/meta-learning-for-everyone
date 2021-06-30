@@ -1,5 +1,5 @@
 """
-Various network architecture codes used in PEARL algorithm
+Various network architecture implementations used in PEARL algorithm
 """
 
 import numpy as np

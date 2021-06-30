@@ -37,7 +37,7 @@ config = dict(
         # How many transitions to store
         max_buffer_size=int(1e6),
         # number of transitions to test
-        test_samples=200,
+        test_samples=400,
     ),
     sac_params=dict(
         # RL discount factor
