@@ -260,7 +260,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         test_results = {}
-        test_tasks_return = 0
+        return_before_infer = 0
+        return_after_infer = 0
         run_cost_before_infer = np.zeros(self.max_step)
         run_cost_after_infer = np.zeros(self.max_step)
 
@@ -270,13 +271,15 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 max_samples=self.test_samples,
                 update_posterior=True,
             )
-            test_tasks_return += sum(trajs[1]["rewards"])[0]
+            return_before_infer += sum(trajs[0]["rewards"])[0]
+            return_after_infer += sum(trajs[1]["rewards"])[0]
             for i in range(self.max_step):
                 run_cost_before_infer[i] += trajs[0]["infos"][i]
                 run_cost_after_infer[i] += trajs[1]["infos"][i]
 
         # Collect meta-test results
-        test_results["return"] = test_tasks_return / len(self.test_tasks)
+        test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
+        test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
         test_results["run_cost_before_infer"] = run_cost_before_infer / len(
             self.test_tasks
         )
@@ -295,7 +298,12 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         test_results["time_per_iter"] = time.time() - start_time
 
         # Tensorboard
-        self.writer.add_scalar("test/return", test_results["return"], iteration)
+        self.writer.add_scalar(
+            "test/return_before_infer", test_results["return_before_infer"], iteration
+        )
+        self.writer.add_scalar(
+            "test/return_after_infer", test_results["return_after_infer"], iteration
+        )
         for step in range(len(test_results["run_cost_before_infer"])):
             self.writer.add_scalar(
                 "test/run_cost_before_infer",
@@ -329,7 +337,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # Logging
         print(
             f"--------------------------------------- \n"
-            f'return: {round(test_results["return"], 2)} \n'
+            f'return: {round(test_results["return_after_infer"], 2)} \n'
             f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
             f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
             f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'
