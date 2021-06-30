@@ -33,9 +33,9 @@ def np_to_torch_batch(np_batch):
 
 def unpack_batch(batch):
     """Unpack a batch and return individual elements"""
-    curr_obs = batch["curr_obs"][None, ...]
+    cur_obs = batch["cur_obs"][None, ...]
     actions = batch["actions"][None, ...]
     rewards = batch["rewards"][None, ...]
     next_obs = batch["next_obs"][None, ...]
     dones = batch["dones"][None, ...]
-    return [curr_obs, actions, rewards, next_obs, dones]
+    return [cur_obs, actions, rewards, next_obs, dones]

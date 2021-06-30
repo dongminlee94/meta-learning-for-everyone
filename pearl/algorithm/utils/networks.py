@@ -1,5 +1,5 @@
 """
-Various network architecture codes used in PEARL algorithm
+Various network architecture implementations used in PEARL algorithm
 """
 
 import numpy as np
@@ -195,6 +195,7 @@ class TanhGaussianPolicy(MLP):
 
         if self.is_deterministic:
             action = torch.tanh(mean)
+            log_prob = None
         else:
             normal = Normal(mean, std)
             # If reparameterize, use reparameterization trick (mean + std * N(0,1))

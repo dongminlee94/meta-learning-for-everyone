@@ -1,17 +1,19 @@
 """
-Meta-train and meta-test codes with PEARL algorithm
+Meta-train and meta-test implementations with PEARL algorithm
 """
 
 
+import datetime
 import os
 import time
 
 import numpy as np
 import torch
-from algorithm.utils.buffers import MultiTaskReplayBuffer
-from algorithm.utils.sampler import Sampler
-from algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 from torch.utils.tensorboard import SummaryWriter
+
+from pearl.algorithm.utils.buffers import MultiTaskReplayBuffer
+from pearl.algorithm.utils.sampler import Sampler
+from pearl.algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
 
 
 class PEARL:  # pylint: disable=too-many-instance-attributes
@@ -25,7 +27,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         action_dim,
         train_tasks,
         test_tasks,
-        filename,
+        exp_name,
+        file_name,
         device,
         **config,
     ):
@@ -34,7 +37,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.agent = agent
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
-        self.filename = filename
         self.device = device
 
         self.train_iters = config["train_iters"]
@@ -48,7 +50,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.meta_batch_size = config["meta_batch_size"]
         self.batch_size = config["batch_size"]
 
-        self.test_iters = config["test_iters"]
+        self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
 
         self.sampler = Sampler(
@@ -71,111 +73,32 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             max_size=config["max_buffer_size"],
         )
 
-        self.writer = SummaryWriter(log_dir=os.path.join(".", "results", filename))
+        if file_name is None:
+            file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.writer = SummaryWriter(
+            log_dir=os.path.join(
+                ".",
+                "results",
+                exp_name,
+                file_name,
+            )
+        )
 
-        self.train_total_samples = 0
-        self.train_total_steps = 0
-
-    def meat_train(self):
-        """PEARL meta-training"""
-        total_start_time = time.time()
-        for iteration in range(self.train_iters):
-            start_time = time.time()
-            if iteration == 0:
-                print(
-                    "[{0}/{1}] collecting initial samples with prior".format(
-                        len(self.train_tasks), len(self.train_tasks)
-                    )
-                )
-                for index in self.train_tasks:
-                    self.env.reset_task(index)
-                    self.collect_data(
-                        task_index=index,
-                        max_samples=self.train_init_samples,
-                        update_posterior=False,
-                        add_to_enc_buffer=True,
-                    )
-
-            print("=============== Iteration {} ===============".format(iteration))
-            # Sample data randomly from train tasks.
-            for i in range(self.train_task_iters):
-                index = np.random.randint(len(self.train_tasks))
-                self.env.reset_task(index)
-                self.encoder_replay_buffer.task_buffers[index].clear()
-
-                # Collect some trajectories with z ~ prior r(z)
-                if self.train_prior_samples > 0:
-                    print(
-                        "[{0}/{1}] collecting samples with prior".format(
-                            i + 1, self.train_task_iters
-                        )
-                    )
-                    self.collect_data(
-                        task_index=index,
-                        max_samples=self.train_prior_samples,
-                        update_posterior=False,
-                        add_to_enc_buffer=True,
-                    )
-
-                # Even if encoder is trained only on samples from the prior r(z),
-                # the policy needs to learn to handle z ~ posterior q(z|c)
-                if self.train_posterior_samples > 0:
-                    print(
-                        "[{0}/{1}] collecting samples with posterior".format(
-                            i + 1, self.train_task_iters
-                        )
-                    )
-                    self.collect_data(
-                        task_index=index,
-                        max_samples=self.train_posterior_samples,
-                        update_posterior=True,
-                        add_to_enc_buffer=False,
-                    )
-
-            # Sample train tasks and compute gradient updates on parameters.
-            print("Start meta-gradient of iteration {}".format(iteration))
-            for i in range(self.meta_grad_iters):
-                indices = np.random.choice(self.train_tasks, self.meta_batch_size)
-
-                # Zero out context and hidden encoder state
-                self.agent.encoder.clear_z(num_tasks=len(indices))
-
-                # Sample context batch
-                context_batch = self.sample_context(indices)  # torch.Size([4, 256, 33])
-
-                # Sample transition batch
-                transition_batch = self.sample_transition(indices)
-
-                # Train the policy, Q-functions and the encoder
-                log_values = self.agent.train_model(
-                    meta_batch_size=self.meta_batch_size,
-                    batch_size=self.batch_size,
-                    context_batch=context_batch,
-                    transition_batch=transition_batch,
-                )
-
-                # Stop backprop
-                self.agent.encoder.task_z.detach()
-
-                self.train_total_steps += 1
-
-            # Evaluate on test tasks
-            self.meta_test(iteration, total_start_time, start_time, log_values)
-
-    def collect_data(
+    def collect_train_data(
         self, task_index, max_samples, update_posterior, add_to_enc_buffer
     ):
-        """Data collecting for training"""
+        """Data collecting for meta-train"""
         self.agent.encoder.clear_z()
 
-        curr_samples = 0
-        while curr_samples < max_samples:
+        cur_samples = 0
+        self.agent.policy.is_deterministic = False
+        while cur_samples < max_samples:
             trajs, num_samples = self.sampler.obtain_samples(
-                max_samples=max_samples - curr_samples,
+                max_samples=max_samples - cur_samples,
                 min_trajs=int(update_posterior),
                 accum_context=False,
             )
-            curr_samples += num_samples
+            cur_samples += num_samples
 
             self.rl_replay_buffer.add_trajs(task_index, trajs)
             if add_to_enc_buffer:
@@ -184,7 +107,6 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             if update_posterior:
                 context_batch = self.sample_context([task_index])
                 self.agent.encoder.infer_posterior(context_batch)
-        self.train_total_samples += curr_samples
 
     def sample_context(self, indices):
         """Sample batch of context from a list of tasks from the replay buffer"""
@@ -236,48 +158,134 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         ]
         return transition_batch
 
-    def collect_trajs(self, index):
-        """Data collecting for meta-test"""
-        self.env.reset_task(index)
-        self.agent.encoder.clear_z()
+    def meta_train(self):
+        """PEARL meta-training"""
+        total_start_time = time.time()
+        for iteration in range(self.train_iters):
+            start_time = time.time()
 
-        traj_batch = []
-        curr_samples = 0
-        while curr_samples < self.test_samples:
-            trajs, num_samples = self.sampler.obtain_samples(
-                max_samples=self.test_samples - curr_samples,
-                min_trajs=1,
-                accum_context=True,
-            )
-            traj_batch += trajs
-            curr_samples += num_samples
-            self.agent.encoder.infer_posterior(self.agent.encoder.context)
-        return traj_batch
+            if iteration == 0:
+                for index in self.train_tasks:
+                    self.env.reset_task(index)
+                    self.collect_train_data(
+                        task_index=index,
+                        max_samples=self.train_init_samples,
+                        update_posterior=False,
+                        add_to_enc_buffer=True,
+                    )
 
-    def meta_test(self, iteration, total_start_time, start_time, log_values):
-        """PEARL meta-testing"""
-        print("Evaluating on {} test tasks".format(len(self.test_tasks)))
+            print("=============== Iteration {} ===============".format(iteration))
+            # Sample data randomly from train tasks.
+            for i in range(self.train_task_iters):
+                index = np.random.randint(len(self.train_tasks))
+                self.env.reset_task(index)
+                self.encoder_replay_buffer.task_buffers[index].clear()
 
-        test_results = {}
-        test_tasks_return = 0
-        test_tasks_diff = 0
+                # Collect some trajectories with z ~ prior r(z)
+                if self.train_prior_samples > 0:
+                    print(
+                        "[{0}/{1}] collecting samples with prior".format(
+                            i + 1, self.train_task_iters
+                        )
+                    )
+                    self.collect_train_data(
+                        task_index=index,
+                        max_samples=self.train_prior_samples,
+                        update_posterior=False,
+                        add_to_enc_buffer=True,
+                    )
 
-        for index in self.test_tasks:
-            test_iters_return = 0
-            test_iters_diff = 0
+                # Even if encoder is trained only on samples from the prior r(z),
+                # the policy needs to learn to handle z ~ posterior q(z|c)
+                if self.train_posterior_samples > 0:
+                    print(
+                        "[{0}/{1}] collecting samples with posterior".format(
+                            i + 1, self.train_task_iters
+                        )
+                    )
+                    self.collect_train_data(
+                        task_index=index,
+                        max_samples=self.train_posterior_samples,
+                        update_posterior=True,
+                        add_to_enc_buffer=False,
+                    )
 
-            for _ in range(self.test_iters):
-                trajs = self.collect_trajs(index)
-                test_iters_return += np.mean([sum(traj["rewards"]) for traj in trajs])
-                test_iters_diff += np.mean(
-                    [sum(traj["infos"]["run_cost"]) for traj in trajs]
+            # Sample train tasks and compute gradient updates on parameters.
+            print("Start meta-gradient updates of iteration {}".format(iteration))
+            for i in range(self.meta_grad_iters):
+                indices = np.random.choice(self.train_tasks, self.meta_batch_size)
+
+                # Zero out context and hidden encoder state
+                self.agent.encoder.clear_z(num_tasks=len(indices))
+
+                # Sample context batch
+                context_batch = self.sample_context(indices)
+
+                # Sample transition batch
+                transition_batch = self.sample_transition(indices)
+
+                # Train the policy, Q-functions and the encoder
+                log_values = self.agent.train_model(
+                    meta_batch_size=self.meta_batch_size,
+                    batch_size=self.batch_size,
+                    context_batch=context_batch,
+                    transition_batch=transition_batch,
                 )
 
-            test_tasks_return += test_iters_return / self.test_iters
-            test_tasks_diff += test_iters_diff / self.test_iters
+                # Stop backprop
+                self.agent.encoder.task_z.detach()
 
-        test_results["return"] = test_tasks_return / len(self.test_tasks)
-        test_results["difference"] = test_tasks_diff / len(self.test_tasks)
+            # Evaluate on test tasks
+            self.meta_test(iteration, total_start_time, start_time, log_values)
+
+    def collect_test_data(self, max_samples, update_posterior):
+        """Data collecting for meta-test"""
+        self.agent.encoder.clear_z()
+
+        cur_trajs = []
+        cur_samples = 0
+        self.agent.policy.is_deterministic = True
+        while cur_samples < max_samples:
+            trajs, num_samples = self.sampler.obtain_samples(
+                max_samples=max_samples - cur_samples,
+                min_trajs=int(update_posterior),
+                accum_context=True,
+            )
+            cur_trajs += trajs
+            cur_samples += num_samples
+            self.agent.encoder.infer_posterior(self.agent.encoder.context)
+        return cur_trajs
+
+    # pylint: disable=too-many-locals
+    def meta_test(self, iteration, total_start_time, start_time, log_values):
+        """PEARL meta-testing"""
+        test_results = {}
+        return_before_infer = 0
+        return_after_infer = 0
+        run_cost_before_infer = np.zeros(self.max_step)
+        run_cost_after_infer = np.zeros(self.max_step)
+
+        for index in self.test_tasks:
+            self.env.reset_task(index)
+            trajs = self.collect_test_data(
+                max_samples=self.test_samples,
+                update_posterior=True,
+            )
+            return_before_infer += sum(trajs[0]["rewards"])[0]
+            return_after_infer += sum(trajs[1]["rewards"])[0]
+            for i in range(self.max_step):
+                run_cost_before_infer[i] += trajs[0]["infos"][i]
+                run_cost_after_infer[i] += trajs[1]["infos"][i]
+
+        # Collect meta-test results
+        test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
+        test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
+        test_results["run_cost_before_infer"] = run_cost_before_infer / len(
+            self.test_tasks
+        )
+        test_results["run_cost_after_infer"] = run_cost_after_infer / len(
+            self.test_tasks
+        )
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -290,8 +298,23 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         test_results["time_per_iter"] = time.time() - start_time
 
         # Tensorboard
-        self.writer.add_scalar("eval/return", test_results["return"], iteration)
-        self.writer.add_scalar("eval/difference", test_results["difference"], iteration)
+        self.writer.add_scalar(
+            "test/return_before_infer", test_results["return_before_infer"], iteration
+        )
+        self.writer.add_scalar(
+            "test/return_after_infer", test_results["return_after_infer"], iteration
+        )
+        for step in range(len(test_results["run_cost_before_infer"])):
+            self.writer.add_scalar(
+                "test/run_cost_before_infer",
+                test_results["run_cost_before_infer"][step],
+                step,
+            )
+            self.writer.add_scalar(
+                "test/run_cost_after_infer",
+                test_results["run_cost_after_infer"][step],
+                step,
+            )
         self.writer.add_scalar(
             "train/policy_loss", test_results["policy_loss"], iteration
         )
@@ -314,8 +337,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # Logging
         print(
             f"--------------------------------------- \n"
-            f'return: {round(test_results["return"], 2)} \n'
-            f'difference: {round(test_results["difference"], 2)} \n'
+            f'return: {round(test_results["return_after_infer"], 2)} \n'
             f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
             f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
             f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'

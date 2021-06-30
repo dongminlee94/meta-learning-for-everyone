@@ -1,12 +1,13 @@
 """
-Soft Actor-Critic algorithm code for training when meta-train
+Soft Actor-Critic algorithm implementation for training when meta-train
 """
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
+
+from pearl.algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
@@ -117,10 +118,10 @@ class SAC:  # pylint: disable=too-many-instance-attributes
     def train_model(self, meta_batch_size, batch_size, context_batch, transition_batch):
         """Train models according to training method of SAC algorithm"""
         # Data is (meta-batch, batch, feature)
-        curr_obs, actions, rewards, next_obs, dones = transition_batch
+        cur_obs, actions, rewards, next_obs, dones = transition_batch
 
         # Flattens out the transition batch dimension
-        curr_obs = curr_obs.view(meta_batch_size * batch_size, -1)
+        cur_obs = cur_obs.view(meta_batch_size * batch_size, -1)
         actions = actions.view(meta_batch_size * batch_size, -1)
         rewards = rewards.view(meta_batch_size * batch_size, -1)
         next_obs = next_obs.view(meta_batch_size * batch_size, -1)
@@ -152,8 +153,8 @@ class SAC:  # pylint: disable=too-many-instance-attributes
             target_q = rewards + self.gamma * (1 - dones) * target_v
 
         # Q-function loss
-        pred_q1 = self.qf1(curr_obs, actions, task_z)
-        pred_q2 = self.qf2(curr_obs, actions, task_z)
+        pred_q1 = self.qf1(cur_obs, actions, task_z)
+        pred_q2 = self.qf2(cur_obs, actions, task_z)
         qf1_loss = F.mse_loss(pred_q1, target_q)
         qf2_loss = F.mse_loss(pred_q2, target_q)
         qf_loss = qf1_loss + qf2_loss
@@ -165,11 +166,11 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.encoder_optimizer.step()
 
         # Policy loss
-        inputs = torch.cat([curr_obs, task_z.detach()], dim=-1)
+        inputs = torch.cat([cur_obs, task_z.detach()], dim=-1)
         policy, log_policy = self.policy(inputs)
         min_q = torch.min(
-            self.qf1(curr_obs, policy, task_z.detach()),
-            self.qf2(curr_obs, policy, task_z.detach()),
+            self.qf1(cur_obs, policy, task_z.detach()),
+            self.qf2(cur_obs, policy, task_z.detach()),
         )
         policy_loss = (self.alpha * log_policy - min_q).mean()
         self.policy_optimizer.zero_grad()
