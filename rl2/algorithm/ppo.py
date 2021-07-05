@@ -51,9 +51,11 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             "vf": self.vf,
         }
 
-    def get_action(self, obs):
+    def get_action(self, trans, hidden):
         """Get an action from the policy"""
-        action, _, _ = self.policy(torch.Tensor(obs).to(self.device))
+        action, _, _ = self.policy(
+            torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
+        )
         return action.detach().cpu().numpy()
 
     # pylint: disable=too-many-locals

@@ -72,9 +72,9 @@ class GaussianGRU(GRU):
         std = torch.exp(self.log_std)
         return Normal(mean, std), mean, hidden
 
-    def get_log_prob(self, obs, hidden, action):
-        """Get log probability of Gaussian distribution using obs and action"""
-        normal, _, _ = self.get_normal_dist(obs, hidden)
+    def get_log_prob(self, trans, hidden, action):
+        """Get log probability of Gaussian distribution using transtion and hidden"""
+        normal, _, _ = self.get_normal_dist(trans, hidden)
         return normal.log_prob(action).sum(dim=-1)
 
     def forward(self, x, h):

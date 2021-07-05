@@ -4,8 +4,8 @@ Meta-train and meta-test codes with RL^2 algorithm
 
 # import numpy as np
 # import torch
-from algorithm.utils.buffer import Buffer
-from algorithm.utils.sampler import Sampler
+from rl2.algorithm.utils.buffer import Buffer
+from rl2.algorithm.utils.sampler import Sampler
 
 
 class RL2:  # pylint: disable=too-many-instance-attributes
