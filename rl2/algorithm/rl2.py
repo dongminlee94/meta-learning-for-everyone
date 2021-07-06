@@ -43,9 +43,6 @@ class RL2:  # pylint: disable=too-many-instance-attributes
         self._total_samples = 0
         self._total_train_steps = 0
 
-    # def compute_loss(self):
-    #     pass
-
     def meta_train(self):
         """Meta-train loop"""
         for _ in range(self.train_tasks):

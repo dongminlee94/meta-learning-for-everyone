@@ -8,7 +8,7 @@ import numpy as np
 class Sampler:
     """Data sampling class"""
 
-    def __init__(   # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
         agent,
