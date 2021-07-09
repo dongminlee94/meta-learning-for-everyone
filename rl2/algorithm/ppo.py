@@ -23,8 +23,8 @@ class PPO:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.device = device
-        self.train_batch_size = config["train_batch_size"]
-        self.train_minibatch_size = config["train_minibatch_size"]
+        self.batch_size = config["batch_size"]
+        self.minibatch_size = config["minibatch_size"]
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
@@ -51,11 +51,22 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         }
 
     def get_action(self, trans, hidden):
-        """Get an action from the policy"""
+        """Get an action from the policy network"""
         action, log_prob, hidden = self.policy(
             torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
         )
-        return action.detach().cpu().numpy(), log_prob, hidden.detach().cpu().numpy()
+        return (
+            action.detach().cpu().numpy(),
+            log_prob.detach().cpu().numpy(),
+            hidden.detach().cpu().numpy(),
+        )
+
+    def get_value(self, trans, hidden):
+        """Get an value from the value network"""
+        value, hidden = self.vf(
+            torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
+        )
+        return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
 
     def train(self, batch):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
@@ -67,7 +78,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advants = batch["advants"]
         log_probs = batch["log_probs"]
 
-        num_mini_batch = int(self.train_batch_size / self.train_minibatch_size)
+        num_mini_batch = int(self.batch_size / self.minibatch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
         action_batches = torch.chunk(actions, num_mini_batch)

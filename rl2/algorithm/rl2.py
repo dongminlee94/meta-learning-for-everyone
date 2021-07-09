@@ -26,17 +26,21 @@ class RL2:  # pylint: disable=too-many-instance-attributes
         action_dim,
         hidden_dim,
         train_tasks,
-        eval_tasks,
+        test_tasks,
+        # exp_name,
+        # file_name,
         device,
         **config,
     ):
 
+        self.env = env
         self.agent = agent
         self.train_tasks = train_tasks
-        self.eval_tasks = eval_tasks
+        self.test_tasks = test_tasks
 
         self.train_iters = config["train_iters"]
-        self.train_max_samples = config["train_max_samples"]
+        self.train_samples = config["train_samples"]
+        self.meta_grad_iters = config["meta_grad_iters"]
 
         self.sampler = Sampler(
             env=env,
@@ -67,33 +71,18 @@ class RL2:  # pylint: disable=too-many-instance-attributes
                 self.agent.policy.is_deterministic = False
 
                 print(
-                    "[{0}/{1}] collecting samples".format(
-                        index + 1, self.train_task_iters
-                    )
+                    "[{0}/{1}] collecting samples".format(index + 1, self.train_iters)
                 )
-                trajs = self.sampler.obtain_trajs(max_samples=self.train_max_samples)
-                self.buffer.add_trajs(index, trajs)
+                trajs = self.sampler.obtain_trajs(max_samples=self.train_samples)
+                self.buffer.add_trajs(trajs)
 
-            # # Sample train tasks and compute gradient updates on parameters.
+            # Sample train tasks and compute gradient updates on parameters.
             # print("Start meta-gradient updates of iteration {}".format(iteration))
             # for i in range(self.meta_grad_iters):
-            #     indices = np.random.choice(self.train_tasks, self.meta_batch_size)
-
-            #     # Zero out context and hidden encoder state
-            #     self.agent.encoder.clear_z(num_tasks=len(indices))
-
-            #     # Sample context batch
-            #     context_batch = self.sample_context(indices)
-
-            #     # Sample transition batch
-            #     transition_batch = self.sample_transition(indices)
-
             #     # Train the policy, Q-functions and the encoder
             #     log_values = self.agent.train_model(
             #         meta_batch_size=self.meta_batch_size,
             #         batch_size=self.batch_size,
-            #         context_batch=context_batch,
-            #         transition_batch=transition_batch,
             #     )
 
             #     # Stop backprop
