@@ -14,31 +14,30 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        observ_dim,
+        trans_dim,
         action_dim,
-        hidden_units,
+        hidden_dim,
         env_target,
         device,
         **config,
     ):
 
         self.device = device
-        self.num_train_iters = config["num_train_iters"]
         self.train_batch_size = config["train_batch_size"]
         self.train_minibatch_size = config["train_minibatch_size"]
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
         self.policy = GaussianGRU(
-            input_dim=observ_dim,
+            input_dim=trans_dim,
             output_dim=action_dim,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
             env_target=env_target,
         ).to(device)
         self.vf = GRU(
-            input_dim=observ_dim,
+            input_dim=trans_dim,
             output_dim=1,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
         ).to(device)
 
         self.optimizer = optim.Adam(
@@ -53,48 +52,57 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
     def get_action(self, trans, hidden):
         """Get an action from the policy"""
-        action, _, _ = self.policy(
+        action, log_prob, hidden = self.policy(
             torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
         )
-        return action.detach().cpu().numpy()
+        return action.detach().cpu().numpy(), log_prob, hidden.detach().cpu().numpy()
 
-    # pylint: disable=too-many-locals
-    def train(self, batch):
+    def train(self, batch):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
-        obs = batch["obs"]
+        trans = batch["trans"]
         actions = batch["actions"]
+        pi_hiddens = batch["pi_hiddens"]
+        v_hiddens = batch["v_hiddens"]
         returns = batch["returns"]
         advants = batch["advants"]
         log_probs = batch["log_probs"]
 
         num_mini_batch = int(self.train_batch_size / self.train_minibatch_size)
 
-        obs_batches = torch.chunk(obs, num_mini_batch)
+        trans_batches = torch.chunk(trans, num_mini_batch)
         action_batches = torch.chunk(actions, num_mini_batch)
+        pi_hidden_batches = torch.chunk(pi_hiddens, num_mini_batch)
+        v_hidden_batches = torch.chunk(v_hiddens, num_mini_batch)
         return_batches = torch.chunk(returns, num_mini_batch)
         advant_batches = torch.chunk(advants, num_mini_batch)
         log_prob_batches = torch.chunk(log_probs, num_mini_batch)
 
         for _ in range(self.num_train_iters):
             for (
-                obs_batch,
+                trans_batch,
                 action_batch,
+                pi_hidden_batch,
+                v_hidden_batch,
                 return_batch,
                 advant_batch,
                 log_prob_batch,
             ) in zip(
-                obs_batches,
+                trans_batches,
                 action_batches,
+                pi_hidden_batches,
+                v_hidden_batches,
                 return_batches,
                 advant_batches,
                 log_prob_batches,
             ):
                 # Value function loss
-                value_batch = self.vf(obs_batch)
+                value_batch = self.vf(trans_batch, v_hidden_batch)
                 value_loss = F.mse_loss(value_batch, return_batch)
 
                 # Policy loss
-                new_log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch)
+                new_log_prob_batch = self.policy.get_log_prob(
+                    trans_batch, pi_hidden_batch, action_batch
+                )
                 ratio = torch.exp(new_log_prob_batch - log_prob_batch)
 
                 policy_loss = ratio * advant_batch

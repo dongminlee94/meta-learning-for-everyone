@@ -8,7 +8,7 @@ import numpy as np
 class Sampler:
     """Data sampling class"""
 
-    def __init__(   # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
         agent,
@@ -26,24 +26,30 @@ class Sampler:
     def obtain_trajs(self, max_samples, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        num_samples = 0
+        cur_samples = 0
 
-        while num_samples < max_samples:
-            traj = self.rollout(use_rendering=use_rendering)
+        while cur_samples < max_samples:
+            if self.max_step > max_samples - cur_samples:
+                self.max_step = max_samples - cur_samples
+
+            traj = self.rollout(
+                max_step=self.max_step,
+                use_rendering=use_rendering,
+            )
             trajs.append(traj)
 
-            num_samples += len(traj["cur_obs"])
-        return trajs, num_samples
+            cur_samples += len(traj["trans"])
+        return trajs
 
     # pylint: disable=too-many-locals
-    def rollout(self, use_rendering=False):
+    def rollout(self, max_step, use_rendering=False):
         """Rollout up to maximum trajectory length"""
-        cur_obs = []
+        trans = []
+        pi_hiddens = []
+        v_hiddens = []
         actions = []
         rewards = []
         dones = []
-        pi_hiddens = []
-        v_hiddens = []
         values = []
         log_probs = []
 
@@ -52,49 +58,50 @@ class Sampler:
         action = np.zeros(self.action_dim)
         reward = np.zeros(1)
         done = np.zeros(1)
-        pi_hidden = np.zeros((1, 1, self.action_dim))
-        v_hidden = np.zeros((1, 1, self.action_dim))
+        pi_hidden = np.zeros((1, self.hidden_dim))
+        v_hidden = np.zeros((1, self.hidden_dim))
 
         if use_rendering:
             self.env.render()
 
-        while cur_step < self.max_step:
-            trans = np.concatenate((obs, action, reward, done), axis=-1)
-            trans = np.reshape(trans, (1, 1, -1))
-            action, log_prob, pi_hidden = self.agent.get_action(trans, pi_hidden)
+        while cur_step < max_step:
+            tran = np.concatenate((obs, action, reward, done), axis=-1)
+            action, log_prob, next_pi_hidden = self.agent.get_action(tran, pi_hidden)
             next_obs, reward, done, _ = self.env.step(action)
-            value, v_hidden = self.agent.vf(trans, v_hidden)
+            value, next_v_hidden = self.agent.vf(tran, v_hidden)
 
-            cur_obs.append(obs)
+            trans.append(tran)
+            pi_hiddens.append(pi_hidden)
+            v_hiddens.append(v_hidden)
             actions.append(action)
             rewards.append(reward)
             dones.append(float(done))
-            pi_hiddens.append(pi_hidden)
-            v_hiddens.append(v_hidden)
             values.append(value)
             log_probs.append(log_prob)
 
             obs = next_obs
+            pi_hidden = next_pi_hidden[0]
+            v_hidden = next_v_hidden[0]
             cur_step += 1
 
             if done:
                 break
 
-        cur_obs = np.array(cur_obs)
+        trans = np.array(trans)
+        pi_hiddens = np.array(pi_hiddens)
+        v_hiddens = np.array(v_hiddens)
         actions = np.array(actions)
         rewards = np.array(rewards).reshape(-1, 1)
         dones = np.array(dones).reshape(-1, 1)
-        pi_hiddens = np.array(pi_hiddens)
-        v_hiddens = np.array(v_hiddens)
         values = np.array(values).reshape(-1, 1)
         log_probs = np.array(log_probs).reshape(-1, 1)
         return dict(
-            cur_obs=cur_obs,
+            trans=trans,
+            pi_hiddens=pi_hiddens,
+            v_hiddens=v_hiddens,
             actions=actions,
             rewards=rewards,
             dones=dones,
-            pi_hiddens=pi_hiddens,
-            v_hiddens=v_hiddens,
             values=values,
             log_probs=log_probs,
         )

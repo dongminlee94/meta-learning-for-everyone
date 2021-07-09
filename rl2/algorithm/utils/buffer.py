@@ -10,7 +10,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        observ_dim,
+        trans_dim,
         action_dim,
         hidden_dim,
         max_size,
@@ -19,12 +19,12 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         lamda=0.97,
     ):
 
-        self._cur_obs = np.zeros((max_size, observ_dim))
+        self._trans = np.zeros((max_size, trans_dim))
+        self._pi_hiddens = np.zeros((max_size, hidden_dim))
+        self._v_hiddens = np.zeros((max_size, hidden_dim))
         self._actions = np.zeros((max_size, action_dim))
         self._rewards = np.zeros((max_size, 1))
         self._dones = np.zeros((max_size, 1))
-        self._pi_hiddens = np.zeros((max_size, hidden_dim))
-        self._v_hiddens = np.zeros((max_size, hidden_dim))
         self._returns = np.zeros((max_size, 1))
         self._advants = np.zeros((max_size, 1))
         self._values = np.zeros((max_size, 1))
@@ -43,15 +43,15 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._size = 0
 
     # pylint: disable=too-many-arguments
-    def add(self, obs, action, reward, done, pi_hidden, v_hidden, value, log_prob):
-        """Add transition, value, and log_prob to the buffer"""
+    def add(self, tran, pi_hidden, v_hidden, action, reward, done, value, log_prob):
+        """Add transition, hiddens, value, and log_prob to the buffer"""
         assert self._size < self._max_size
-        self._cur_obs[self._top] = obs
+        self._trans[self._top] = tran
+        self._pi_hiddens[self._top] = pi_hidden
+        self._v_hiddens[self._top] = v_hidden
         self._actions[self._top] = action
         self._rewards[self._top] = reward
         self._dones[self._top] = done
-        self._pi_hiddens[self._top] = pi_hidden
-        self._v_hiddens[self._top] = v_hidden
         self._values[self._top] = value
         self._log_probs[self._top] = log_prob
 
@@ -63,26 +63,33 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         """Add trajectories to the buffer"""
         for traj in trajs:
             for (
-                obs,
+                tran,
+                pi_hidden,
+                v_hidden,
                 action,
                 reward,
                 done,
-                pi_hidden,
-                v_hidden,
                 value,
                 log_prob,
             ) in zip(
-                traj["cur_obs"],
+                traj["trans"],
+                traj["pi_hiddens"],
+                traj["v_hiddens"],
                 traj["actions"],
                 traj["rewards"],
                 traj["dones"],
-                traj["pi_hiddens"],
-                traj["v_hiddens"],
                 traj["values"],
                 traj["log_probs"],
             ):
                 self.add(
-                    obs, action, reward, done, pi_hidden, v_hidden, value, log_prob
+                    tran=tran,
+                    pi_hidden=pi_hidden,
+                    v_hidden=v_hidden,
+                    action=action,
+                    reward=reward,
+                    done=done,
+                    value=value,
+                    log_prob=log_prob,
                 )
 
     def compute_gae(self):
@@ -119,10 +126,10 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         assert self._size == self._max_size
         self.compute_gae()
         return dict(
-            obs=self._cur_obs,
-            actions=self._actions,
+            trans=self._trans,
             pi_hiddens=self._pi_hiddens,
             v_hiddens=self._v_hiddens,
+            actions=self._actions,
             returns=self._returns,
             advants=self._advants,
             log_probs=self._log_probs,
