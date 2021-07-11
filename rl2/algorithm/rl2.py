@@ -7,12 +7,11 @@ Meta-train and meta-test codes with RL^2 algorithm
 # import os
 # import time
 
-# import numpy as np
-# import torch
-# from torch.utils.tensorboard import SummaryWriter
-
 from rl2.algorithm.utils.buffer import Buffer
 from rl2.algorithm.utils.sampler import Sampler
+
+# import numpy as np
+# from torch.utils.tensorboard import SummaryWriter
 
 
 class RL2:  # pylint: disable=too-many-instance-attributes
@@ -40,7 +39,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
         self.train_iters = config["train_iters"]
         self.train_samples = config["train_samples"]
-        self.meta_grad_iters = config["meta_grad_iters"]
+        self.train_grad_iters = config["train_grad_iters"]
 
         self.sampler = Sampler(
             env=env,
@@ -71,28 +70,26 @@ class RL2:  # pylint: disable=too-many-instance-attributes
                 self.agent.policy.is_deterministic = False
 
                 print(
-                    "[{0}/{1}] collecting samples".format(index + 1, self.train_iters)
+                    "[{0}/{1}] collecting samples".format(
+                        index + 1, len(self.train_tasks)
+                    )
                 )
                 trajs = self.sampler.obtain_trajs(max_samples=self.train_samples)
                 self.buffer.add_trajs(trajs)
 
-            # Sample train tasks and compute gradient updates on parameters.
-            # print("Start meta-gradient updates of iteration {}".format(iteration))
-            # for i in range(self.meta_grad_iters):
-            #     # Train the policy, Q-functions and the encoder
-            #     log_values = self.agent.train_model(
-            #         meta_batch_size=self.meta_batch_size,
-            #         batch_size=self.batch_size,
-            #     )
+            # Get all samples for the train tasks
+            batch = self.buffer.get_samples()
 
-            #     # Stop backprop
-            #     self.agent.encoder.task_z.detach()
+            # Train the policy and the value function
+            print("Start the meta-gradient update of iteration {}".format(iteration))
+            log_values = self.agent.train_model(self.train_grad_iters, batch)
+            print(log_values)
 
             # Evaluate on test tasks
             # self.meta_test(iteration, total_start_time, start_time, log_values)
 
     def meta_test(self):
-        """Meta-test loop"""
+        """RL^2 meta-testing"""
         for _ in range(self.train_tasks):
             pass
         return NotImplementedError

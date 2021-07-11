@@ -15,8 +15,8 @@ config = dict(
         train_iters=1,
         # number of transitions to collect per task
         train_samples=400,
-        # number of meta-gradient updates per iteration
-        meta_grad_iters=1,
+        # number of meta-gradient iterations per iteration
+        train_grad_iters=1,
         # maximum step for the environment
         max_step=200,
         # How many transitions to store (train_tasks * train_samples)

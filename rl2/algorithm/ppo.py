@@ -68,12 +68,12 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         )
         return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
 
-    def train(self, batch):  # pylint: disable=too-many-locals
+    def train_model(self, grad_iters, batch):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
         trans = batch["trans"]
-        actions = batch["actions"]
         pi_hiddens = batch["pi_hiddens"]
         v_hiddens = batch["v_hiddens"]
+        actions = batch["actions"]
         returns = batch["returns"]
         advants = batch["advants"]
         log_probs = batch["log_probs"]
@@ -81,40 +81,48 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         num_mini_batch = int(self.batch_size / self.minibatch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
-        action_batches = torch.chunk(actions, num_mini_batch)
         pi_hidden_batches = torch.chunk(pi_hiddens, num_mini_batch)
         v_hidden_batches = torch.chunk(v_hiddens, num_mini_batch)
+        action_batches = torch.chunk(actions, num_mini_batch)
         return_batches = torch.chunk(returns, num_mini_batch)
         advant_batches = torch.chunk(advants, num_mini_batch)
         log_prob_batches = torch.chunk(log_probs, num_mini_batch)
 
-        for _ in range(self.num_train_iters):
+        total_loss_sum = 0
+        policy_loss_sum = 0
+        value_loss_sum = 0
+
+        for _ in range(grad_iters):
+            total_loss_mini_batch_sum = 0
+            policy_loss_mini_batch_sum = 0
+            value_loss_mini_batch_sum = 0
+
             for (
                 trans_batch,
-                action_batch,
                 pi_hidden_batch,
                 v_hidden_batch,
+                action_batch,
                 return_batch,
                 advant_batch,
                 log_prob_batch,
             ) in zip(
                 trans_batches,
-                action_batches,
                 pi_hidden_batches,
                 v_hidden_batches,
+                action_batches,
                 return_batches,
                 advant_batches,
                 log_prob_batches,
             ):
                 # Value function loss
-                value_batch = self.vf(trans_batch, v_hidden_batch)
-                value_loss = F.mse_loss(value_batch, return_batch)
+                value_batch, _ = self.vf(trans_batch, v_hidden_batch)
+                value_loss = F.mse_loss(value_batch.view(-1, 1), return_batch)
 
                 # Policy loss
                 new_log_prob_batch = self.policy.get_log_prob(
                     trans_batch, pi_hidden_batch, action_batch
                 )
-                ratio = torch.exp(new_log_prob_batch - log_prob_batch)
+                ratio = torch.exp(new_log_prob_batch.view(-1, 1) - log_prob_batch)
 
                 policy_loss = ratio * advant_batch
                 clipped_loss = (
@@ -129,6 +137,24 @@ class PPO:  # pylint: disable=too-many-instance-attributes
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
+
+                total_loss_mini_batch_sum += total_loss
+                policy_loss_mini_batch_sum += policy_loss
+                value_loss_mini_batch_sum += value_loss
+
+            total_loss_sum += total_loss_mini_batch_sum / num_mini_batch
+            policy_loss_sum += policy_loss_mini_batch_sum / num_mini_batch
+            value_loss_sum += value_loss_mini_batch_sum / num_mini_batch
+
+        total_loss_mean = total_loss_sum / grad_iters
+        policy_loss_mean = policy_loss_sum / grad_iters
+        value_loss_mean = value_loss_sum / grad_iters
+
+        return dict(
+            total_loss=total_loss_mean.item(),
+            policy_loss=policy_loss_mean.item(),
+            value_loss=value_loss_mean.item(),
+        )
 
     def save(self, path, net_dict=None):
         """Save data related to models in path"""
