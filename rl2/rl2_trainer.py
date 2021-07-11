@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
     observ_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    hidden_dim = list(map(int, config["hidden_dim"].split(",")))
     trans_dim = observ_dim + action_dim + 2
+    hidden_dim = config["hidden_dim"]
 
     device = (
         torch.device("cuda", index=args.gpu_index)
@@ -68,9 +68,9 @@ if __name__ == "__main__":
         action_dim=action_dim,
         hidden_dim=hidden_dim,
         train_tasks=list(tasks[: config["train_tasks"]]),
-        eval_tasks=list(tasks[-config["eval_tasks"] :]),
-        exp_name=args.exp_name,
-        file_name=args.file_name,
+        test_tasks=list(tasks[-config["test_tasks"] :]),
+        # exp_name=args.exp_name,
+        # file_name=args.file_name,
         device=device,
         **config["rl2_params"],
     )

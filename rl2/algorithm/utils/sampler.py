@@ -37,7 +37,6 @@ class Sampler:
                 use_rendering=use_rendering,
             )
             trajs.append(traj)
-
             cur_samples += len(traj["trans"])
         return trajs
 
@@ -65,21 +64,25 @@ class Sampler:
             self.env.render()
 
         while cur_step < max_step:
-            tran = np.concatenate((obs, action, reward, done), axis=-1)
+            tran = np.concatenate((obs, action, reward, done), axis=-1).reshape(1, -1)
             action, log_prob, next_pi_hidden = self.agent.get_action(tran, pi_hidden)
-            next_obs, reward, done, _ = self.env.step(action)
-            value, next_v_hidden = self.agent.vf(tran, v_hidden)
+            value, next_v_hidden = self.agent.get_value(tran, v_hidden)
 
-            trans.append(tran)
-            pi_hiddens.append(pi_hidden)
-            v_hiddens.append(v_hidden)
+            next_obs, reward, done, _ = self.env.step(action)
+            reward = np.array(reward).reshape(-1)
+            done = np.array(int(done)).reshape(-1)
+
+            # Flatten out the samples needed to train and add them to each list
+            trans.append(tran.reshape(-1))
+            pi_hiddens.append(pi_hidden.reshape(-1))
+            v_hiddens.append(v_hidden.reshape(-1))
             actions.append(action)
             rewards.append(reward)
-            dones.append(float(done))
-            values.append(value)
-            log_probs.append(log_prob)
+            dones.append(done)
+            values.append(value.reshape(-1))
+            log_probs.append(log_prob.reshape(-1))
 
-            obs = next_obs
+            obs = next_obs.reshape(-1)
             pi_hidden = next_pi_hidden[0]
             v_hidden = next_v_hidden[0]
             cur_step += 1
@@ -87,21 +90,13 @@ class Sampler:
             if done:
                 break
 
-        trans = np.array(trans)
-        pi_hiddens = np.array(pi_hiddens)
-        v_hiddens = np.array(v_hiddens)
-        actions = np.array(actions)
-        rewards = np.array(rewards).reshape(-1, 1)
-        dones = np.array(dones).reshape(-1, 1)
-        values = np.array(values).reshape(-1, 1)
-        log_probs = np.array(log_probs).reshape(-1, 1)
         return dict(
-            trans=trans,
-            pi_hiddens=pi_hiddens,
-            v_hiddens=v_hiddens,
-            actions=actions,
-            rewards=rewards,
-            dones=dones,
-            values=values,
-            log_probs=log_probs,
+            trans=np.array(trans),
+            pi_hiddens=np.array(pi_hiddens),
+            v_hiddens=np.array(v_hiddens),
+            actions=np.array(actions),
+            rewards=np.array(rewards),
+            dones=np.array(dones),
+            values=np.array(values),
+            log_probs=np.array(log_probs),
         )

@@ -24,7 +24,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._v_hiddens = np.zeros((max_size, hidden_dim))
         self._actions = np.zeros((max_size, action_dim))
         self._rewards = np.zeros((max_size, 1))
-        self._dones = np.zeros((max_size, 1))
+        self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._returns = np.zeros((max_size, 1))
         self._advants = np.zeros((max_size, 1))
         self._values = np.zeros((max_size, 1))

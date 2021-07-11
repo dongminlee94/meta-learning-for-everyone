@@ -85,4 +85,5 @@ class GaussianGRU(GRU):
         else:
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)
+        action = action.view(-1)
         return action, log_prob, hidden
