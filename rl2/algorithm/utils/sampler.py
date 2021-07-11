@@ -72,6 +72,7 @@ class Sampler:
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)
 
+            # Flatten out the samples needed to train and add them to each list
             trans.append(tran.reshape(-1))
             pi_hiddens.append(pi_hidden.reshape(-1))
             v_hiddens.append(v_hidden.reshape(-1))
