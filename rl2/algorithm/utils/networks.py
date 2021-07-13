@@ -16,7 +16,7 @@ class GRU(nn.Module):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dim,
         hidden_activation=F.relu,
         init_w=3e-3,
     ):
@@ -25,16 +25,16 @@ class GRU(nn.Module):
         self.hidden_activation = hidden_activation
 
         # Set GRU layers
-        self.gru = nn.GRU(input_size=input_dim, hidden_size=hidden_units)
+        self.gru = nn.GRU(input_size=input_dim, hidden_size=hidden_dim)
 
         # Set output layer
-        self.last_fc_layer = nn.Linear(hidden_units, output_dim)
+        self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
     def forward(self, x, h):
         """Get output when input is given"""
-        x, h = self.gru(x, h)
+        x, h = self.gru(x.unsqueeze(0), h.unsqueeze(0))
         x = self.hidden_activation(x)
         x = self.last_fc_layer(x)
         return x, h
@@ -47,7 +47,7 @@ class GaussianGRU(GRU):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dim,
         env_target,
         is_deterministic=False,
         init_w=1e-3,
@@ -55,7 +55,7 @@ class GaussianGRU(GRU):
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
             init_w=init_w,
         )
 
@@ -85,4 +85,5 @@ class GaussianGRU(GRU):
         else:
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)
+        action = action.view(-1)
         return action, log_prob, hidden

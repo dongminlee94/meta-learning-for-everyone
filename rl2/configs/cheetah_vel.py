@@ -8,45 +8,30 @@ config = dict(
     test_tasks=15,
     # number of random seed
     seed=0,
-    # dimension of the latent context vector
-    latent_size=5,
     # number of hidden units in neural networks
-    hidden_units="300,300,300",
-    # path to pre-trained weights to load into networks
-    path_to_weights=None,
+    hidden_dim=256,
     rl2_params=dict(
-        # number of data sampling / training iterates
-        train_iters=200,
-        # number of sampled tasks to collect data for each iteration
-        train_task_iters=5,
-        # number of transitions collected per task before training
-        train_init_samples=2000,
-        # number of transitions to collect per task with z ~ prior
-        train_prior_samples=400,
-        # number of transitions to collect per task with z ~ posterior
-        # that are only used to train the policy and NOT the encoder
-        train_posterior_samples=600,
-        # number of meta-training steps taken per iteration
-        meta_grad_iters=2000,
-        # number of tasks to average the gradient across
-        meta_batch_size=16,
-        # number of transitions in the context batch
-        batch_size=100,
+        # number of training iterates
+        train_iters=1,
+        # number of transitions to collect per task
+        train_samples=400,
+        # number of meta-gradient iterations per iteration
+        train_grad_iters=1,
         # maximum step for the environment
         max_step=200,
-        # How many transitions to store
-        max_buffer_size=int(1e6),  # default: int(1e6)
-        # number of transitions to test
-        test_samples=200,
+        # How many transitions to store (train_tasks * train_samples)
+        max_buffer_size=800,
     ),
     ppo_params=dict(
-        # RL discount factor
+        # discount factor
         gamma=0.99,
-        # weight on KL divergence term in encoder loss
-        kl_lambda=0.1,
-        # number of transitions in the RL batch
-        batch_size=256,
-        # learning rate of losses
+        # number of timesteps collected for each meta-gradient update
+        batch_size=800,
+        # number of minibatch within each epoch
+        minibatch_size=128,
+        # PPO clip parameter
+        clip_param=0.3,
+        # learning rate of PPO losses
         learning_rate=3e-4,
     ),
 )
