@@ -55,11 +55,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         action, log_prob, hidden = self.policy(
             torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
         )
-        return (
-            action.detach().cpu().numpy(),
-            log_prob.detach().cpu().numpy(),
-            hidden.detach().cpu().numpy(),
-        )
+        if log_prob:
+            log_prob = log_prob.detach().cpu().numpy()
+        return action.detach().cpu().numpy(), log_prob, hidden.detach().cpu().numpy()
 
     def get_value(self, trans, hidden):
         """Get an value from the value network"""

@@ -13,7 +13,7 @@ config = dict(
     rl2_params=dict(
         # number of training iterates
         train_iters=1,
-        # number of transitions to collect per task
+        # number of transitions to train
         train_samples=400,
         # number of meta-gradient iterations per iteration
         train_grad_iters=30,
@@ -21,6 +21,8 @@ config = dict(
         max_step=200,
         # How many transitions to store (train_tasks * train_samples)
         max_buffer_size=800,
+        # number of transitions to test
+        test_samples=400,
     ),
     ppo_params=dict(
         # discount factor

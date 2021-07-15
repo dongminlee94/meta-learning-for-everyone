@@ -49,6 +49,7 @@ class Sampler:
         actions = []
         rewards = []
         dones = []
+        infos = []
         values = []
         log_probs = []
 
@@ -68,7 +69,7 @@ class Sampler:
             action, log_prob, next_pi_hidden = self.agent.get_action(tran, pi_hidden)
             value, next_v_hidden = self.agent.get_value(tran, v_hidden)
 
-            next_obs, reward, done, _ = self.env.step(action)
+            next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)
 
@@ -79,8 +80,10 @@ class Sampler:
             actions.append(action)
             rewards.append(reward)
             dones.append(done)
+            infos.append(info["run_cost"])
             values.append(value.reshape(-1))
-            log_probs.append(log_prob.reshape(-1))
+            if log_prob:
+                log_probs.append(log_prob.reshape(-1))
 
             obs = next_obs.reshape(-1)
             pi_hidden = next_pi_hidden[0]
@@ -97,6 +100,7 @@ class Sampler:
             actions=np.array(actions),
             rewards=np.array(rewards),
             dones=np.array(dones),
+            infos=np.array(infos),
             values=np.array(values),
             log_probs=np.array(log_probs),
         )
