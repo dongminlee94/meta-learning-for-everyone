@@ -69,8 +69,8 @@ if __name__ == "__main__":
         hidden_dim=hidden_dim,
         train_tasks=list(tasks[: config["train_tasks"]]),
         test_tasks=list(tasks[-config["test_tasks"] :]),
-        # exp_name=args.exp_name,
-        # file_name=args.file_name,
+        exp_name=args.exp_name,
+        file_name=args.file_name,
         device=device,
         **config["rl2_params"],
     )
