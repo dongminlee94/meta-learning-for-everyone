@@ -17,14 +17,13 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         trans_dim,
         action_dim,
         hidden_dim,
-        env_target,
+        env_name,
         device,
         **config,
     ):
 
         self.device = device
-        self.batch_size = config["batch_size"]
-        self.minibatch_size = config["minibatch_size"]
+        self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
@@ -32,7 +31,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             input_dim=trans_dim,
             output_dim=action_dim,
             hidden_dim=hidden_dim,
-            env_target=env_target,
+            env_name=env_name,
         ).to(device)
         self.vf = GRU(
             input_dim=trans_dim,
@@ -66,7 +65,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         )
         return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
 
-    def train_model(self, grad_iters, batch):  # pylint: disable=too-many-locals
+    def train_model(
+        self, grad_iters, batch_size, batch
+    ):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
@@ -76,7 +77,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advants = batch["advants"]
         log_probs = batch["log_probs"]
 
-        num_mini_batch = int(self.batch_size / self.minibatch_size)
+        num_mini_batch = int(batch_size / self.mini_batch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
         pi_hidden_batches = torch.chunk(pi_hiddens, num_mini_batch)

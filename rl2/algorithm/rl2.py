@@ -40,6 +40,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
         self.train_iters = config["train_iters"]
         self.train_samples = config["train_samples"]
         self.train_grad_iters = config["train_grad_iters"]
+        self.batch_size = config["batch_size"]
 
         self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
@@ -56,7 +57,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             trans_dim=trans_dim,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
-            max_size=config["max_buffer_size"],
+            max_size=config["batch_size"],
             device=device,
         )
 
@@ -96,7 +97,12 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
             # Train the policy and the value function
             print("Start the meta-gradient update of iteration {}".format(iteration))
-            log_values = self.agent.train_model(self.train_grad_iters, batch)
+            log_values = self.agent.train_model(
+                self.train_grad_iters, self.batch_size, batch
+            )
+
+            # Clear the collected batch
+            self.buffer.clear()
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)

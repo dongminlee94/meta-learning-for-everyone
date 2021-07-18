@@ -56,7 +56,7 @@ if __name__ == "__main__":
         trans_dim=trans_dim,
         action_dim=action_dim,
         hidden_dim=hidden_dim,
-        env_target=config["env_name"],
+        env_name=config["env_name"],
         device=device,
         **config["ppo_params"],
     )
