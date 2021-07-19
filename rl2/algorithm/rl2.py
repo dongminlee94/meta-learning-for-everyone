@@ -20,6 +20,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
     def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
+        env_name,
         agent,
         trans_dim,
         action_dim,
@@ -33,13 +34,13 @@ class RL2:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.env = env
+        self.env_name = env_name
         self.agent = agent
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
 
         self.train_iters = config["train_iters"]
         self.train_samples = config["train_samples"]
-        self.train_grad_iters = config["train_grad_iters"]
         self.batch_size = config["batch_size"]
 
         self.max_step = config["max_step"]
@@ -97,9 +98,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
             # Train the policy and the value function
             print("Start the meta-gradient update of iteration {}".format(iteration))
-            log_values = self.agent.train_model(
-                self.train_grad_iters, self.batch_size, batch
-            )
+            log_values = self.agent.train_model(self.batch_size, batch)
 
             # Clear the collected batch
             self.buffer.clear()
@@ -118,13 +117,15 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             self.agent.policy.is_deterministic = True
 
             trajs = self.sampler.obtain_trajs(max_samples=self.test_samples)
-            test_return += sum(trajs[0]["rewards"])[0] + sum(trajs[1]["rewards"])[0]
-            for i in range(self.max_step):
-                test_run_cost[i] += trajs[0]["infos"][i] + trajs[1]["infos"][i]
+            test_return += sum(trajs[0]["rewards"])[0]
+            if self.env_name == "cheetah-vel":
+                for i in range(self.max_step):
+                    test_run_cost[i] += trajs[0]["infos"][i]
 
         # Collect meta-test results
         test_results["return"] = test_return / len(self.test_tasks)
-        test_results["run_cost"] = test_run_cost / len(self.test_tasks)
+        if self.env_name == "cheetah-vel":
+            test_results["run_cost"] = test_run_cost / len(self.test_tasks)
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]
@@ -133,10 +134,11 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
         # Tensorboard
         self.writer.add_scalar("test/return", test_results["return"], iteration)
-        for step in range(len(test_results["run_cost"])):
-            self.writer.add_scalar(
-                "test/run_cost", test_results["run_cost"][step], step
-            )
+        if self.env_name == "cheetah-vel":
+            for step in range(len(test_results["run_cost"])):
+                self.writer.add_scalar(
+                    "test/run_cost", test_results["run_cost"][step], step
+                )
         self.writer.add_scalar(
             "train/total_loss", test_results["total_loss"], iteration
         )

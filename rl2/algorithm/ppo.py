@@ -14,15 +14,16 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        env_name,
         trans_dim,
         action_dim,
         hidden_dim,
-        env_name,
         device,
         **config,
     ):
 
         self.device = device
+        self.grad_iters = config["grad_iters"]
         self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
@@ -65,9 +66,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         )
         return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
 
-    def train_model(
-        self, grad_iters, batch_size, batch
-    ):  # pylint: disable=too-many-locals
+    def train_model(self, batch_size, batch):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
@@ -91,7 +90,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         policy_loss_sum = 0
         value_loss_sum = 0
 
-        for _ in range(grad_iters):
+        for _ in range(self.grad_iters):
             total_loss_mini_batch_sum = 0
             policy_loss_mini_batch_sum = 0
             value_loss_mini_batch_sum = 0
@@ -145,9 +144,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             policy_loss_sum += policy_loss_mini_batch_sum / num_mini_batch
             value_loss_sum += value_loss_mini_batch_sum / num_mini_batch
 
-        total_loss_mean = total_loss_sum / grad_iters
-        policy_loss_mean = policy_loss_sum / grad_iters
-        value_loss_mean = value_loss_sum / grad_iters
+        total_loss_mean = total_loss_sum / self.grad_iters
+        policy_loss_mean = policy_loss_sum / self.grad_iters
+        value_loss_mean = value_loss_sum / self.grad_iters
 
         return dict(
             total_loss=total_loss_mean.item(),

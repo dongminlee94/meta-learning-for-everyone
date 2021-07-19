@@ -16,9 +16,9 @@ from rl2.envs import ENVS
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", type=str, default="dir", help="Set an environment to use")
 parser.add_argument(
-    "--exp-name", type=str, default="exp_1", help="Set an experiment name"
+    "--exp-name", type=str, default="exp_5", help="Set an experiment name"
 )
-parser.add_argument("--file-name", type=str, default=None, help="Set a file name")
+parser.add_argument("--file-name", type=str, default="0.0", help="Set a file name")
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
 
 
@@ -53,16 +53,17 @@ if __name__ == "__main__":
     )
 
     agent = PPO(
+        env_name=config["env_name"],
         trans_dim=trans_dim,
         action_dim=action_dim,
         hidden_dim=hidden_dim,
-        env_name=config["env_name"],
         device=device,
         **config["ppo_params"],
     )
 
     rl2 = RL2(
         env=env,
+        env_name=config["env_name"],
         agent=agent,
         trans_dim=trans_dim,
         action_dim=action_dim,
