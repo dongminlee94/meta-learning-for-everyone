@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from rl2.algorithm.utils.networks import GRU, GaussianGRU
+from rl2.algorithm.networks import GRU, GaussianGRU
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes
@@ -14,7 +14,6 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        env_name,
         trans_dim,
         action_dim,
         hidden_dim,
@@ -32,7 +31,6 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             input_dim=trans_dim,
             output_dim=action_dim,
             hidden_dim=hidden_dim,
-            env_name=env_name,
         ).to(device)
         self.vf = GRU(
             input_dim=trans_dim,

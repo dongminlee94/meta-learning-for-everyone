@@ -36,17 +36,11 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
         self._max_size = max_size
         self._top = 0
-        self._size = 0
-
-    def clear(self):
-        """Clear the buffer's variables"""
-        self._top = 0
-        self._size = 0
 
     # pylint: disable=too-many-arguments
     def add(self, tran, pi_hidden, v_hidden, action, reward, done, value, log_prob):
         """Add transition, hiddens, value, and log_prob to the buffer"""
-        assert self._size < self._max_size
+        assert self._top < self._max_size
         self._trans[self._top] = tran
         self._pi_hiddens[self._top] = pi_hidden
         self._v_hiddens[self._top] = v_hidden
@@ -55,10 +49,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._dones[self._top] = done
         self._values[self._top] = value
         self._log_probs[self._top] = log_prob
-
-        self._top = (self._top + 1) % self._max_size
-        if self._size < self._max_size:
-            self._size += 1
+        self._top += 1
 
     def add_trajs(self, trajs):
         """Add trajectories to the buffer"""
@@ -124,7 +115,10 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def get_samples(self):
         """Get samples in the buffer"""
-        assert self._size == self._max_size
+        print(self._top, self._max_size)
+        assert self._top == self._max_size
+        self._top = 0
+
         self.compute_gae()
         samples = dict(
             trans=self._trans,

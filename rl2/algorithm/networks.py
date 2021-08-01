@@ -48,7 +48,6 @@ class GaussianGRU(GRU):
         input_dim,
         output_dim,
         hidden_dim,
-        env_name,
         is_deterministic=False,
         init_w=1e-3,
     ):
@@ -59,10 +58,7 @@ class GaussianGRU(GRU):
             init_w=init_w,
         )
 
-        if env_name == "cheetah-dir":
-            self.log_std = -0.5 * np.ones(output_dim, dtype=np.float32)
-        elif env_name == "cheetah-vel":
-            self.log_std = -1.0 * np.ones(output_dim, dtype=np.float32)
+        self.log_std = -0.5 * np.ones(output_dim, dtype=np.float32)
         self.log_std = torch.nn.Parameter(torch.Tensor(self.log_std))
         self.is_deterministic = is_deterministic
 

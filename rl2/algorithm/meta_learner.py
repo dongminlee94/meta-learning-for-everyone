@@ -10,12 +10,12 @@ import time
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-from rl2.algorithm.utils.buffer import Buffer
-from rl2.algorithm.utils.sampler import Sampler
+from rl2.algorithm.buffer import Buffer
+from rl2.algorithm.sampler import Sampler
 
 
-class RL2:  # pylint: disable=too-many-instance-attributes
-    """RL^2 algorithm class"""
+class MetaLearner:  # pylint: disable=too-many-instance-attributes
+    """RL^2 meta-learner class"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -41,7 +41,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
         self.train_iters = config["train_iters"]
         self.train_samples = config["train_samples"]
-        self.batch_size = config["batch_size"]
+        self.batch_size = len(train_tasks) * self.train_samples
 
         self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
@@ -49,7 +49,6 @@ class RL2:  # pylint: disable=too-many-instance-attributes
         self.sampler = Sampler(
             env=env,
             agent=agent,
-            max_step=config["max_step"],
             action_dim=action_dim,
             hidden_dim=hidden_dim,
         )
@@ -58,7 +57,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             trans_dim=trans_dim,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
-            max_size=config["batch_size"],
+            max_size=self.batch_size,
             device=device,
         )
 
@@ -90,7 +89,10 @@ class RL2:  # pylint: disable=too-many-instance-attributes
                         index + 1, len(self.train_tasks)
                     )
                 )
-                trajs = self.sampler.obtain_trajs(max_samples=self.train_samples)
+                trajs = self.sampler.obtain_trajs(
+                    max_samples=self.train_samples,
+                    max_step=self.max_step,
+                )
                 self.buffer.add_trajs(trajs)
 
             # Get all samples for the train tasks
@@ -99,9 +101,6 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             # Train the policy and the value function
             print("Start the meta-gradient update of iteration {}".format(iteration))
             log_values = self.agent.train_model(self.batch_size, batch)
-
-            # Clear the collected batch
-            self.buffer.clear()
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
