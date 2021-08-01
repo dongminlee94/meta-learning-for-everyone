@@ -1,0 +1,38 @@
+# Velocity target reward configs
+
+# General setup
+# -------------
+# Number of tasks for meta-train
+train_tasks: 300
+
+# Number of tasks for meta-test
+test_tasks: 15
+
+# Number of hidden units in neural networks
+hidden_dim: 256
+
+# RL^2 setup
+# ----------
+rl2_params:
+    # Number of training iterations
+    train_iters: 200
+    # Number of samples to train
+    train_samples: 1600
+    # Maximum step for the environment
+    max_step: 200
+    # Number of samples to test
+    test_samples: 200
+
+# PPO setup
+# ---------
+ppo_params:
+    # Discount factor
+    gamma: 0.99
+    # Number of epochs per iteration
+    grad_iters: 5
+    # Number of minibatch within each epoch
+    mini_batch_size: 128
+    # PPO clip parameter
+    clip_param: 0.3
+    # Learning rate of PPO losses
+    learning_rate: 0.0001

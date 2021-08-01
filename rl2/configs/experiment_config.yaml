@@ -1,0 +1,16 @@
+# Experiment configs
+
+# Select either cheetah-dir or cheetah-vel
+env_name: "cheetah-vel"
+
+# Set an experiment name
+exp_name: "exp_14"
+
+# Set a file name
+file_name: "train_tasks_300_3"
+
+# Set a GPU index
+gpu_index: 1
+
+# Set a random seed
+seed: 0
