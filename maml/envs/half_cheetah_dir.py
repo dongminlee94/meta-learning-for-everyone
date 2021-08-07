@@ -16,9 +16,9 @@ class HalfCheetahDirEnv(
 
     environment_name = "cheetah-dir"
 
-    def __init__(self, seed=0):
-
+    def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)
+        assert num_tasks == 4
         directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
         self._goal = None

@@ -17,9 +17,7 @@ class HalfCheetahVelEnv(
     environment_name = "cheetah-vel"
 
     def __init__(self, num_tasks=2, seed=0):
-
         super().__init__(render=False)
-
         self.tasks = self.sample_tasks(num_tasks)
         self._goal_vel = self.tasks[0].get("velocity", 0.0)
         self._goal = self._goal_vel
