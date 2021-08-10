@@ -1,9 +1,9 @@
 format:
-		black .
+		black . --line-length 104
 		isort .
 
 lint:
-		env PYTHONPATH=rl2 pytest --pylint --flake8 --mypy --ignore=rl2/envs
+		env PYTHONPATH=. pytest --pylint --flake8 --mypy
 
 setup:
 		pip install -r requirements.txt
