@@ -83,11 +83,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print(
-                    "[{0}/{1}] collecting samples".format(
-                        index + 1, len(self.train_tasks)
-                    )
-                )
+                print("[{0}/{1}] collecting samples".format(index + 1, len(self.train_tasks)))
                 trajs = self.sampler.obtain_trajs(
                     max_samples=self.train_samples,
                     max_step=self.max_step,
@@ -126,7 +122,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         # Collect meta-test results
         test_results["return"] = test_return / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
-            test_results["run_cost"] = test_run_cost / len(self.test_tasks)
+            test_results["cur_run_cost"] = test_run_cost / len(self.test_tasks)
+        test_results["total_run_cost"] = sum(test_results["cur_run_cost"])
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]
@@ -136,23 +133,18 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         # Tensorboard
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "cheetah-vel":
-            for step in range(len(test_results["run_cost"])):
+            self.writer.add_scalar("test/total_run_cost", test_results["total_run_cost"], iteration)
+            for step in range(len(test_results["cur_run_cost"])):
                 self.writer.add_scalar(
-                    "test/run_cost", test_results["run_cost"][step], step
+                    "run_cost/cur_run_cost_" + str(iteration),
+                    test_results["cur_run_cost"][step],
+                    step,
                 )
-        self.writer.add_scalar(
-            "train/total_loss", test_results["total_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/policy_loss", test_results["policy_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/value_loss", test_results["value_loss"], iteration
-        )
+        self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
+        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar(
-            "time/time_per_iter", test_results["time_per_iter"], iteration
-        )
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
         # Logging
         print(

@@ -28,7 +28,6 @@ class Sampler:
 
         while cur_samples < max_samples:
             if max_step > max_samples - cur_samples:
-                print("max_samples - cur_samples", max_samples - cur_samples)
                 max_step = max_samples - cur_samples + 1
 
             traj = self.rollout(

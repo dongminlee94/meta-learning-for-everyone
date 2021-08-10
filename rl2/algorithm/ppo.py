@@ -122,8 +122,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
                 policy_loss = ratio * advant_batch
                 clipped_loss = (
-                    torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param)
-                    * advant_batch
+                    torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
                 )
 
                 policy_loss = -torch.min(policy_loss, clipped_loss).mean()
