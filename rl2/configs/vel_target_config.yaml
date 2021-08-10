@@ -17,7 +17,7 @@ rl2_params:
     # Number of training iterations
     train_iters: 200
     # Number of samples to train
-    train_samples: 1600
+    train_samples: 1200
     # Maximum step for the environment
     max_step: 200
     # Number of samples to test
