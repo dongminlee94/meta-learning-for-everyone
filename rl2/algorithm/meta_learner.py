@@ -10,16 +10,17 @@ import time
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-from rl2.algorithm.utils.buffer import Buffer
-from rl2.algorithm.utils.sampler import Sampler
+from rl2.algorithm.buffer import Buffer
+from rl2.algorithm.sampler import Sampler
 
 
-class RL2:  # pylint: disable=too-many-instance-attributes
-    """RL^2 algorithm class"""
+class MetaLearner:  # pylint: disable=too-many-instance-attributes
+    """RL^2 meta-learner class"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
+        env_name,
         agent,
         trans_dim,
         action_dim,
@@ -33,21 +34,20 @@ class RL2:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.env = env
+        self.env_name = env_name
         self.agent = agent
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
 
         self.train_iters = config["train_iters"]
         self.train_samples = config["train_samples"]
-        self.train_grad_iters = config["train_grad_iters"]
-
-        self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
+        self.max_step = config["max_step"]
+        self.batch_size = len(train_tasks) * self.train_samples
 
         self.sampler = Sampler(
             env=env,
             agent=agent,
-            max_step=config["max_step"],
             action_dim=action_dim,
             hidden_dim=hidden_dim,
         )
@@ -56,7 +56,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             trans_dim=trans_dim,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
-            max_size=config["max_buffer_size"],
+            max_size=self.batch_size,
             device=device,
         )
 
@@ -83,12 +83,11 @@ class RL2:  # pylint: disable=too-many-instance-attributes
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print(
-                    "[{0}/{1}] collecting samples".format(
-                        index + 1, len(self.train_tasks)
-                    )
+                print("[{0}/{1}] collecting samples".format(index + 1, len(self.train_tasks)))
+                trajs = self.sampler.obtain_trajs(
+                    max_samples=self.train_samples,
+                    max_step=self.max_step,
                 )
-                trajs = self.sampler.obtain_trajs(max_samples=self.train_samples)
                 self.buffer.add_trajs(trajs)
 
             # Get all samples for the train tasks
@@ -96,7 +95,7 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
             # Train the policy and the value function
             print("Start the meta-gradient update of iteration {}".format(iteration))
-            log_values = self.agent.train_model(self.train_grad_iters, batch)
+            log_values = self.agent.train_model(self.batch_size, batch)
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
@@ -111,14 +110,20 @@ class RL2:  # pylint: disable=too-many-instance-attributes
             self.env.reset_task(index)
             self.agent.policy.is_deterministic = True
 
-            trajs = self.sampler.obtain_trajs(max_samples=self.test_samples)
-            test_return += sum(trajs[0]["rewards"])[0] + sum(trajs[1]["rewards"])[0]
-            for i in range(self.max_step):
-                test_run_cost[i] += trajs[0]["infos"][i] + trajs[1]["infos"][i]
+            trajs = self.sampler.obtain_trajs(
+                max_samples=self.test_samples,
+                max_step=self.max_step,
+            )
+            test_return += sum(trajs[0]["rewards"])[0]
+            if self.env_name == "cheetah-vel":
+                for i in range(self.max_step):
+                    test_run_cost[i] += trajs[0]["infos"][i]
 
         # Collect meta-test results
         test_results["return"] = test_return / len(self.test_tasks)
-        test_results["run_cost"] = test_run_cost / len(self.test_tasks)
+        if self.env_name == "cheetah-vel":
+            test_results["cur_run_cost"] = test_run_cost / len(self.test_tasks)
+        test_results["total_run_cost"] = sum(test_results["cur_run_cost"])
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]
@@ -127,23 +132,19 @@ class RL2:  # pylint: disable=too-many-instance-attributes
 
         # Tensorboard
         self.writer.add_scalar("test/return", test_results["return"], iteration)
-        for step in range(len(test_results["run_cost"])):
-            self.writer.add_scalar(
-                "test/run_cost", test_results["run_cost"][step], step
-            )
-        self.writer.add_scalar(
-            "train/total_loss", test_results["total_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/policy_loss", test_results["policy_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/value_loss", test_results["value_loss"], iteration
-        )
+        if self.env_name == "cheetah-vel":
+            self.writer.add_scalar("test/total_run_cost", test_results["total_run_cost"], iteration)
+            for step in range(len(test_results["cur_run_cost"])):
+                self.writer.add_scalar(
+                    "run_cost/cur_run_cost_" + str(iteration),
+                    test_results["cur_run_cost"][step],
+                    step,
+                )
+        self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
+        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar(
-            "time/time_per_iter", test_results["time_per_iter"], iteration
-        )
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
         # Logging
         print(

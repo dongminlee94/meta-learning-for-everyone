@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from rl2.algorithm.utils.networks import GRU, GaussianGRU
+from rl2.algorithm.networks import GRU, GaussianGRU
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes
@@ -17,14 +17,13 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         trans_dim,
         action_dim,
         hidden_dim,
-        env_target,
         device,
         **config,
     ):
 
         self.device = device
-        self.batch_size = config["batch_size"]
-        self.minibatch_size = config["minibatch_size"]
+        self.grad_iters = config["grad_iters"]
+        self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
@@ -32,7 +31,6 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             input_dim=trans_dim,
             output_dim=action_dim,
             hidden_dim=hidden_dim,
-            env_target=env_target,
         ).to(device)
         self.vf = GRU(
             input_dim=trans_dim,
@@ -66,7 +64,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         )
         return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
 
-    def train_model(self, grad_iters, batch):  # pylint: disable=too-many-locals
+    def train_model(self, batch_size, batch):  # pylint: disable=too-many-locals
         """Train models according to training method of PPO algorithm"""
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
@@ -76,7 +74,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advants = batch["advants"]
         log_probs = batch["log_probs"]
 
-        num_mini_batch = int(self.batch_size / self.minibatch_size)
+        num_mini_batch = int(batch_size / self.mini_batch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
         pi_hidden_batches = torch.chunk(pi_hiddens, num_mini_batch)
@@ -90,7 +88,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         policy_loss_sum = 0
         value_loss_sum = 0
 
-        for _ in range(grad_iters):
+        for _ in range(self.grad_iters):
             total_loss_mini_batch_sum = 0
             policy_loss_mini_batch_sum = 0
             value_loss_mini_batch_sum = 0
@@ -124,8 +122,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
                 policy_loss = ratio * advant_batch
                 clipped_loss = (
-                    torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param)
-                    * advant_batch
+                    torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
                 )
 
                 policy_loss = -torch.min(policy_loss, clipped_loss).mean()
@@ -144,9 +141,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             policy_loss_sum += policy_loss_mini_batch_sum / num_mini_batch
             value_loss_sum += value_loss_mini_batch_sum / num_mini_batch
 
-        total_loss_mean = total_loss_sum / grad_iters
-        policy_loss_mean = policy_loss_sum / grad_iters
-        value_loss_mean = value_loss_sum / grad_iters
+        total_loss_mean = total_loss_sum / self.grad_iters
+        policy_loss_mean = policy_loss_sum / self.grad_iters
+        value_loss_mean = value_loss_sum / self.grad_iters
 
         return dict(
             total_loss=total_loss_mean.item(),

@@ -36,17 +36,11 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
         self._max_size = max_size
         self._top = 0
-        self._size = 0
-
-    def clear(self):
-        """Clear the buffer's variables"""
-        self._top = 0
-        self._size = 0
 
     # pylint: disable=too-many-arguments
     def add(self, tran, pi_hidden, v_hidden, action, reward, done, value, log_prob):
         """Add transition, hiddens, value, and log_prob to the buffer"""
-        assert self._size < self._max_size
+        assert self._top < self._max_size
         self._trans[self._top] = tran
         self._pi_hiddens[self._top] = pi_hidden
         self._v_hiddens[self._top] = v_hidden
@@ -55,24 +49,12 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._dones[self._top] = done
         self._values[self._top] = value
         self._log_probs[self._top] = log_prob
-
-        self._top = (self._top + 1) % self._max_size
-        if self._size < self._max_size:
-            self._size += 1
+        self._top += 1
 
     def add_trajs(self, trajs):
         """Add trajectories to the buffer"""
         for traj in trajs:
-            for (
-                tran,
-                pi_hidden,
-                v_hidden,
-                action,
-                reward,
-                done,
-                value,
-                log_prob,
-            ) in zip(
+            for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob,) in zip(
                 traj["trans"],
                 traj["pi_hiddens"],
                 traj["v_hiddens"],
@@ -101,20 +83,15 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
         for t in reversed(range(len(self._rewards))):
             # Compute return
-            running_return = (
-                self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
-            )
+            running_return = self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
             self._returns[t] = running_return
 
             # Compute GAE
             running_tderror = (
-                self._rewards[t]
-                + self.gamma * (1 - self._dones[t]) * prev_value
-                - self._values[t]
+                self._rewards[t] + self.gamma * (1 - self._dones[t]) * prev_value - self._values[t]
             )
             running_advant = (
-                running_tderror
-                + self.gamma * self.lamda * (1 - self._dones[t]) * running_advant
+                running_tderror + self.gamma * self.lamda * (1 - self._dones[t]) * running_advant
             )
             self._advants[t] = running_advant
             prev_value = self._values[t]
@@ -124,7 +101,9 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def get_samples(self):
         """Get samples in the buffer"""
-        assert self._size == self._max_size
+        assert self._top == self._max_size
+        self._top = 0
+
         self.compute_gae()
         samples = dict(
             trans=self._trans,
@@ -135,6 +114,4 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
             advants=self._advants,
             log_probs=self._log_probs,
         )
-        return {
-            key: torch.Tensor(value).to(self.device) for key, value in samples.items()
-        }
+        return {key: torch.Tensor(value).to(self.device) for key, value in samples.items()}

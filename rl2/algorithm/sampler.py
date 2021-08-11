@@ -12,28 +12,26 @@ class Sampler:
         self,
         env,
         agent,
-        max_step,
         action_dim,
         hidden_dim,
     ):
 
         self.env = env
         self.agent = agent
-        self.max_step = max_step
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
 
-    def obtain_trajs(self, max_samples, use_rendering=False):
+    def obtain_trajs(self, max_samples, max_step, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         cur_samples = 0
 
         while cur_samples < max_samples:
-            if self.max_step > max_samples - cur_samples:
-                self.max_step = max_samples - cur_samples
+            if max_step > max_samples - cur_samples:
+                max_step = max_samples - cur_samples + 1
 
             traj = self.rollout(
-                max_step=self.max_step,
+                max_step=max_step,
                 use_rendering=use_rendering,
             )
             trajs.append(traj)

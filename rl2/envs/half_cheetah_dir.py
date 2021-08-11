@@ -9,16 +9,14 @@ from . import register_env
 
 
 @register_env("cheetah-dir")
-class HalfCheetahDirEnv(
-    HalfCheetahBulletEnv
-):  # pylint: disable=too-many-instance-attributes
+class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with direction target reward"""
 
     environment_name = "cheetah-dir"
 
-    def __init__(self, seed=0):
-
+    def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)
+        assert num_tasks == 4
         directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
         self._goal = None
@@ -62,14 +60,10 @@ class HalfCheetahDirEnv(
             else:
                 self.robot.feet_contact[i] = 0.0
 
-        electricity_cost = self.electricity_cost * float(
-            np.abs(a * self.robot.joint_speeds).mean()
-        )
+        electricity_cost = self.electricity_cost * float(np.abs(a * self.robot.joint_speeds).mean())
         electricity_cost += self.stall_torque_cost * float(np.square(a).mean())
 
-        joints_at_limit_cost = float(
-            self.joints_at_limit_cost * self.robot.joints_at_limit
-        )
+        joints_at_limit_cost = float(self.joints_at_limit_cost * self.robot.joints_at_limit)
 
         self.rewards = [
             self._alive,
