@@ -16,7 +16,7 @@ from maml.algorithm.sampler import Sampler
 
 
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
-    """MAML algorithm class"""
+    """MAML meta-learner class"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -98,11 +98,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
-                print(
-                    "[{0}/{1}] collecting losses".format(
-                        index + 1, len(self.train_tasks)
-                    )
-                )
+                print("[{0}/{1}] collecting losses".format(index + 1, len(self.train_tasks)))
 
                 # Branch policy and optimizer
                 with higher.innerloop_ctx(

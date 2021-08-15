@@ -8,7 +8,7 @@ env_name: "cheetah-dir"
 exp_name: "exp_1"
 
 # Set a file name
-file_name: "train_tasks_0_0"
+file_name: null
 
 # Set a GPU index
 gpu_index: 0

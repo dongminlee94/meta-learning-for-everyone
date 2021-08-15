@@ -70,20 +70,15 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
         for t in reversed(range(0, len(self._rewards))):
             # Compute return
-            running_return = (
-                self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
-            )
+            running_return = self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
             self._returns[t] = running_return
 
             # Compute GAE
             running_tderror = (
-                self._rewards[t]
-                + self.gamma * (1 - self._dones[t]) * prev_value
-                - self._values[t]
+                self._rewards[t] + self.gamma * (1 - self._dones[t]) * prev_value - self._values[t]
             )
             running_advant = (
-                running_tderror
-                + self.gamma * self.lamda * (1 - self._dones[t]) * running_advant
+                running_tderror + self.gamma * self.lamda * (1 - self._dones[t]) * running_advant
             )
             self._advants[t] = running_advant
             prev_value = self._values[t]
@@ -104,6 +99,4 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
             advants=self._advants,
             log_probs=self._log_probs,
         )
-        return {
-            key: torch.Tensor(value).to(self.device) for key, value in batch.items()
-        }
+        return {key: torch.Tensor(value).to(self.device) for key, value in batch.items()}

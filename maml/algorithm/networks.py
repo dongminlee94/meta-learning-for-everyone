@@ -4,8 +4,8 @@ Various network architecture codes used in MAML algorithm
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 from torch.distributions import Normal
 
 
