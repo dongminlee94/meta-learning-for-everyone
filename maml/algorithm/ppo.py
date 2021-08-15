@@ -4,7 +4,7 @@ Proximal Policy Optimization algorithm implementation for training
 
 import torch
 import torch.nn.functional as F
-from torch import optim
+import torch.optim as optim
 
 from maml.algorithm.networks import MLP, GaussianPolicy
 
@@ -69,7 +69,5 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         ratio = torch.exp(new_log_prob_batch - log_prob_batch)
 
         policy_loss = ratio * advant_batch
-        clipped_loss = (
-            torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
-        )
+        clipped_loss = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
         return -torch.min(policy_loss, clipped_loss).mean()
