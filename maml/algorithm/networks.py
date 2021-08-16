@@ -16,23 +16,20 @@ class MLP(nn.Module):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dims,
         hidden_activation=F.relu,
         init_w=3e-3,
     ):
         super().__init__()
 
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.hidden_units = hidden_units
         self.hidden_activation = hidden_activation
 
         # Set fully connected layers
         self.fc_layers = nn.ModuleList()
         in_dim = input_dim
-        for i, hidden_unit in enumerate(hidden_units):
-            fc_layer = nn.Linear(in_dim, hidden_unit)
-            in_dim = hidden_unit
+        for i, hidden_dim in enumerate(hidden_dims):
+            fc_layer = nn.Linear(in_dim, hidden_dim)
+            in_dim = hidden_dim
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
@@ -56,7 +53,7 @@ class GaussianPolicy(MLP):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dims,
         env_target,
         is_deterministic=False,
         init_w=1e-3,
@@ -64,7 +61,7 @@ class GaussianPolicy(MLP):
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
-            hidden_units=hidden_units,
+            hidden_dims=hidden_dims,
             init_w=init_w,
         )
 

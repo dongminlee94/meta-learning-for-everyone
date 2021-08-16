@@ -144,7 +144,7 @@ disable=print-statement,
         no-member,
         no-name-in-module,
         import-error,
-        duplicate-code
+        duplicate-code,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -204,7 +204,7 @@ logging-modules=logging
 [SPELLING]
 
 # Limits count of emitted suggestions for spelling mistakes.
-max-spelling-suggestions=4
+max-spelling-suggestions=15
 
 # Spelling dictionary name. Available dictionaries: none. To make it work,
 # install the python-enchant package.
