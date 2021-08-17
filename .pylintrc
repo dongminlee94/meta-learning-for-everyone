@@ -204,7 +204,11 @@ logging-modules=logging
 [SPELLING]
 
 # Limits count of emitted suggestions for spelling mistakes.
+<<<<<<< HEAD
 max-spelling-suggestions=4
+=======
+max-spelling-suggestions=15
+>>>>>>> 39f69bb73b4630e7e5ba5f953ddccb4d56cc282c
 
 # Spelling dictionary name. Available dictionaries: none. To make it work,
 # install the python-enchant package.

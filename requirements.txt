@@ -10,3 +10,4 @@ pytest-mypy==0.7.0
 pytest-pylint==0.18.0
 pre-commit==2.8.2
 tensorboard==2.5.0
+types-PyYAML==5.4.3
