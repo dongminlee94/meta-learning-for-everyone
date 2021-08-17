@@ -23,18 +23,14 @@ class Sampler:
         self.max_step = max_step
         self.device = device
 
-    def obtain_samples(
-        self, max_samples, min_trajs, accum_context=True, use_rendering=False
-    ):
+    def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         num_samples = 0
         num_trajs = 0
 
         while num_samples < max_samples:
-            traj = self.rollout(
-                accum_context=accum_context, use_rendering=use_rendering
-            )
+            traj = self.rollout(accum_context=accum_context, use_rendering=use_rendering)
 
             trajs.append(traj)
             num_samples += len(traj["cur_obs"])
@@ -98,16 +94,12 @@ class Sampler:
         """Append single transition to the current context"""
         obs = torch.from_numpy(obs[None, None, ...]).float().to(self.device)
         action = torch.from_numpy(action[None, None, ...]).float().to(self.device)
-        reward = (
-            torch.from_numpy(np.array([reward])[None, None, ...])
-            .float()
-            .to(self.device)
-        )
+        reward = torch.from_numpy(np.array([reward])[None, None, ...]).float().to(self.device)
         transition = torch.cat([obs, action, reward], dim=-1).to(self.device)
 
         if self.agent.encoder.context is None:
             self.agent.encoder.context = transition
         else:
-            self.agent.encoder.context = torch.cat(
-                [self.agent.encoder.context, transition], dim=1
-            ).to(self.device)
+            self.agent.encoder.context = torch.cat([self.agent.encoder.context, transition], dim=1).to(
+                self.device
+            )

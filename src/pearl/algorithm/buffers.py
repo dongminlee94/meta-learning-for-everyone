@@ -66,9 +66,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self._episode_starts = []
         self._cur_episode_start = 0
 
-    def add(
-        self, obs, action, reward, next_obs, done
-    ):  # pylint: disable=too-many-arguments
+    def add(self, obs, action, reward, next_obs, done):  # pylint: disable=too-many-arguments
         """Add transition to replay buffer"""
         self._cur_obs[self._top] = obs
         self._actions[self._top] = action

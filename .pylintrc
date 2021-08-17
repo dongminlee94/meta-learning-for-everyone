@@ -144,7 +144,7 @@ disable=print-statement,
         no-member,
         no-name-in-module,
         import-error,
-        duplicate-code
+        duplicate-code,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -204,11 +204,7 @@ logging-modules=logging
 [SPELLING]
 
 # Limits count of emitted suggestions for spelling mistakes.
-<<<<<<< HEAD
-max-spelling-suggestions=4
-=======
 max-spelling-suggestions=15
->>>>>>> 39f69bb73b4630e7e5ba5f953ddccb4d56cc282c
 
 # Spelling dictionary name. Available dictionaries: none. To make it work,
 # install the python-enchant package.
@@ -337,7 +333,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=104
 
 # Maximum number of lines in a module.
 max-module-lines=1000

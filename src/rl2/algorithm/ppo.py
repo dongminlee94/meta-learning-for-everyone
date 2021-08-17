@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from rl2.algorithm.networks import GRU, GaussianGRU
+from src.rl2.algorithm.networks import GRU, GaussianGRU
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes

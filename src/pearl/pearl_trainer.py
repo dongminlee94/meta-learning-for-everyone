@@ -7,17 +7,15 @@ import argparse
 import numpy as np
 import torch
 
-from pearl.algorithm.pearl import PEARL
-from pearl.algorithm.sac import SAC
-from pearl.configs.cheetah_dir import config as dir_config
-from pearl.configs.cheetah_vel import config as vel_config
-from pearl.envs import ENVS
+from src.pearl.algorithm.pearl import PEARL
+from src.pearl.algorithm.sac import SAC
+from src.pearl.configs.cheetah_dir import config as dir_config
+from src.pearl.configs.cheetah_vel import config as vel_config
+from src.pearl.envs import ENVS
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env", type=str, default="dir", help="Set an environment to use")
-parser.add_argument(
-    "--exp-name", type=str, default="exp_1", help="Set an experiment name"
-)
+parser.add_argument("--exp-name", type=str, default="exp_1", help="Set an experiment name")
 parser.add_argument("--file-name", type=str, default=None, help="Set a file name")
 parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
 
@@ -31,9 +29,7 @@ if __name__ == "__main__":
         env = ENVS[config["env_name"]]()
     elif args.env == "vel":
         config = vel_config
-        env = ENVS[config["env_name"]](
-            num_tasks=config["train_tasks"] + config["test_tasks"]
-        )
+        env = ENVS[config["env_name"]](num_tasks=config["train_tasks"] + config["test_tasks"])
     tasks = env.get_all_task_idx()
 
     # Set a random seed
@@ -46,9 +42,7 @@ if __name__ == "__main__":
     hidden_units = list(map(int, config["hidden_units"].split(",")))
 
     device = (
-        torch.device("cuda", index=args.gpu_index)
-        if torch.cuda.is_available()
-        else torch.device("cpu")
+        torch.device("cuda", index=args.gpu_index) if torch.cuda.is_available() else torch.device("cpu")
     )
 
     agent = SAC(

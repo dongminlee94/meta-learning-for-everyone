@@ -11,9 +11,9 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from pearl.algorithm.utils.buffers import MultiTaskReplayBuffer
-from pearl.algorithm.utils.sampler import Sampler
-from pearl.algorithm.utils.torch_utils import np_to_torch_batch, unpack_batch
+from src.pearl.algorithm.buffers import MultiTaskReplayBuffer
+from src.pearl.algorithm.sampler import Sampler
+from src.pearl.algorithm.torch_utils import np_to_torch_batch, unpack_batch
 
 
 class PEARL:  # pylint: disable=too-many-instance-attributes
@@ -53,9 +53,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.max_step = config["max_step"]
         self.test_samples = config["test_samples"]
 
-        self.sampler = Sampler(
-            env=env, agent=agent, max_step=config["max_step"], device=device
-        )
+        self.sampler = Sampler(env=env, agent=agent, max_step=config["max_step"], device=device)
 
         # separate replay buffers for
         # - training RL update
@@ -84,9 +82,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    def collect_train_data(
-        self, task_index, max_samples, update_posterior, add_to_enc_buffer
-    ):
+    def collect_train_data(self, task_index, max_samples, update_posterior, add_to_enc_buffer):
         """Data collecting for meta-train"""
         self.agent.encoder.clear_z()
 
@@ -113,17 +109,14 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # This batch consists of context sampled randomly from encoder's replay buffer
         context_batch = []
         for index in indices:
-            batch = self.encoder_replay_buffer.sample_batch(
-                task=index, batch_size=self.batch_size
-            )
+            batch = self.encoder_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
             batch = np_to_torch_batch(batch)
             batch = unpack_batch(batch)
             context_batch.append(batch)
 
         # Group like elements together
         context_batch = [
-            [context[i] for context in context_batch]
-            for i in range(len(context_batch[0]))
+            [context[i] for context in context_batch] for i in range(len(context_batch[0]))
         ]
         context_batch = [torch.cat(context, dim=0) for context in context_batch]
 
@@ -140,21 +133,17 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # This batch consists of transitions sampled randomly from RL's replay buffer
         transition_batch = []
         for index in indices:
-            batch = self.rl_replay_buffer.sample_batch(
-                task=index, batch_size=self.batch_size
-            )
+            batch = self.rl_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
             batch = np_to_torch_batch(batch)
             batch = unpack_batch(batch)
             transition_batch.append(batch)
 
         # Group like elements together
         transition_batch = [
-            [transition[i] for transition in transition_batch]
-            for i in range(len(transition_batch[0]))
+            [transition[i] for transition in transition_batch] for i in range(len(transition_batch[0]))
         ]
         transition_batch = [
-            torch.cat(transition, dim=0).to(self.device)
-            for transition in transition_batch
+            torch.cat(transition, dim=0).to(self.device) for transition in transition_batch
         ]
         return transition_batch
 
@@ -184,9 +173,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 # Collect some trajectories with z ~ prior r(z)
                 if self.train_prior_samples > 0:
                     print(
-                        "[{0}/{1}] collecting samples with prior".format(
-                            i + 1, self.train_task_iters
-                        )
+                        "[{0}/{1}] collecting samples with prior".format(i + 1, self.train_task_iters)
                     )
                     self.collect_train_data(
                         task_index=index,
@@ -280,12 +267,8 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         # Collect meta-test results
         test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
         test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
-        test_results["run_cost_before_infer"] = run_cost_before_infer / len(
-            self.test_tasks
-        )
-        test_results["run_cost_after_infer"] = run_cost_after_infer / len(
-            self.test_tasks
-        )
+        test_results["run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
+        test_results["run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -301,9 +284,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar(
             "test/return_before_infer", test_results["return_before_infer"], iteration
         )
-        self.writer.add_scalar(
-            "test/return_after_infer", test_results["return_after_infer"], iteration
-        )
+        self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
         for step in range(len(test_results["run_cost_before_infer"])):
             self.writer.add_scalar(
                 "test/run_cost_before_infer",
@@ -315,24 +296,16 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                 test_results["run_cost_after_infer"][step],
                 step,
             )
-        self.writer.add_scalar(
-            "train/policy_loss", test_results["policy_loss"], iteration
-        )
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
         self.writer.add_scalar("train/qf1_loss", test_results["qf1_loss"], iteration)
         self.writer.add_scalar("train/qf2_loss", test_results["qf2_loss"], iteration)
-        self.writer.add_scalar(
-            "train/encoder_loss", test_results["encoder_loss"], iteration
-        )
-        self.writer.add_scalar(
-            "train/alpha_loss", test_results["alpha_loss"], iteration
-        )
+        self.writer.add_scalar("train/encoder_loss", test_results["encoder_loss"], iteration)
+        self.writer.add_scalar("train/alpha_loss", test_results["alpha_loss"], iteration)
         self.writer.add_scalar("train/alpha", test_results["alpha"], iteration)
         self.writer.add_scalar("train/z_mean", test_results["z_mean"], iteration)
         self.writer.add_scalar("train/z_var", test_results["z_var"], iteration)
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar(
-            "time/time_per_iter", test_results["time_per_iter"], iteration
-        )
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
         # Logging
         print(

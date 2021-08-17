@@ -10,8 +10,8 @@ import time
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-from rl2.algorithm.buffer import Buffer
-from rl2.algorithm.sampler import Sampler
+from src.rl2.algorithm.buffer import Buffer
+from src.rl2.algorithm.sampler import Sampler
 
 
 class MetaLearner:  # pylint: disable=too-many-instance-attributes

@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from pearl.algorithm.utils.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
+from src.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
@@ -69,12 +69,8 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.hard_target_update(self.qf1, self.target_qf1)
         self.hard_target_update(self.qf2, self.target_qf2)
 
-        self.policy_optimizer = optim.Adam(
-            self.policy.parameters(), lr=config["policy_lr"]
-        )
-        self.encoder_optimizer = optim.Adam(
-            self.encoder.parameters(), lr=config["encoder_lr"]
-        )
+        self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=config["policy_lr"])
+        self.encoder_optimizer = optim.Adam(self.encoder.parameters(), lr=config["encoder_lr"])
         self.qf_parameters = list(self.qf1.parameters()) + list(self.qf2.parameters())
         self.qf_optimizer = optim.Adam(self.qf_parameters, lr=config["qf_lr"])
 
@@ -102,9 +98,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
     def soft_target_update(cls, main, target, tau=0.005):
         """Update target network by polyak averaging."""
         for main_param, target_param in zip(main.parameters(), target.parameters()):
-            target_param.data.copy_(
-                tau * main_param.data + (1.0 - tau) * target_param.data
-            )
+            target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs):
         """Sample action from the policy"""
@@ -178,9 +172,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.policy_optimizer.step()
 
         # Temperature parameter alpha update
-        alpha_loss = -(
-            self.log_alpha * (log_policy + self.target_entropy).detach()
-        ).mean()
+        alpha_loss = -(self.log_alpha * (log_policy + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
