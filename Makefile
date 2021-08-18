@@ -3,8 +3,8 @@ format:
 		isort .
 
 lint:
-		env PYTHONPATH=src/rl2 pytest src/rl2 --pylint --flake8 --mypy --ignore=src/rl2/envs
-		env PYTHONPATH=src/pearl pytest src/pearl --pylint --flake8 --mypy --ignore=src/pearl/envs
+		env PYTHONPATH=src/rl2 pytest src/rl2 --pylint --flake8 --mypy
+		env PYTHONPATH=src/pearl pytest src/pearl --pylint --flake8 --mypy
 
 setup:
 		pip install -r requirements.txt
