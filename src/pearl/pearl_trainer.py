@@ -2,72 +2,72 @@
 PEARL trainer based on half-cheetah environment
 """
 
-import argparse
-
 import numpy as np
 import torch
+import yaml
 
-from src.pearl.algorithm.pearl import PEARL
+from src.envs import ENVS
+from src.pearl.algorithm.meta_learner import MetaLearner
 from src.pearl.algorithm.sac import SAC
-from src.pearl.configs.cheetah_dir import config as dir_config
-from src.pearl.configs.cheetah_vel import config as vel_config
-from src.pearl.envs import ENVS
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--env", type=str, default="dir", help="Set an environment to use")
-parser.add_argument("--exp-name", type=str, default="exp_1", help="Set an experiment name")
-parser.add_argument("--file-name", type=str, default=None, help="Set a file name")
-parser.add_argument("--gpu-index", type=int, default=0, help="Set a GPU index")
-
 
 if __name__ == "__main__":
-    args = parser.parse_args()
+    # Experiment configuration setup
+    with open("./configs/experiment_config.yaml", "r") as file:
+        experiment_config = yaml.load(file, Loader=yaml.FullLoader)
+
+    # Target reward configuration setup
+    if experiment_config["env_name"] == "cheetah-dir":
+        with open("./configs/dir_target_config.yaml", "r") as file:
+            env_target_config = yaml.load(file, Loader=yaml.FullLoader)
+    elif experiment_config["env_name"] == "cheetah-vel":
+        with open("./configs/vel_target_config.yaml", "r") as file:
+            env_target_config = yaml.load(file, Loader=yaml.FullLoader)
 
     # Create a multi-task environment and sample tasks
-    if args.env == "dir":
-        config = dir_config
-        env = ENVS[config["env_name"]]()
-    elif args.env == "vel":
-        config = vel_config
-        env = ENVS[config["env_name"]](num_tasks=config["train_tasks"] + config["test_tasks"])
+    env = ENVS[experiment_config["env_name"]](
+        num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"]
+    )
     tasks = env.get_all_task_idx()
 
     # Set a random seed
-    env.seed(config["seed"])
-    np.random.seed(config["seed"])
-    torch.manual_seed(config["seed"])
+    env.seed(experiment_config["seed"])
+    np.random.seed(experiment_config["seed"])
+    torch.manual_seed(experiment_config["seed"])
 
     observ_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    hidden_units = list(map(int, config["hidden_units"].split(",")))
+    hidden_dim = env_target_config["hidden_dim"]
 
     device = (
-        torch.device("cuda", index=args.gpu_index) if torch.cuda.is_available() else torch.device("cpu")
+        torch.device("cuda", index=experiment_config["gpu_index"])
+        if torch.cuda.is_available()
+        else torch.device("cpu")
     )
 
     agent = SAC(
         observ_dim=observ_dim,
         action_dim=action_dim,
-        latent_dim=config["latent_size"],
-        hidden_units=hidden_units,
+        latent_dim=env_target_config["latent_dim"],
+        hidden_dim=hidden_dim,
         encoder_input_dim=observ_dim + action_dim + 1,
-        encoder_output_dim=config["latent_size"] * 2,
+        encoder_output_dim=env_target_config["latent_dim"] * 2,
         device=device,
-        **config["sac_params"],
+        **env_target_config["sac_params"],
     )
 
-    pearl = PEARL(
+    meta_learner = MetaLearner(
         env=env,
+        env_name=experiment_config["env_name"],
         agent=agent,
         observ_dim=observ_dim,
         action_dim=action_dim,
-        train_tasks=list(tasks[: config["train_tasks"]]),
-        test_tasks=list(tasks[-config["test_tasks"] :]),
-        exp_name=args.exp_name,
-        file_name=args.file_name,
+        train_tasks=list(tasks[: env_target_config["train_tasks"]]),
+        test_tasks=list(tasks[-env_target_config["test_tasks"] :]),
+        exp_name=experiment_config["exp_name"],
+        file_name=experiment_config["file_name"],
         device=device,
-        **config["pearl_params"],
+        **env_target_config["pearl_params"],
     )
 
     # Run PEARL training
-    pearl.meta_train()
+    meta_learner.meta_train()
