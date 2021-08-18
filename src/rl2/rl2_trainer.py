@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import yaml
 
+from src.envs import ENVS
 from src.rl2.algorithm.meta_learner import MetaLearner
 from src.rl2.algorithm.ppo import PPO
-from src.rl2.envs import ENVS
 
 if __name__ == "__main__":
     # Experiment configuration setup
