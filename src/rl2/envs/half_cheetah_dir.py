@@ -1,5 +1,5 @@
 """
-Half-cheetah environment code with velocity target reward
+Half-cheetah environment with direction target reward
 """
 
 import numpy as np
@@ -8,21 +8,19 @@ from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from . import register_env
 
 
-@register_env("cheetah-vel")
-class HalfCheetahVelEnv(
-    HalfCheetahBulletEnv
-):  # pylint: disable=too-many-instance-attributes
-    """Half-cheetah environment class with velocity target reward"""
+@register_env("cheetah-dir")
+class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
+    """Half-cheetah environment class with direction target reward"""
 
-    environment_name = "cheetah-vel"
+    environment_name = "cheetah-dir"
 
     def __init__(self, num_tasks=2, seed=0):
-
         super().__init__(render=False)
-
-        self.tasks = self.sample_tasks(num_tasks)
-        self._goal_vel = self.tasks[0].get("velocity", 0.0)
-        self._goal = self._goal_vel
+        assert num_tasks == 4
+        directions = [-1, 1]
+        self.tasks = [{"direction": direction} for direction in directions]
+        self._goal = None
+        self._goal_dir = None
         self._task = None
         self._alive = None
         self.rewards = None
@@ -52,8 +50,7 @@ class HalfCheetahVelEnv(
         potential_old = self.potential
         self.potential = self.robot.calc_potential()
         progress = float(self.potential - potential_old)
-        run_cost = abs(progress - self._goal_vel)
-        scaled_run_cost = -5.0 * run_cost
+        run_cost = self._goal_dir * progress
 
         feet_collision_cost = 0.0
         for i, feet in enumerate(self.robot.feet):
@@ -63,18 +60,14 @@ class HalfCheetahVelEnv(
             else:
                 self.robot.feet_contact[i] = 0.0
 
-        electricity_cost = self.electricity_cost * float(
-            np.abs(a * self.robot.joint_speeds).mean()
-        )
+        electricity_cost = self.electricity_cost * float(np.abs(a * self.robot.joint_speeds).mean())
         electricity_cost += self.stall_torque_cost * float(np.square(a).mean())
 
-        joints_at_limit_cost = float(
-            self.joints_at_limit_cost * self.robot.joints_at_limit
-        )
+        joints_at_limit_cost = float(self.joints_at_limit_cost * self.robot.joints_at_limit)
 
         self.rewards = [
             self._alive,
-            scaled_run_cost,
+            run_cost,
             electricity_cost,
             joints_at_limit_cost,
             feet_collision_cost,
@@ -88,20 +81,13 @@ class HalfCheetahVelEnv(
 
         return state, sum(self.rewards), bool(done), info
 
-    @classmethod
-    def sample_tasks(cls, num_tasks):
-        """Sample tasks as many as num_tasks"""
-        velocities = np.random.uniform(0.5, 1.5, size=(num_tasks,))
-        tasks = [{"velocity": velocity} for velocity in velocities]
-        return tasks
-
     def get_all_task_idx(self):
         """Get index of all the tasks"""
         return range(len(self.tasks))
 
     def reset_task(self, index):
-        """Reset velocity target to index of task"""
+        """Reset direction target to index of task"""
         self._task = self.tasks[index]
-        self._goal_vel = self._task["velocity"]
-        self._goal = self._goal_vel
+        self._goal_dir = self._task["direction"]
+        self._goal = self._goal_dir
         self.reset()

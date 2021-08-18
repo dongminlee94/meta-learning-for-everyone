@@ -74,9 +74,7 @@ class MLPEncoder(FlattenMLP):
         hidden_units,
         device,
     ):
-        super().__init__(
-            input_dim=input_dim, output_dim=output_dim, hidden_units=hidden_units
-        )
+        super().__init__(input_dim=input_dim, output_dim=output_dim, hidden_units=hidden_units)
 
         self.output_dim = output_dim
         self.latent_dim = latent_dim
@@ -128,9 +126,7 @@ class MLPEncoder(FlattenMLP):
         # With probabilistic z, predict mean and variance of q(z | c)
         z_mean = torch.unbind(params[..., : self.latent_dim])
         z_var = torch.unbind(F.softplus(params[..., self.latent_dim :]))
-        z_params = [
-            self.product_of_gaussians(mu, var) for mu, var in zip(z_mean, z_var)
-        ]
+        z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mean, z_var)]
 
         self.z_mean = torch.stack([z_param[0] for z_param in z_params]).to(self.device)
         self.z_var = torch.stack([z_param[1] for z_param in z_params]).to(self.device)
@@ -148,10 +144,7 @@ class MLPEncoder(FlattenMLP):
             dist = torch.distributions.Normal(mean, torch.sqrt(var))
             posteriors.append(dist)
 
-        kl_div = [
-            torch.distributions.kl.kl_divergence(posterior, prior)
-            for posterior in posteriors
-        ]
+        kl_div = [torch.distributions.kl.kl_divergence(posterior, prior) for posterior in posteriors]
         kl_div = torch.stack(kl_div).sum().to(self.device)
         return kl_div
 
