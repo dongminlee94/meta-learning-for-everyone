@@ -1,5 +1,5 @@
 """
-Half-cheetah environment with direction target reward
+Half-cheetah environment code with velocity target reward
 """
 
 import numpy as np
@@ -8,19 +8,17 @@ from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from . import register_env
 
 
-@register_env("cheetah-dir")
-class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
-    """Half-cheetah environment class with direction target reward"""
+@register_env("cheetah-vel")
+class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
+    """Half-cheetah environment class with velocity target reward"""
 
-    environment_name = "cheetah-dir"
+    environment_name = "cheetah-vel"
 
-    def __init__(self, seed=0):
-
+    def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)
-        directions = [-1, 1]
-        self.tasks = [{"direction": direction} for direction in directions]
-        self._goal = None
-        self._goal_dir = None
+        self.tasks = self.sample_tasks(num_tasks)
+        self._goal_vel = self.tasks[0].get("velocity", 0.0)
+        self._goal = self._goal_vel
         self._task = None
         self._alive = None
         self.rewards = None
@@ -50,7 +48,8 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
         potential_old = self.potential
         self.potential = self.robot.calc_potential()
         progress = float(self.potential - potential_old)
-        run_cost = self._goal_dir * progress
+        run_cost = progress - self._goal_vel
+        scaled_run_cost = -5.0 * abs(run_cost)
 
         feet_collision_cost = 0.0
         for i, feet in enumerate(self.robot.feet):
@@ -67,7 +66,7 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
         self.rewards = [
             self._alive,
-            run_cost,
+            scaled_run_cost,
             electricity_cost,
             joints_at_limit_cost,
             feet_collision_cost,
@@ -81,13 +80,20 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
         return state, sum(self.rewards), bool(done), info
 
+    @classmethod
+    def sample_tasks(cls, num_tasks):
+        """Sample tasks as many as num_tasks"""
+        velocities = np.random.uniform(0.5, 1.5, size=(num_tasks,))
+        tasks = [{"velocity": velocity} for velocity in velocities]
+        return tasks
+
     def get_all_task_idx(self):
         """Get index of all the tasks"""
         return range(len(self.tasks))
 
     def reset_task(self, index):
-        """Reset direction target to index of task"""
+        """Reset velocity target to index of task"""
         self._task = self.tasks[index]
-        self._goal_dir = self._task["direction"]
-        self._goal = self._goal_dir
+        self._goal_vel = self._task["velocity"]
+        self._goal = self._goal_vel
         self.reset()
