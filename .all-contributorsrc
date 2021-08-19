@@ -1,0 +1,24 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "dongminlee94",
+      "name": "Dongmin Lee",
+      "avatar_url": "https://avatars.githubusercontent.com/u/29733842?v=4",
+      "profile": "https://dongminlee94.github.io",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "meta-rl",
+  "projectOwner": "dongminlee94",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
