@@ -1,17 +1,24 @@
 {
-  "files": ["README.md"],
+  "files": [
+    "README.md"
+  ],
   "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "dongminlee94",
+      "name": "Dongmin Lee",
+      "avatar_url": "https://avatars.githubusercontent.com/u/29733842?v=4",
+      "profile": "https://github.com/dongminlee94",
+      "contributions": [
+        "code"
+      ]
+    },
+  ],
   "contributorsPerLine": 7,
-  "contributorsSortAlphabetically": false,
-  "badgeTemplate": "[![All Contributors](https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat-square)](#contributors)",
-  "contributorTemplate": "<a href=\"<%= contributor.profile %>\"><img src=\"<%= contributor.avatar_url %>\" width=\"<%= options.imageSize %>px;\" alt=\"\"/><br /><sub><b><%= contributor.name %></b></sub></a>",
-  "types": {
-    "custom": {
-      "symbol": "🔭",
-      "description": "A custom contribution type.",
-      "link": "[<%= symbol %>](<%= url %> \"<%= description %>\"),"
-    }
-  },
-  "skipCi": "true",
-  "contributors": []
+  "projectName": "meta-rl",
+  "projectOwner": "dongminlee94",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
 }
