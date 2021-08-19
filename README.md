@@ -1,11 +1,11 @@
 <div align="center">
-  <br><br>
+  <br>
   <img src="./assets/meta-rl.png" width="450">
 </div>
 
-[<div dir="rtl">image source</div>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
+[Image source](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
 
-<br>
+<br><br>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8.8](https://img.shields.io/badge/python-3.8.8-blue.svg)](https://www.python.org/downloads/release/python-388/)
