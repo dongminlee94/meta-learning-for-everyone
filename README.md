@@ -3,7 +3,9 @@
   <img src="./assets/meta-rl.png" width="450">
 </div>
 
-[image source](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
+<div style="text-align: right">
+  [image source](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
+</div>
 
 <br>
 
