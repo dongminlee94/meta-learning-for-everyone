@@ -2,7 +2,7 @@
   <br><img src="./assets/meta-rl.png" width="450"><br>
 </div>
 
-[<span style="color:gray">image source</span>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
+[<div style="text-align: right"><span style="color:#808080">image source</span></div>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
 
 <br>
 
