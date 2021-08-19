@@ -59,21 +59,20 @@ $ echo 'export PYTHONPATH=$META_HOME:$PYTHONPATH' >> ~/.zshrc
 
 The repository's high-level structure is:
 
-    └── meta-rl
-        └── src
-            ├── envs
-            ├── rl2
-                ├── algorithm
-                ├── configs
-                └── results
-            ├── maml
-                ├── algorithm
-                ├── configs
-                └── results
-            └── pearl
-                ├── algorithm
-                ├── configs
-                └── results
+    └── src
+        ├── envs
+        ├── rl2
+            ├── algorithm
+            ├── configs
+            └── results
+        ├── maml
+            ├── algorithm
+            ├── configs
+            └── results
+        └── pearl
+            ├── algorithm
+            ├── configs
+            └── results
 
 ### RL^2
 
