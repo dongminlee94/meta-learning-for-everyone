@@ -3,7 +3,7 @@
   <img src="./assets/meta-rl.png" width="450">
 </div>
 
-[<div dir="rtl">image source</div>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
+[<div dir="rtl"><span style="color:gray">image source</span></div>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
 
 <br>
 
