@@ -123,8 +123,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         # Collect meta-test results
         test_results["return"] = test_return / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
-            test_results["cur_run_cost"] = test_run_cost / len(self.test_tasks)
-            test_results["total_run_cost"] = sum(test_results["cur_run_cost"])
+            test_results["run_cost"] = test_run_cost / len(self.test_tasks)
+            test_results["total_run_cost"] = sum(test_results["run_cost"])
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]
@@ -135,10 +135,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "cheetah-vel":
             self.writer.add_scalar("test/total_run_cost", test_results["total_run_cost"], iteration)
-            for step in range(len(test_results["cur_run_cost"])):
+            for step in range(len(test_results["run_cost"])):
                 self.writer.add_scalar(
-                    "run_cost/cur_run_cost_" + str(iteration),
-                    test_results["cur_run_cost"][step],
+                    "run_cost/iteration_" + str(iteration),
+                    test_results["run_cost"][step],
                     step,
                 )
         self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
