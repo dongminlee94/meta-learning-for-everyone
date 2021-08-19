@@ -3,7 +3,7 @@
   <img src="./assets/meta-rl.png" width="450">
 </div>
 
-<div style="text-align: right"><font color="gray">image source</font></div>
+<span style="color:gray">image source</span>
 
 <br>
 
