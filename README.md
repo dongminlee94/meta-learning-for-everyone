@@ -1,11 +1,9 @@
-<div align="center">
-  <br>
-  <img src="./assets/meta-rl.png" width="450">
-</div>
-
 [<div dir="rtl">source</div>](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
 
-<br>
+<div align="center">
+  <img src="./assets/meta-rl.png" width="450">
+  <br><br>
+</div>
 
 [![Python 3.8.8](https://img.shields.io/badge/python-3.8.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
