@@ -1,5 +1,5 @@
 <div align="center">
-  <br><img src="./assets/meta-rl.png" width="400"><br><br><br>
+  <br><img src="./assets/meta-rl.png" width="450"><br><br><br>
 </div>
 
 [![Python 3.8.8](https://img.shields.io/badge/python-3.8.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
