@@ -39,11 +39,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
 
-        self.train_iters = config["train_iters"]
-        self.train_samples = config["train_samples"]
-        self.test_samples = config["test_samples"]
+        self.num_iterations = config["num_iterations"]
+        self.num_sample_tasks = config["num_sample_tasks"]
+        self.num_samples = config["num_samples"]
         self.max_step = config["max_step"]
-        self.batch_size = len(train_tasks) * self.train_samples
+        self.batch_size = self.num_sample_tasks * self.num_samples
 
         self.sampler = Sampler(
             env=env,
@@ -74,18 +74,19 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     def meta_train(self):
         """RL^2 meta-training"""
         total_start_time = time.time()
-        for iteration in range(self.train_iters):
+        for iteration in range(self.num_iterations):
             start_time = time.time()
 
             print("=============== Iteration {} ===============".format(iteration))
             # Sample data randomly from train tasks.
-            for index in range(len(self.train_tasks)):
+            for i in range(self.num_sample_tasks):
+                index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print("[{0}/{1}] collecting samples".format(index + 1, len(self.train_tasks)))
+                print("[{0}/{1}] collecting samples".format(i + 1, self.num_sample_tasks))
                 trajs = self.sampler.obtain_trajs(
-                    max_samples=self.train_samples,
+                    max_samples=self.num_samples,
                     max_step=self.max_step,
                 )
                 self.buffer.add_trajs(trajs)
@@ -101,7 +102,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
     def meta_test(self, iteration, total_start_time, start_time, log_values):
-        """PEARL meta-testing"""
+        """RL^2 meta-testing"""
         test_results = {}
         test_return = 0
         test_run_cost = np.zeros(self.max_step)
@@ -111,7 +112,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.agent.policy.is_deterministic = True
 
             trajs = self.sampler.obtain_trajs(
-                max_samples=self.test_samples,
+                max_samples=self.max_step,
                 max_step=self.max_step,
             )
             test_return += sum(trajs[0]["rewards"])[0]
@@ -123,7 +124,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["return"] = test_return / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
             test_results["cur_run_cost"] = test_run_cost / len(self.test_tasks)
-        test_results["total_run_cost"] = sum(test_results["cur_run_cost"])
+            test_results["total_run_cost"] = sum(test_results["cur_run_cost"])
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]

@@ -16,7 +16,7 @@ class MLP(nn.Module):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dim,
         hidden_activation=F.relu,
         init_w=3e-3,
     ):
@@ -24,20 +24,21 @@ class MLP(nn.Module):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.hidden_units = hidden_units
         self.hidden_activation = hidden_activation
 
         # Set fully connected layers
         self.fc_layers = nn.ModuleList()
-        in_dim = input_dim
-        for i, hidden_unit in enumerate(hidden_units):
-            fc_layer = nn.Linear(in_dim, hidden_unit)
-            in_dim = hidden_unit
+        self.hidden_layers = [hidden_dim] * 3
+        in_layer = input_dim
+
+        for i, hidden_layer in enumerate(self.hidden_layers):
+            fc_layer = nn.Linear(in_layer, hidden_layer)
+            in_layer = hidden_layer
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
         # Set the output layer
-        self.last_fc_layer = nn.Linear(in_dim, output_dim)
+        self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
@@ -71,10 +72,10 @@ class MLPEncoder(FlattenMLP):
         input_dim,
         output_dim,
         latent_dim,
-        hidden_units,
+        hidden_dim,
         device,
     ):
-        super().__init__(input_dim=input_dim, output_dim=output_dim, hidden_units=hidden_units)
+        super().__init__(input_dim=input_dim, output_dim=output_dim, hidden_dim=hidden_dim)
 
         self.output_dim = output_dim
         self.latent_dim = latent_dim
@@ -160,20 +161,19 @@ class TanhGaussianPolicy(MLP):
         self,
         input_dim,
         output_dim,
-        hidden_units,
+        hidden_dim,
         is_deterministic=False,
         init_w=1e-3,
     ):
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
             init_w=init_w,
         )
 
         self.is_deterministic = is_deterministic
-        last_hidden_units = hidden_units[-1]
-        self.last_fc_log_std = nn.Linear(last_hidden_units, output_dim)
+        self.last_fc_log_std = nn.Linear(hidden_dim, output_dim)
         self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
         self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
 

@@ -16,12 +16,13 @@ from src.pearl.algorithm.sampler import Sampler
 from src.pearl.algorithm.torch_utils import np_to_torch_batch, unpack_batch
 
 
-class PEARL:  # pylint: disable=too-many-instance-attributes
-    """PEARL algorithm class"""
+class MetaLearner:  # pylint: disable=too-many-instance-attributes
+    """PEARL meta-learner class"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
+        env_name,
         agent,
         observ_dim,
         action_dim,
@@ -34,24 +35,23 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.env = env
+        self.env_name = env_name
         self.agent = agent
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
         self.device = device
 
-        self.train_iters = config["train_iters"]
-        self.train_task_iters = config["train_task_iters"]
+        self.num_iterations = config["num_iterations"]
+        self.num_sample_tasks = config["num_sample_tasks"]
 
-        self.train_init_samples = config["train_init_samples"]
-        self.train_prior_samples = config["train_prior_samples"]
-        self.train_posterior_samples = config["train_posterior_samples"]
+        self.num_init_samples = config["num_init_samples"]
+        self.num_prior_samples = config["num_prior_samples"]
+        self.num_posterior_samples = config["num_posterior_samples"]
 
-        self.meta_grad_iters = config["meta_grad_iters"]
+        self.num_meta_grads = config["num_meta_grads"]
         self.meta_batch_size = config["meta_batch_size"]
         self.batch_size = config["batch_size"]
-
         self.max_step = config["max_step"]
-        self.test_samples = config["test_samples"]
 
         self.sampler = Sampler(env=env, agent=agent, max_step=config["max_step"], device=device)
 
@@ -150,7 +150,7 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
     def meta_train(self):
         """PEARL meta-training"""
         total_start_time = time.time()
-        for iteration in range(self.train_iters):
+        for iteration in range(self.num_iterations):
             start_time = time.time()
 
             if iteration == 0:
@@ -158,48 +158,48 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
                     self.env.reset_task(index)
                     self.collect_train_data(
                         task_index=index,
-                        max_samples=self.train_init_samples,
+                        max_samples=self.num_init_samples,
                         update_posterior=False,
                         add_to_enc_buffer=True,
                     )
 
             print("=============== Iteration {} ===============".format(iteration))
             # Sample data randomly from train tasks.
-            for i in range(self.train_task_iters):
+            for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.encoder_replay_buffer.task_buffers[index].clear()
 
                 # Collect some trajectories with z ~ prior r(z)
-                if self.train_prior_samples > 0:
+                if self.num_prior_samples > 0:
                     print(
-                        "[{0}/{1}] collecting samples with prior".format(i + 1, self.train_task_iters)
+                        "[{0}/{1}] collecting samples with prior".format(i + 1, self.num_sample_tasks)
                     )
                     self.collect_train_data(
                         task_index=index,
-                        max_samples=self.train_prior_samples,
+                        max_samples=self.num_prior_samples,
                         update_posterior=False,
                         add_to_enc_buffer=True,
                     )
 
                 # Even if encoder is trained only on samples from the prior r(z),
                 # the policy needs to learn to handle z ~ posterior q(z|c)
-                if self.train_posterior_samples > 0:
+                if self.num_posterior_samples > 0:
                     print(
                         "[{0}/{1}] collecting samples with posterior".format(
-                            i + 1, self.train_task_iters
+                            i + 1, self.num_sample_tasks
                         )
                     )
                     self.collect_train_data(
                         task_index=index,
-                        max_samples=self.train_posterior_samples,
+                        max_samples=self.num_posterior_samples,
                         update_posterior=True,
                         add_to_enc_buffer=False,
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
             print("Start meta-gradient updates of iteration {}".format(iteration))
-            for i in range(self.meta_grad_iters):
+            for i in range(self.num_meta_grads):
                 indices = np.random.choice(self.train_tasks, self.meta_batch_size)
 
                 # Zero out context and hidden encoder state
@@ -255,20 +255,24 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
         for index in self.test_tasks:
             self.env.reset_task(index)
             trajs = self.collect_test_data(
-                max_samples=self.test_samples,
+                max_samples=self.max_step * 2,
                 update_posterior=True,
             )
             return_before_infer += sum(trajs[0]["rewards"])[0]
             return_after_infer += sum(trajs[1]["rewards"])[0]
-            for i in range(self.max_step):
-                run_cost_before_infer[i] += trajs[0]["infos"][i]
-                run_cost_after_infer[i] += trajs[1]["infos"][i]
+            if self.env_name == "cheetah-vel":
+                for i in range(self.max_step):
+                    run_cost_before_infer[i] += trajs[0]["infos"][i]
+                    run_cost_after_infer[i] += trajs[1]["infos"][i]
 
         # Collect meta-test results
         test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
         test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
-        test_results["run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
-        test_results["run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
+        if self.env_name == "cheetah-vel":
+            test_results["cur_run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
+            test_results["cur_run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
+            test_results["total_run_cost_before_infer"] = sum(test_results["cur_run_cost_before_infer"])
+            test_results["total_run_cost_after_infer"] = sum(test_results["cur_run_cost_after_infer"])
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -285,17 +289,26 @@ class PEARL:  # pylint: disable=too-many-instance-attributes
             "test/return_before_infer", test_results["return_before_infer"], iteration
         )
         self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
-        for step in range(len(test_results["run_cost_before_infer"])):
+        if self.env_name == "cheetah-vel":
             self.writer.add_scalar(
-                "test/run_cost_before_infer",
-                test_results["run_cost_before_infer"][step],
-                step,
+                "test/total_run_cost_before_infer",
+                test_results["total_run_cost_before_infer"],
+                iteration,
             )
             self.writer.add_scalar(
-                "test/run_cost_after_infer",
-                test_results["run_cost_after_infer"][step],
-                step,
+                "test/total_run_cost_after_infer", test_results["total_run_cost_after_infer"], iteration
             )
+            for step in range(len(test_results["cur_run_cost_before_infer"])):
+                self.writer.add_scalar(
+                    "run_cost/cur_run_cost_before_infer",
+                    test_results["cur_run_cost_before_infer"][step],
+                    step,
+                )
+                self.writer.add_scalar(
+                    "run_cost/cur_run_cost_after_infer",
+                    test_results["cur_run_cost_after_infer"][step],
+                    step,
+                )
         self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
         self.writer.add_scalar("train/qf1_loss", test_results["qf1_loss"], iteration)
         self.writer.add_scalar("train/qf2_loss", test_results["qf2_loss"], iteration)

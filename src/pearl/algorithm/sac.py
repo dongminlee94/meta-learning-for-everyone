@@ -18,7 +18,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         observ_dim,
         action_dim,
         latent_dim,
-        hidden_units,
+        hidden_dim,
         encoder_input_dim,
         encoder_output_dim,
         device,
@@ -34,35 +34,35 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.policy = TanhGaussianPolicy(
             input_dim=observ_dim + latent_dim,
             output_dim=action_dim,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
             is_deterministic=False,
         ).to(device)
         self.encoder = MLPEncoder(
             input_dim=encoder_input_dim,
             output_dim=encoder_output_dim,
             latent_dim=latent_dim,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
             device=device,
         ).to(device)
         self.qf1 = FlattenMLP(
             input_dim=observ_dim + action_dim + latent_dim,
             output_dim=1,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.qf2 = FlattenMLP(
             input_dim=observ_dim + action_dim + latent_dim,
             output_dim=1,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.target_qf1 = FlattenMLP(
             input_dim=observ_dim + action_dim + latent_dim,
             output_dim=1,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.target_qf2 = FlattenMLP(
             input_dim=observ_dim + action_dim + latent_dim,
             output_dim=1,
-            hidden_units=hidden_units,
+            hidden_dim=hidden_dim,
         ).to(device)
 
         # Initialize target parameters to match main parameters

@@ -1,4 +1,4 @@
-# RL^2 Experiment configs
+# PEARL Experiment configs
 
 # Select either cheetah-dir or cheetah-vel
 env_name: "cheetah-vel"

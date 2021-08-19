@@ -15,13 +15,13 @@ hidden_dim: 256
 # ----------
 rl2_params:
     # Number of training iterations
-    train_iters: 200
+    num_iterations: 200
+    # Number of sampled tasks to collect data for each iteration
+    num_sample_tasks: 5
     # Number of samples to train
-    train_samples: 1200
+    num_samples: 1200
     # Maximum step for the environment
     max_step: 200
-    # Number of samples to test
-    test_samples: 200
 
 # PPO setup
 # ---------
