@@ -41,15 +41,15 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.num_iterations = config["num_iterations"]
         self.num_sample_tasks = config["num_sample_tasks"]
-        self.num_samples = config["num_samples"]
+        self.batch_size = config["num_sample_tasks"] * config["num_samples"]
         self.max_step = config["max_step"]
-        self.batch_size = self.num_sample_tasks * self.num_samples
 
         self.sampler = Sampler(
             env=env,
             agent=agent,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
+            max_samples=config["num_samples"],
         )
 
         self.buffer = Buffer(
@@ -77,25 +77,22 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
-            print("=============== Iteration {} ===============".format(iteration))
+            print(f"=============== Iteration {iteration} ===============")
             # Sample data randomly from train tasks.
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print("[{0}/{1}] collecting samples".format(i + 1, self.num_sample_tasks))
-                trajs = self.sampler.obtain_trajs(
-                    max_samples=self.num_samples,
-                    max_step=self.max_step,
-                )
+                print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples")
+                trajs = self.sampler.obtain_trajs()
                 self.buffer.add_trajs(trajs)
 
             # Get all samples for the train tasks
             batch = self.buffer.get_samples()
 
             # Train the policy and the value function
-            print("Start the meta-gradient update of iteration {}".format(iteration))
+            print(f"Start the meta-gradient update of iteration {iteration}")
             log_values = self.agent.train_model(self.batch_size, batch)
 
             # Evaluate on test tasks
@@ -111,10 +108,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.env.reset_task(index)
             self.agent.policy.is_deterministic = True
 
-            trajs = self.sampler.obtain_trajs(
-                max_samples=self.max_step,
-                max_step=self.max_step,
-            )
+            trajs = self.sampler.obtain_trajs()
             test_return += sum(trajs[0]["rewards"])[0]
             if self.env_name == "cheetah-vel":
                 for i in range(self.max_step):

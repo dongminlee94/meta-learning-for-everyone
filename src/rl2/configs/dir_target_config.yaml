@@ -29,7 +29,7 @@ ppo_params:
     # Discount factor
     gamma: 0.99
     # Number of epochs per iteration
-    grad_iters: 5
+    num_epochs: 5
     # Number of minibatch within each epoch
     mini_batch_size: 128
     # PPO clip parameter

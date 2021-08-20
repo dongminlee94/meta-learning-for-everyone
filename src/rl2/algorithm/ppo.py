@@ -22,7 +22,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.device = device
-        self.grad_iters = config["grad_iters"]
+        self.num_epochs = config["num_epochs"]
         self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
@@ -88,7 +88,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         policy_loss_sum = 0
         value_loss_sum = 0
 
-        for _ in range(self.grad_iters):
+        for _ in range(self.num_epochs):
             total_loss_mini_batch_sum = 0
             policy_loss_mini_batch_sum = 0
             value_loss_mini_batch_sum = 0
@@ -141,9 +141,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             policy_loss_sum += policy_loss_mini_batch_sum / num_mini_batch
             value_loss_sum += value_loss_mini_batch_sum / num_mini_batch
 
-        total_loss_mean = total_loss_sum / self.grad_iters
-        policy_loss_mean = policy_loss_sum / self.grad_iters
-        value_loss_mean = value_loss_sum / self.grad_iters
+        total_loss_mean = total_loss_sum / self.num_epochs
+        policy_loss_mean = policy_loss_sum / self.num_epochs
+        value_loss_mean = value_loss_sum / self.num_epochs
 
         return dict(
             total_loss=total_loss_mean.item(),
