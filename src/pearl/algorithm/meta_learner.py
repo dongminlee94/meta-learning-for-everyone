@@ -269,10 +269,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
         test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
-            test_results["cur_run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
-            test_results["cur_run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
-            test_results["total_run_cost_before_infer"] = sum(test_results["cur_run_cost_before_infer"])
-            test_results["total_run_cost_after_infer"] = sum(test_results["cur_run_cost_after_infer"])
+            test_results["run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
+            test_results["run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
+            test_results["total_run_cost_before_infer"] = sum(test_results["run_cost_before_infer"])
+            test_results["total_run_cost_after_infer"] = sum(test_results["run_cost_after_infer"])
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -298,15 +298,15 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.writer.add_scalar(
                 "test/total_run_cost_after_infer", test_results["total_run_cost_after_infer"], iteration
             )
-            for step in range(len(test_results["cur_run_cost_before_infer"])):
+            for step in range(len(test_results["run_cost_before_infer"])):
                 self.writer.add_scalar(
-                    "run_cost/cur_run_cost_before_infer",
-                    test_results["cur_run_cost_before_infer"][step],
+                    "run_cost_before_infer/iteration_" + str(iteration),
+                    test_results["run_cost_before_infer"][step],
                     step,
                 )
                 self.writer.add_scalar(
-                    "run_cost/cur_run_cost_after_infer",
-                    test_results["cur_run_cost_after_infer"][step],
+                    "run_cost_after_infer/iteration_" + str(iteration),
+                    test_results["run_cost_after_infer"][step],
                     step,
                 )
         self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
