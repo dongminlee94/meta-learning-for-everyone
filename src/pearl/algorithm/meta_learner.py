@@ -85,13 +85,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     def collect_train_data(self, task_index, max_samples, update_posterior, add_to_enc_buffer):
         """Data collecting for meta-train"""
         self.agent.encoder.clear_z()
+        self.agent.policy.is_deterministic = False
 
         cur_samples = 0
-        self.agent.policy.is_deterministic = False
         while cur_samples < max_samples:
             trajs, num_samples = self.sampler.obtain_samples(
                 max_samples=max_samples - cur_samples,
-                min_trajs=int(update_posterior),
+                update_posterior=update_posterior,
                 accum_context=False,
             )
             cur_samples += num_samples
@@ -163,7 +163,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                         add_to_enc_buffer=True,
                     )
 
-            print("=============== Iteration {} ===============".format(iteration))
+            print(f"=============== Iteration {iteration} ===============")
             # Sample data randomly from train tasks.
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
@@ -172,9 +172,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
                 # Collect some trajectories with z ~ prior r(z)
                 if self.num_prior_samples > 0:
-                    print(
-                        "[{0}/{1}] collecting samples with prior".format(i + 1, self.num_sample_tasks)
-                    )
+                    print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples with prior")
                     self.collect_train_data(
                         task_index=index,
                         max_samples=self.num_prior_samples,
@@ -185,11 +183,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 # Even if encoder is trained only on samples from the prior r(z),
                 # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
-                    print(
-                        "[{0}/{1}] collecting samples with posterior".format(
-                            i + 1, self.num_sample_tasks
-                        )
-                    )
+                    print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples with posterior")
                     self.collect_train_data(
                         task_index=index,
                         max_samples=self.num_posterior_samples,
@@ -198,7 +192,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     )
 
             # Sample train tasks and compute gradient updates on parameters.
-            print("Start meta-gradient updates of iteration {}".format(iteration))
+            print(f"Start meta-gradient updates of iteration {iteration}")
             for i in range(self.num_meta_grads):
                 indices = np.random.choice(self.train_tasks, self.meta_batch_size)
 
@@ -228,14 +222,14 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     def collect_test_data(self, max_samples, update_posterior):
         """Data collecting for meta-test"""
         self.agent.encoder.clear_z()
+        self.agent.policy.is_deterministic = True
 
         cur_trajs = []
         cur_samples = 0
-        self.agent.policy.is_deterministic = True
         while cur_samples < max_samples:
             trajs, num_samples = self.sampler.obtain_samples(
                 max_samples=max_samples - cur_samples,
-                min_trajs=int(update_posterior),
+                update_posterior=update_posterior,
                 accum_context=True,
             )
             cur_trajs += trajs
