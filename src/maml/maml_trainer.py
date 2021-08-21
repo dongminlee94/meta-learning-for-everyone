@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import yaml
 
-from maml.algorithm.meta_learner import MetaLearner
-from maml.algorithm.ppo import PPO
-from maml.envs import ENVS
+from src.envs import ENVS
+from src.maml.algorithm.meta_learner import MetaLearner
+from src.maml.algorithm.ppo import PPO
 
 if __name__ == "__main__":
     # Experiment configuration setup
