@@ -48,8 +48,8 @@ class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
         potential_old = self.potential
         self.potential = self.robot.calc_potential()
         progress = float(self.potential - potential_old)
-        run_cost = abs(progress - self._goal_vel)
-        scaled_run_cost = -5.0 * run_cost
+        run_cost = progress - self._goal_vel
+        scaled_run_cost = -5.0 * abs(run_cost)
 
         feet_collision_cost = 0.0
         for i, feet in enumerate(self.robot.feet):

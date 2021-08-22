@@ -60,7 +60,7 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
             else:
                 self.robot.feet_contact[i] = 0.0
 
-        electricity_cost = self.electricity_cost * float(abs(a * self.robot.joint_speeds).mean())
+        electricity_cost = self.electricity_cost * float(np.abs(a * self.robot.joint_speeds).mean())
         electricity_cost += self.stall_torque_cost * float(np.square(a).mean())
 
         joints_at_limit_cost = float(self.joints_at_limit_cost * self.robot.joints_at_limit)
