@@ -265,10 +265,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         if self.env_name == "cheetah-vel":
             test_results["run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
             test_results["run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
-            test_results["total_run_cost_before_infer"] = sum(
-                abs(test_results["run_cost_before_infer"])
-            )
-            test_results["total_run_cost_after_infer"] = sum(abs(test_results["run_cost_after_infer"]))
+            test_results["sum_run_cost_before_infer"] = sum(abs(test_results["run_cost_before_infer"]))
+            test_results["sum_run_cost_after_infer"] = sum(abs(test_results["run_cost_after_infer"]))
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["qf1_loss"] = log_values["qf1_loss"]
         test_results["qf2_loss"] = log_values["qf2_loss"]
@@ -287,12 +285,12 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
         if self.env_name == "cheetah-vel":
             self.writer.add_scalar(
-                "test/total_run_cost_before_infer",
-                test_results["total_run_cost_before_infer"],
+                "test/sum_run_cost_before_infer",
+                test_results["sum_run_cost_before_infer"],
                 iteration,
             )
             self.writer.add_scalar(
-                "test/total_run_cost_after_infer", test_results["total_run_cost_after_infer"], iteration
+                "test/sum_run_cost_after_infer", test_results["sum_run_cost_after_infer"], iteration
             )
             for step in range(len(test_results["run_cost_before_infer"])):
                 self.writer.add_scalar(
