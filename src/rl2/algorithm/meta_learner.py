@@ -41,6 +41,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.num_iterations = config["num_iterations"]
         self.num_sample_tasks = config["num_sample_tasks"]
+        self.num_samples = config["num_samples"]
         self.batch_size = config["num_sample_tasks"] * config["num_samples"]
         self.max_step = config["max_step"]
 
@@ -49,7 +50,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             agent=agent,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
-            max_samples=config["num_samples"],
         )
 
         self.buffer = Buffer(
@@ -85,7 +85,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 self.agent.policy.is_deterministic = False
 
                 print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples")
-                trajs = self.sampler.obtain_trajs()
+                trajs = self.sampler.obtain_trajs(max_samples=self.num_samples)
                 self.buffer.add_trajs(trajs)
 
             # Get all samples for the train tasks
@@ -108,7 +108,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.env.reset_task(index)
             self.agent.policy.is_deterministic = True
 
-            trajs = self.sampler.obtain_trajs()
+            trajs = self.sampler.obtain_trajs(max_samples=self.max_step)
             test_return += sum(trajs[0]["rewards"])[0]
             if self.env_name == "cheetah-vel":
                 for i in range(self.max_step):

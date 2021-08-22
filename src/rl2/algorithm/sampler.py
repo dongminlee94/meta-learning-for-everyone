@@ -14,28 +14,27 @@ class Sampler:
         agent,
         action_dim,
         hidden_dim,
-        max_samples,
     ):
 
         self.env = env
         self.agent = agent
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
-        self.max_samples = max_samples
         self.cur_samples = 0
 
-    def obtain_trajs(self):
+    def obtain_trajs(self, max_samples):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        while not self.cur_samples == self.max_samples:
-            traj = self.rollout()
+        while not self.cur_samples == max_samples:
+            traj = self.rollout(max_samples)
             trajs.append(traj)
 
+        print(f"sampler's obtain_trajs -> cur_samples: {self.cur_samples}, max_samples: {max_samples}")
         self.cur_samples = 0
         return trajs
 
     # pylint: disable=too-many-locals
-    def rollout(self):
+    def rollout(self, max_samples):
         """Rollout up to maximum trajectory length"""
         trans = []
         pi_hiddens = []
@@ -54,7 +53,7 @@ class Sampler:
         pi_hidden = np.zeros((1, self.hidden_dim))
         v_hidden = np.zeros((1, self.hidden_dim))
 
-        while not (done or self.cur_samples == self.max_samples):
+        while not (done or self.cur_samples == max_samples):
             tran = np.concatenate((obs, action, reward, done), axis=-1).reshape(1, -1)
             action, log_prob, next_pi_hidden = self.agent.get_action(tran, pi_hidden)
             value, next_v_hidden = self.agent.get_value(tran, v_hidden)
@@ -79,6 +78,7 @@ class Sampler:
             pi_hidden = next_pi_hidden[0]
             v_hidden = next_v_hidden[0]
             self.cur_samples += 1
+        print(f"sampler's rollout -> cur_samples: {self.cur_samples}, max_samples: {max_samples}")
 
         return dict(
             trans=np.array(trans),

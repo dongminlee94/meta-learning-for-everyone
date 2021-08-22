@@ -33,7 +33,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self.device = device
         self.gamma = gamma
         self.lamda = lamda
-
         self._max_size = max_size
         self._top = 0
 
@@ -74,6 +73,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
                     value=value,
                     log_prob=log_prob,
                 )
+            print(f"buffer's add_trajs -> top: {self._top}, max_size: {self._max_size}")
 
     def compute_gae(self):
         """Compute return and GAE"""
@@ -101,6 +101,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def get_samples(self):
         """Get samples in the buffer"""
+        print(f"buffer's get_samples -> top: {self._top}, max_size: {self._max_size}")
         assert self._top == self._max_size
         self._top = 0
 
