@@ -9,7 +9,7 @@ train_tasks: 15
 test_tasks: 15
 
 # Number of hidden units in neural networks
-hidden_dims: [300, 300, 300]
+hidden_dim: 100
 
 maml_params:
     # Number of training iterations
@@ -22,12 +22,12 @@ maml_params:
     max_step: 200
     # Number of samples to test
     test_samples: 200
-    # Number of inner adaptation steps for the MAML algorithm
-    inner_adaptation_steps: 1
+    # Number of inner adaptation iterations for the MAML algorithm
+    inner_grad_iters: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
-    # Number of PPO steps per meta-update iteration
-    maml_optimizer_steps: 5
+    # Number of PPO iterations per each meta-update iteration
+    outer_grad_iters: 5
     # Learning rate of PPO losses
     learning_rate: 0.001
 

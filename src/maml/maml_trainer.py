@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     observ_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    hidden_dim = env_target_config["hidden_dims"]
+    hidden_dim = env_target_config["hidden_dim"]
 
     device = (
         torch.device("cuda", index=experiment_config["gpu_index"])
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     agent = PPO(
         observ_dim=observ_dim,
         action_dim=action_dim,
-        hidden_dims=hidden_dim,
+        hidden_dim=hidden_dim,
         env_target=experiment_config["env_name"],
         device=device,
         **env_target_config["ppo_params"],
