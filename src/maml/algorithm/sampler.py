@@ -3,7 +3,6 @@ Sample collection code through interaction between agent and environment
 """
 
 import numpy as np
-import torch
 
 
 class Sampler:
@@ -59,7 +58,7 @@ class Sampler:
             self.env.render()
 
         while cur_step < max_step:
-            action, log_prob = self.get_action(obs)
+            action, log_prob = self.agent.get_action(self.policy, obs, self.device)
             value = self.agent.get_value(obs)
 
             next_obs, reward, done, info = self.env.step(action)
@@ -89,10 +88,3 @@ class Sampler:
             values=np.array(values),
             log_probs=np.array(log_probs),
         )
-
-    def get_action(self, obs):
-        """Get an action from the policy"""
-        action, log_prob = self.policy(torch.Tensor(obs).to(self.device))
-        if log_prob:
-            log_prob = log_prob.detach().cpu().numpy()
-        return action.detach().cpu().numpy(), log_prob

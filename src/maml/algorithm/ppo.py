@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from maml.algorithm.networks import MLP, GaussianPolicy
+from src.maml.algorithm.networks import MLP, GaussianPolicy
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes
@@ -43,6 +43,14 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             lr=config["vf_learning_rate"],
         )
 
+    @staticmethod
+    def get_action(policy, obs, device):
+        """Get an action from the policy"""
+        action, log_prob = policy(torch.Tensor(obs).to(device))
+        if log_prob:
+            log_prob = log_prob.detach().cpu().numpy()
+        return action.detach().cpu().numpy(), log_prob
+
     def get_value(self, obs):
         """Get an value from the value network"""
         value = self.vf(torch.Tensor(obs).to(self.device))
@@ -70,4 +78,4 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
         policy_loss = ratio * advant_batch
         clipped_loss = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
-        return -torch.min(policy_loss, clipped_loss).mean()
+        return -torch.min(policy_loss, clipped_loss).mean(), value_loss
