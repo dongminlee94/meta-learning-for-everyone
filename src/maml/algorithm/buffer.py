@@ -49,7 +49,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._top += 1
 
     def add_trajs(self, trajs):
-        """Add trajectories to buffer"""
+        """Add trajectories to the buffer"""
         for traj in trajs:
             for (obs, action, reward, next_obs, done, value, log_prob) in zip(
                 traj["cur_obs"],
