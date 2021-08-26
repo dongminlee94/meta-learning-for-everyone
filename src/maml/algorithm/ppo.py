@@ -37,7 +37,6 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             output_dim=1,
             hidden_dims=hidden_dims,
         ).to(device)
-        # self.vf.to(device)
         self.vf_optimizer = optim.Adam(
             list(self.vf.parameters()),
             lr=config["vf_learning_rate"],
