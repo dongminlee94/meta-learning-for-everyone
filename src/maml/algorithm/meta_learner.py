@@ -56,26 +56,26 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        self.outer_buffer = Buffer(
-            observ_dim=observ_dim,
-            action_dim=action_dim,
-            max_size=self.train_samples * self.num_sample_tasks,
-            device=device,
-        )
         self.inner_buffer = Buffer(
             observ_dim=observ_dim,
             action_dim=action_dim,
-            max_size=self.train_samples,
+            max_size=self.train_samples * self.inner_grad_iters,
+            device=device,
+        )
+        self.outer_buffer = Buffer(
+            observ_dim=observ_dim,
+            action_dim=action_dim,
+            max_size=self.train_samples * self.inner_grad_iters * self.num_sample_tasks,
             device=device,
         )
 
-        self.outer_optimizer = torch.optim.Adam(
-            list(self.agent.policy.parameters()),
-            lr=config["learning_rate"],
-        )
         self.inner_optimizer_base = torch.optim.SGD(
             list(self.agent.policy.parameters()),
             lr=config["inner_learning_rate"],
+        )
+        self.outer_optimizer = torch.optim.Adam(
+            list(self.agent.policy.parameters()),
+            lr=config["outer_learning_rate"],
         )
 
         if file_name is None:
@@ -105,7 +105,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
-                print(f"[{i+1}/{self.num_sample_tasks}] collecting inner-loop losses")
+                print(f"TRAIN | [{i+1}/{self.num_sample_tasks}] collecting inner-loop losses")
 
                 # Branch policy network and its optimizer by Higher
                 with higher.innerloop_ctx(
@@ -124,14 +124,16 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                             max_step=self.max_step,
                         )
                         self.inner_buffer.add_trajs(trajs)
-                        batch = self.inner_buffer.get_samples()
+
                         # Inner update
+                        batch = self.inner_buffer.get_samples()
                         inner_policy_loss, value_loss = self.agent.compute_losses(inner_policy, batch)
                         inner_optimizer_branch.step(inner_policy_loss)
 
                         inner_policy_loss_sum += inner_policy_loss
                         value_loss_sum += value_loss
 
+                    inner_policy.is_deterministic = False
                     # Sample trajectory with adapted policy
                     trajs = self.sampler.obtain_trajs(
                         inner_policy,
@@ -156,7 +158,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 self.inner_grad_iters * self.num_sample_tasks
             )
             outer_policy_loss_mean = outer_policy_loss_sum / (
-                self.inner_grad_iters * self.num_sample_tasks
+                self.outer_grad_iters * self.num_sample_tasks
             )
             value_loss_mean = value_loss_sum / (
                 self.inner_grad_iters * self.num_sample_tasks + self.outer_grad_iters
@@ -181,9 +183,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         run_cost_after_grad = np.zeros(self.max_step)
 
         for index in self.test_tasks:
+            trajs = []
             self.env.reset_task(index)
-            self.agent.policy.is_deterministic = True
 
+            print(f"TEST | [{index+1}/{len(self.test_tasks)}] collecting inner-loop losses")
             # Branch policy network and its optimizer by Higher
             with higher.innerloop_ctx(
                 self.agent.policy,
@@ -195,30 +198,35 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 # Adapt meta-policy to each task with n-steps grandients
                 for _ in range(self.inner_grad_iters):
                     # Sample trajectory with inner policy
-                    trajs = self.sampler.obtain_trajs(
+                    pre_adapted_trajs = self.sampler.obtain_trajs(
                         inner_policy,
-                        max_samples=self.train_samples,
+                        max_samples=self.test_samples,
                         max_step=self.max_step,
                     )
-                    self.inner_buffer.add_trajs(trajs)
-                    batch = self.inner_buffer.get_samples()
+                    self.inner_buffer.add_trajs(pre_adapted_trajs)
+                    trajs.append(pre_adapted_trajs[0])
+
                     # Inner update
+                    batch = self.inner_buffer.get_samples()
                     ppo_loss = self.agent.compute_losses(inner_policy, batch)
                     inner_optimizer_branch.step(ppo_loss)
 
+                inner_policy.is_deterministic = True
                 # Sample trajectory with adapted policy
-                trajs = self.sampler.obtain_trajs(
+                post_adapted_trajs = self.sampler.obtain_trajs(
                     inner_policy,
-                    max_samples=self.train_samples,
+                    max_samples=self.test_samples,
                     max_step=self.max_step,
                 )
+                trajs.append(post_adapted_trajs[0])
 
                 return_before_grad += sum(trajs[0]["rewards"])[0]
-                return_after_grad += sum(trajs[1]["rewards"])[0]
+                return_after_grad += sum(trajs[-1]["rewards"])[0]
+
                 if self.env_name == "cheetah-vel":
                     for i in range(self.max_step):
                         run_cost_before_grad[i] += trajs[0]["infos"][i]
-                        run_cost_after_grad[i] += trajs[1]["infos"][i]
+                        run_cost_after_grad[i] += trajs[-1]["infos"][i]
 
         # Collect meta-test results
         test_results["return_before_grad"] = return_before_grad / len(self.test_tasks)
@@ -266,7 +274,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         # Logging
         print(
             f"--------------------------------------- \n"
-            f'return: {round(test_results["return_after_grad"], 2)} \n'
+            f'return_before_grad: {round(test_results["return_before_grad"], 2)} \n'
+            f'return_after_grad: {round(test_results["return_after_grad"], 2)} \n'
             f'inner_policy_loss: {round(test_results["inner_policy_loss"], 2)} \n'
             f'outer_policy_loss: {round(test_results["outer_policy_loss"], 2)} \n'
             f'value_loss: {round(test_results["value_loss"], 2)} \n'
@@ -277,4 +286,3 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         # Save the trained model
         # TBU
-        # TEST

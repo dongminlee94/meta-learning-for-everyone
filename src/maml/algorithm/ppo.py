@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from src.maml.algorithm.networks import MLP, GaussianPolicy
+from src.maml.algorithm.networks import MLP, TanhGaussianPolicy
 
 
 class PPO:  # pylint: disable=too-many-instance-attributes
@@ -16,8 +16,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self,
         observ_dim,
         action_dim,
-        hidden_dims,
-        env_target,
+        hidden_dim,
         device,
         **config,
     ):
@@ -26,16 +25,15 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
-        self.policy = GaussianPolicy(
+        self.policy = TanhGaussianPolicy(
             input_dim=observ_dim,
             output_dim=action_dim,
-            hidden_dims=hidden_dims,
-            env_target=env_target,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.vf = MLP(
             input_dim=observ_dim,
             output_dim=1,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.vf_optimizer = optim.Adam(
             list(self.vf.parameters()),

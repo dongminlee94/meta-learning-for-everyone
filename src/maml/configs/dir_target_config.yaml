@@ -15,9 +15,9 @@ hidden_dim: 100
 # ----------
 maml_params:
     # Number of training iterations
-    train_iters: 200
+    train_iters: 1000
     # Number of task samples for training
-    num_sample_tasks: 2
+    num_sample_tasks: 5
     # Number of samples to train
     train_samples: 200
     # Maximum step for the environment
@@ -31,7 +31,7 @@ maml_params:
     # Number of PPO iterations per each meta-update iteration
     outer_grad_iters: 5
     # Learning rate of PPO losses
-    learning_rate: 0.001
+    outer_learning_rate: 0.001
 
 # PPO setup
 # ---------

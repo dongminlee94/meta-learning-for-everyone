@@ -48,7 +48,6 @@ if __name__ == "__main__":
         observ_dim=observ_dim,
         action_dim=action_dim,
         hidden_dim=hidden_dim,
-        env_target=experiment_config["env_name"],
         device=device,
         **env_target_config["ppo_params"],
     )
