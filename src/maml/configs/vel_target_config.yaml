@@ -9,7 +9,7 @@ train_tasks: 15
 test_tasks: 15
 
 # Number of hidden units in neural networks
-hidden_dim: 100
+hidden_dim: 256
 
 maml_params:
     # Number of training iterations
@@ -36,7 +36,3 @@ maml_params:
 ppo_params:
     # PPO clip parameter
     clip_param: 0.3
-    # coefficient of the value function 
-    vf_loss_coeff: 0.5
-    # Learning rate of value function
-    vf_learning_rate: 0.001
