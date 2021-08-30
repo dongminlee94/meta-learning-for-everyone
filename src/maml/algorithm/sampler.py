@@ -18,13 +18,13 @@ class Sampler:
 
         self.env = env
         self.agent = agent
-        self.policy = agent.policy
+        self.model = agent.model
         self.action_dim = action_dim
         self.device = device
 
-    def obtain_trajs(self, policy, max_samples, max_step, use_rendering=False):
+    def obtain_trajs(self, model, max_samples, max_step, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
-        self.policy = policy
+        self.model = model
         trajs = []
         cur_samples = 0
 
@@ -58,7 +58,7 @@ class Sampler:
             self.env.render()
 
         while cur_step < max_step:
-            action, log_prob = self.agent.get_action(self.policy, obs, self.device)
+            action, log_prob = self.agent.get_action(self.model, obs, self.device)
             value = self.agent.get_value(obs)
 
             next_obs, reward, done, info = self.env.step(action)

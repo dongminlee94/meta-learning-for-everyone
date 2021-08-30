@@ -55,7 +55,7 @@ LOG_SIG_MIN = -20
 
 
 class TanhGaussianPolicy(MLP):
-    """Gaussian policy network class using MLP and tanh activation function"""
+    """Gaussian policy network class containing Value network"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -123,3 +123,30 @@ class TanhGaussianPolicy(MLP):
 
         action = torch.tanh(action)
         return action, log_prob
+
+
+class Model(nn.Module):
+    """Set of fully connected networks containing Policy and Value function"""
+
+    def __init__(
+        self,
+        observ_dim,
+        action_dim,
+        hidden_dim,
+    ):
+        super().__init__()
+
+        self.policy = TanhGaussianPolicy(
+            input_dim=observ_dim,
+            output_dim=action_dim,
+            hidden_dim=hidden_dim,
+        )
+        self.vf = MLP(
+            input_dim=observ_dim,
+            output_dim=1,
+            hidden_dim=hidden_dim,
+        )
+
+    def forward(self, obs):
+        """Infer policy network"""
+        return self.policy(obs)

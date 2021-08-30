@@ -70,11 +70,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         )
 
         self.inner_optimizer_base = torch.optim.SGD(
-            list(self.agent.policy.parameters()),
+            list(self.agent.model.parameters()),
             lr=config["inner_learning_rate"],
         )
         self.outer_optimizer = torch.optim.Adam(
-            list(self.agent.policy.parameters()),
+            list(self.agent.model.parameters()),
             lr=config["outer_learning_rate"],
         )
 
@@ -96,30 +96,31 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         for iteration in range(self.train_iters):
             start_time = time.time()
             inner_policy_loss_sum = 0
+            inner_vf_loss_sum = 0
             outer_policy_loss_sum = 0
-            value_loss_sum = 0
+            outer_vf_loss_sum = 0
 
             print(f"=============== Iteration {iteration} ===============")
             # Sample tasks randomly from train tasks distribution.
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
-                self.agent.policy.is_deterministic = False
-                print(f"TRAIN | [{i+1}/{self.num_sample_tasks}] collecting inner-loop losses")
+                self.agent.model.policy.is_deterministic = False
+                print(f"[{i+1}/{self.num_sample_tasks}] collecting inner-loop losses")
 
                 # Branch policy network and its optimizer by Higher
                 with higher.innerloop_ctx(
-                    self.agent.policy,
+                    self.agent.model,
                     self.inner_optimizer_base,
                     copy_initial_weights=False,
-                ) as (inner_policy, inner_optimizer_branch):
+                ) as (inner_model, inner_optimizer_branch):
 
-                    inner_policy.is_deterministic = False
+                    inner_model.policy.is_deterministic = False
                     # Adapt meta-policy to each task with n-steps grandients
                     for _ in range(self.inner_grad_iters):
                         # Sample trajectory with inner policy
                         trajs = self.sampler.obtain_trajs(
-                            inner_policy,
+                            inner_model,
                             max_samples=self.train_samples,
                             max_step=self.max_step,
                         )
@@ -127,16 +128,18 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
                         # Inner update
                         batch = self.inner_buffer.get_samples()
-                        inner_policy_loss, value_loss = self.agent.compute_losses(inner_policy, batch)
-                        inner_optimizer_branch.step(inner_policy_loss)
+                        total_loss, inner_policy_loss, inner_vf_loss = self.agent.compute_losses(
+                            inner_model, batch
+                        )
+                        inner_optimizer_branch.step(total_loss)
 
                         inner_policy_loss_sum += inner_policy_loss
-                        value_loss_sum += value_loss
+                        inner_vf_loss_sum += inner_vf_loss
 
-                    inner_policy.is_deterministic = False
+                    inner_model.policy.is_deterministic = False
                     # Sample trajectory with adapted policy
                     trajs = self.sampler.obtain_trajs(
-                        inner_policy,
+                        inner_model,
                         max_samples=self.train_samples,
                         max_step=self.max_step,
                     )
@@ -146,34 +149,38 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             print("Meta-updating outer-loop policy")
             batch = self.outer_buffer.get_samples()
             for _ in range(self.outer_grad_iters):
-                outer_policy_loss, value_loss = self.agent.compute_losses(self.agent.policy, batch)
+                meta_loss, outer_policy_loss, outer_vf_loss = self.agent.compute_losses(
+                    self.agent.model, batch
+                )
+
                 self.outer_optimizer.zero_grad()
-                outer_policy_loss.backward()
+                meta_loss.backward()
                 self.outer_optimizer.step()
 
                 outer_policy_loss_sum += outer_policy_loss
-                value_loss_sum += value_loss
+                outer_vf_loss_sum += outer_vf_loss
 
             inner_policy_loss_mean = inner_policy_loss_sum / (
                 self.inner_grad_iters * self.num_sample_tasks
             )
+            inner_vf_loss_mean = inner_vf_loss_sum / (self.inner_grad_iters * self.num_sample_tasks)
             outer_policy_loss_mean = outer_policy_loss_sum / (
                 self.outer_grad_iters * self.num_sample_tasks
             )
-            value_loss_mean = value_loss_sum / (
-                self.inner_grad_iters * self.num_sample_tasks + self.outer_grad_iters
-            )
+            outer_vf_loss_mean = outer_vf_loss_sum / (self.outer_grad_iters * self.num_sample_tasks)
 
             log_values = dict(
                 inner_policy_loss=inner_policy_loss_mean.item(),
+                inner_vf_loss=inner_vf_loss_mean.item(),
                 outer_policy_loss=outer_policy_loss_mean.item(),
-                value_loss=value_loss_mean.item(),
+                outer_vf_loss=outer_vf_loss_mean.item(),
             )
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
     # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """MAML meta-testing"""
         test_results = {}
@@ -186,20 +193,19 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             trajs = []
             self.env.reset_task(index)
 
-            print(f"TEST | [{index+1}/{len(self.test_tasks)}] collecting inner-loop losses")
             # Branch policy network and its optimizer by Higher
             with higher.innerloop_ctx(
-                self.agent.policy,
+                self.agent.model,
                 self.inner_optimizer_base,
                 copy_initial_weights=False,
-            ) as (inner_policy, inner_optimizer_branch):
+            ) as (inner_model, inner_optimizer_branch):
 
-                inner_policy.is_deterministic = False
+                inner_model.policy.is_deterministic = False
                 # Adapt meta-policy to each task with n-steps grandients
                 for _ in range(self.inner_grad_iters):
                     # Sample trajectory with inner policy
                     pre_adapted_trajs = self.sampler.obtain_trajs(
-                        inner_policy,
+                        inner_model,
                         max_samples=self.test_samples,
                         max_step=self.max_step,
                     )
@@ -208,13 +214,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
                     # Inner update
                     batch = self.inner_buffer.get_samples()
-                    ppo_loss = self.agent.compute_losses(inner_policy, batch)
-                    inner_optimizer_branch.step(ppo_loss)
+                    total_loss, _, _ = self.agent.compute_losses(inner_model, batch)
+                    inner_optimizer_branch.step(total_loss)
 
-                inner_policy.is_deterministic = True
+                inner_model.policy.is_deterministic = True
                 # Sample trajectory with adapted policy
                 post_adapted_trajs = self.sampler.obtain_trajs(
-                    inner_policy,
+                    inner_model,
                     max_samples=self.test_samples,
                     max_step=self.max_step,
                 )
@@ -237,8 +243,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             test_results["total_run_cost_before_grad"] = sum(test_results["run_cost_before_grad"])
             test_results["total_run_cost_after_grad"] = sum(test_results["run_cost_after_grad"])
         test_results["inner_policy_loss"] = log_values["inner_policy_loss"]
+        test_results["inner_vf_loss"] = log_values["inner_vf_loss"]
         test_results["outer_policy_loss"] = log_values["outer_policy_loss"]
-        test_results["value_loss"] = log_values["value_loss"]
+        test_results["outer_vf_loss"] = log_values["outer_vf_loss"]
+
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
 
@@ -266,8 +274,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     step,
                 )
         self.writer.add_scalar("train/inner_policy_loss", test_results["inner_policy_loss"], iteration)
+        self.writer.add_scalar("train/inner_vf_loss", test_results["inner_vf_loss"], iteration)
         self.writer.add_scalar("train/outer_policy_loss", test_results["outer_policy_loss"], iteration)
-        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
+        self.writer.add_scalar("train/outer_vf_loss", test_results["outer_vf_loss"], iteration)
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
@@ -277,8 +286,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             f'return_before_grad: {round(test_results["return_before_grad"], 2)} \n'
             f'return_after_grad: {round(test_results["return_after_grad"], 2)} \n'
             f'inner_policy_loss: {round(test_results["inner_policy_loss"], 2)} \n'
+            f'inner_vf_loss: {round(test_results["inner_vf_loss"], 2)} \n'
             f'outer_policy_loss: {round(test_results["outer_policy_loss"], 2)} \n'
-            f'value_loss: {round(test_results["value_loss"], 2)} \n'
+            f'outer_vf_loss: {round(test_results["outer_vf_loss"], 2)} \n'
             f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
             f'total_time: {round(test_results["total_time"], 2)} \n'
             f"--------------------------------------- \n"
