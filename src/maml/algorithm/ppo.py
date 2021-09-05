@@ -17,10 +17,14 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         action_dim,
         hidden_dim,
         device,
+        gamma=0.99,
+        lamda=0.97,
         **config,
     ):
 
         self.device = device
+        self.gamma = gamma
+        self.lamda = lamda
         self.clip_param = config["clip_param"]
 
         # Instantiate networks
@@ -43,8 +47,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         value = self.model.vf(torch.Tensor(obs).to(self.device))
         return value.detach().cpu().numpy()
 
-    def compute_losses(self, model, batch):
-        """Compute loesses according to method of PPO algorithm"""
+    # pylint: disable=too-many-locals
+    def compute_losses(self, model, batch, clip_loss=True):
+        """Compute model losses according to PPO algorithm"""
         obs_batch = batch["obs"]
         action_batch = batch["actions"]
         return_batch = batch["returns"]
@@ -59,12 +64,15 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         new_log_prob_batch = model.policy.get_log_prob(obs_batch, action_batch)
         ratio = torch.exp(new_log_prob_batch - log_prob_batch)
 
-        policy_loss = ratio * advant_batch
-        clipped_loss = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
-
-        policy_loss = -torch.min(policy_loss, clipped_loss).mean()
+        surr_loss = ratio * advant_batch
+        if clip_loss:
+            clipped_loss = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
+            surr_loss = torch.min(surr_loss, clipped_loss).mean()
+        else:
+            surr_loss = surr_loss.mean()
 
         # Total loss
-        total_loss = policy_loss + 0.5 * value_loss
+        total_loss = -surr_loss + 0.5 * value_loss
 
-        return total_loss, policy_loss, value_loss
+        # print(policy_loss)
+        return total_loss, surr_loss, value_loss

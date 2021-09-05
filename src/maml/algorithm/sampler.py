@@ -22,23 +22,23 @@ class Sampler:
         self.action_dim = action_dim
         self.device = device
 
-    def obtain_trajs(self, model, max_samples, max_step, use_rendering=False):
+    def obtain_trajs(self, model, max_samples, max_steps, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
         self.model = model
         trajs = []
         cur_samples = 0
 
         while cur_samples < max_samples:
-            if max_step > max_samples - cur_samples:
-                max_step = max_samples - cur_samples
-            traj = self.rollout(max_step=max_step, use_rendering=use_rendering)
+            if max_steps > max_samples - cur_samples:
+                max_steps = max_samples - cur_samples
+            traj = self.rollout(max_steps=max_steps, use_rendering=use_rendering)
             trajs.append(traj)
 
             cur_samples += len(traj["cur_obs"])
         return trajs
 
     # pylint: disable=too-many-locals
-    def rollout(self, max_step, use_rendering=False):
+    def rollout(self, max_steps, use_rendering=False):
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
@@ -57,10 +57,9 @@ class Sampler:
         if use_rendering:
             self.env.render()
 
-        while cur_step < max_step:
+        while cur_step < max_steps:
             action, log_prob = self.agent.get_action(self.model, obs, self.device)
             value = self.agent.get_value(obs)
-
             next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)

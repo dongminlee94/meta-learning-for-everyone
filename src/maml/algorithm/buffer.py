@@ -6,6 +6,44 @@ import numpy as np
 import torch
 
 
+class MultiBuffer:
+    """Multi-buffer class"""
+
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        observ_dim,
+        action_dim,
+        num_buffers,
+        max_size,
+        device,
+    ):
+        self.num_buffers = num_buffers
+        self.multi_buffers = {}
+        for i in range(num_buffers):
+            self.multi_buffers[i] = Buffer(
+                observ_dim=observ_dim,
+                action_dim=action_dim,
+                max_size=max_size,
+                device=device,
+            )
+
+    def add_trajs(self, cur_task, cur_adapt, trajs):
+        """Add trajectories to the sub-buffer of multi-buffer"""
+        buffer_index = cur_adapt * self.num_buffers + cur_task
+        self.multi_buffers[buffer_index].add_trajs(trajs)
+
+    def get_samples(self, cur_task, cur_adapt):
+        """Sample batch of the sub-buffer in multi-buffer"""
+        buffer_index = cur_adapt * self.num_buffers + cur_task
+        batch = self.multi_buffers[buffer_index].get_samples()
+        return batch
+
+    def clear(self):
+        """Clear variables of all sub-buffers"""
+        for buffer_index in range(self.num_buffers):
+            self.multi_buffers[buffer_index].clear()
+
+
 class Buffer:  # pylint: disable=too-many-instance-attributes
     """Simple buffer class that includes computing return and gae"""
 
@@ -89,7 +127,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
     def get_samples(self):
         """Get sample batch in buffer"""
         assert self._top == self._max_size
-        self._top = 0
 
         self.compute_gae()
         batch = dict(
@@ -100,3 +137,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
             log_probs=self._log_probs,
         )
         return {key: torch.Tensor(value).to(self.device) for key, value in batch.items()}
+
+    def clear(self):
+        """Clear variables of replay buffer"""
+        self._top = 0
