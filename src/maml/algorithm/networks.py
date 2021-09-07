@@ -2,7 +2,6 @@
 Various network architecture codes used in MAML algorithm
 """
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -91,7 +90,7 @@ class TanhGaussianPolicy(MLP):
     def get_log_prob(self, obs, action):
         """Get log probability of Gaussian distribution using obs and action"""
         normal, _ = self.get_normal_dist(obs)
-        return normal.log_prob(action).sum(dim=-1)
+        return normal.log_prob(action).sum(dim=-1, keepdim=True)
 
     def forward(self, x):
         normal, mean = self.get_normal_dist(x)
@@ -100,26 +99,8 @@ class TanhGaussianPolicy(MLP):
             action = torch.tanh(mean)
             log_prob = None
         else:
-            # If reparameterize, use reparameterization trick (mean + std * N(0,1))
-            action = normal.rsample()
-
-            # Compute log prob from Gaussian,
-            # and then apply correction for Tanh squashing.
-            # NOTE: The correction formula is a little bit magic.
-            # To get an understanding of where it comes from,
-            # check out the original SAC paper
-            # (https://arxiv.org/abs/1801.01290) and look in appendix C.
-            # This is a more numerically-stable equivalent to Eq 21.
-            # Derivation:
-            #               log(1 - tanh(x)^2))
-            #               = log(sech(x)^2))
-            #               = 2 * log(sech(x)))
-            #               = 2 * log(2e^-x / (e^-2x + 1)))
-            #               = 2 * (log(2) - x - log(e^-2x + 1)))
-            #               = 2 * (log(2) - x - softplus(-2x)))
-            log_prob = normal.log_prob(action)
-            log_prob -= 2 * (np.log(2) - action - F.softplus(-2 * action))
-            log_prob = log_prob.sum(-1, keepdim=True)
+            action = normal.sample()
+            log_prob = normal.log_prob(action).sum(dim=-1, keepdim=True)
 
         action = torch.tanh(action)
         return action, log_prob

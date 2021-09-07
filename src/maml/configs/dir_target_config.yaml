@@ -36,5 +36,7 @@ maml_params:
 ppo_params:
     # PPO clip parameter
     clip_param: 0.3
+    # vf clip parameter
+    vf_clip_param: 10
 
 

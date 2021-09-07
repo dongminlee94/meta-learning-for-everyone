@@ -26,6 +26,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self.gamma = gamma
         self.lamda = lamda
         self.clip_param = config["clip_param"]
+        self.vf_clip_param = config["vf_clip_param"]
 
         # Instantiate networks
         self.model = Model(
@@ -56,7 +57,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advant_batch = batch["advants"]
         log_prob_batch = batch["log_probs"]
 
-        # Compute Value function loss
+        # Compute GAE Value function loss
         value_batch = self.model.vf(obs_batch)
         value_loss = F.mse_loss(value_batch, return_batch)
 
