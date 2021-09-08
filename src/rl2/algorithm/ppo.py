@@ -22,7 +22,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
     ):
 
         self.device = device
-        self.grad_iters = config["grad_iters"]
+        self.num_epochs = config["num_epochs"]
         self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
@@ -84,14 +84,14 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advant_batches = torch.chunk(advants, num_mini_batch)
         log_prob_batches = torch.chunk(log_probs, num_mini_batch)
 
-        total_loss_sum = 0
-        policy_loss_sum = 0
-        value_loss_sum = 0
+        sum_total_loss = 0
+        sum_policy_loss = 0
+        sum_value_loss = 0
 
-        for _ in range(self.grad_iters):
-            total_loss_mini_batch_sum = 0
-            policy_loss_mini_batch_sum = 0
-            value_loss_mini_batch_sum = 0
+        for _ in range(self.num_epochs):
+            sum_total_loss_mini_batch = 0
+            sum_policy_loss_mini_batch = 0
+            sum_value_loss_mini_batch = 0
 
             for (
                 trans_batch,
@@ -133,22 +133,22 @@ class PPO:  # pylint: disable=too-many-instance-attributes
                 total_loss.backward()
                 self.optimizer.step()
 
-                total_loss_mini_batch_sum += total_loss
-                policy_loss_mini_batch_sum += policy_loss
-                value_loss_mini_batch_sum += value_loss
+                sum_total_loss_mini_batch += total_loss
+                sum_policy_loss_mini_batch += policy_loss
+                sum_value_loss_mini_batch += value_loss
 
-            total_loss_sum += total_loss_mini_batch_sum / num_mini_batch
-            policy_loss_sum += policy_loss_mini_batch_sum / num_mini_batch
-            value_loss_sum += value_loss_mini_batch_sum / num_mini_batch
+            sum_total_loss += sum_total_loss_mini_batch / num_mini_batch
+            sum_policy_loss += sum_policy_loss_mini_batch / num_mini_batch
+            sum_value_loss += sum_value_loss_mini_batch / num_mini_batch
 
-        total_loss_mean = total_loss_sum / self.grad_iters
-        policy_loss_mean = policy_loss_sum / self.grad_iters
-        value_loss_mean = value_loss_sum / self.grad_iters
+        mean_total_loss = sum_total_loss / self.num_epochs
+        mean_policy_loss = sum_policy_loss / self.num_epochs
+        mean_value_loss = sum_value_loss / self.num_epochs
 
         return dict(
-            total_loss=total_loss_mean.item(),
-            policy_loss=policy_loss_mean.item(),
-            value_loss=value_loss_mean.item(),
+            total_loss=mean_total_loss.item(),
+            policy_loss=mean_policy_loss.item(),
+            value_loss=mean_value_loss.item(),
         )
 
     def save(self, path, net_dict=None):

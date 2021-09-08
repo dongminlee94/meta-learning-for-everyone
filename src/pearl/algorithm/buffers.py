@@ -52,19 +52,13 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self._next_obs = np.zeros((max_size, observ_dim))
         self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._max_size = max_size
-
-        self._top = None
-        self._size = None
-        self._episode_starts = None
-        self._cur_episode_start = None
-        self.clear()
+        self._top = 0
+        self._size = 0
 
     def clear(self):
         """Clear variables of replay buffer"""
         self._top = 0
         self._size = 0
-        self._episode_starts = []
-        self._cur_episode_start = 0
 
     def add(self, obs, action, reward, next_obs, done):  # pylint: disable=too-many-arguments
         """Add transition to replay buffer"""
@@ -78,11 +72,6 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         if self._size < self._max_size:
             self._size += 1
 
-    def termination(self):
-        """Store episode beginning once episode is over"""
-        self._episode_starts.append(self._cur_episode_start)
-        self._cur_episode_start = self._top
-
     def add_traj(self, traj):
         """Add trajectory to replay buffer"""
         for (obs, action, reward, next_obs, done) in zip(
@@ -93,7 +82,6 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
             traj["dones"],
         ):
             self.add(obs, action, reward, next_obs, done)
-        self.termination()
 
     def sample(self, batch_size):
         """Sample batch in replay buffer"""

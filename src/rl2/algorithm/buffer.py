@@ -33,7 +33,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self.device = device
         self.gamma = gamma
         self.lamda = lamda
-
         self._max_size = max_size
         self._top = 0
 
@@ -54,7 +53,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
     def add_trajs(self, trajs):
         """Add trajectories to the buffer"""
         for traj in trajs:
-            for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob,) in zip(
+            for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
                 traj["trans"],
                 traj["pi_hiddens"],
                 traj["v_hiddens"],

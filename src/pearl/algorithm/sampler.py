@@ -23,26 +23,22 @@ class Sampler:
         self.max_step = max_step
         self.device = device
 
-    def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
+    def obtain_samples(self, max_samples, update_posterior, accum_context=True):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        num_samples = 0
-        num_trajs = 0
+        cur_samples = 0
 
-        while num_samples < max_samples:
-            traj = self.rollout(accum_context=accum_context, use_rendering=use_rendering)
-
+        while cur_samples < max_samples:
+            traj = self.rollout(accum_context=accum_context)
             trajs.append(traj)
-            num_samples += len(traj["cur_obs"])
-            num_trajs += 1
-
+            cur_samples += len(traj["cur_obs"])
             self.agent.encoder.sample_z()
 
-            if min_trajs == 1:
+            if update_posterior:
                 break
-        return trajs, num_samples
+        return trajs, cur_samples
 
-    def rollout(self, accum_context=True, use_rendering=False):
+    def rollout(self, accum_context=True):
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
@@ -51,12 +47,10 @@ class Sampler:
         infos = []
 
         obs = self.env.reset()
+        done = False
         cur_step = 0
 
-        if use_rendering:
-            self.env.render()
-
-        while cur_step < self.max_step:
+        while not (done or cur_step == self.max_step):
             action = self.agent.get_action(obs)
             next_obs, reward, done, info = self.env.step(action)
 
@@ -72,22 +66,15 @@ class Sampler:
 
             cur_step += 1
             obs = next_obs
-            if done:
-                break
 
         cur_obs = np.array(cur_obs)
-        actions = np.array(actions)
-        rewards = np.array(rewards).reshape(-1, 1)
-        next_obs = np.vstack((cur_obs[1:, :], np.expand_dims(next_obs, 0)))
-        dones = np.array(dones).reshape(-1, 1)
-        infos = np.array(infos)
         return dict(
             cur_obs=cur_obs,
-            actions=actions,
-            rewards=rewards,
-            next_obs=next_obs,
-            dones=dones,
-            infos=infos,
+            actions=np.array(actions),
+            rewards=np.array(rewards).reshape(-1, 1),
+            next_obs=np.vstack((cur_obs[1:, :], np.expand_dims(next_obs, 0))),
+            dones=np.array(dones).reshape(-1, 1),
+            infos=np.array(infos),
         )
 
     def update_context(self, obs, action, reward):
