@@ -40,9 +40,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.test_tasks = test_tasks
 
         self.num_iterations = config["num_iterations"]
-        self.num_sample_tasks = config["num_sample_tasks"]
         self.num_samples = config["num_samples"]
-        self.batch_size = config["num_sample_tasks"] * config["num_samples"]
+        self.batch_size = len(train_tasks) * config["num_samples"]
         self.max_step = config["max_step"]
 
         self.sampler = Sampler(
@@ -50,6 +49,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             agent=agent,
             action_dim=action_dim,
             hidden_dim=hidden_dim,
+            max_step=config["max_step"],
         )
 
         self.buffer = Buffer(
@@ -79,12 +79,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
             print(f"=============== Iteration {iteration} ===============")
             # Sample data randomly from train tasks.
-            for i in range(self.num_sample_tasks):
-                index = np.random.randint(len(self.train_tasks))
+            for index in range(len(self.train_tasks)):
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples")
+                print(f"[{index + 1}/{len(self.train_tasks)}] collecting samples")
                 trajs = self.sampler.obtain_trajs(max_samples=self.num_samples)
                 self.buffer.add_trajs(trajs)
 
@@ -118,7 +117,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["return"] = test_return / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
             test_results["run_cost"] = test_run_cost / len(self.test_tasks)
-            test_results["total_run_cost"] = sum(test_results["run_cost"])
+            test_results["sum_run_cost"] = sum(abs(test_results["run_cost"]))
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]
@@ -128,7 +127,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         # Tensorboard
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "cheetah-vel":
-            self.writer.add_scalar("test/total_run_cost", test_results["total_run_cost"], iteration)
+            self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
             for step in range(len(test_results["run_cost"])):
                 self.writer.add_scalar(
                     "run_cost/iteration_" + str(iteration),

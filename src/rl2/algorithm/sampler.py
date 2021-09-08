@@ -14,12 +14,14 @@ class Sampler:
         agent,
         action_dim,
         hidden_dim,
+        max_step,
     ):
 
         self.env = env
         self.agent = agent
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
+        self.max_step = max_step
         self.cur_samples = 0
 
     def obtain_trajs(self, max_samples):
@@ -28,8 +30,6 @@ class Sampler:
         while not self.cur_samples == max_samples:
             traj = self.rollout(max_samples)
             trajs.append(traj)
-
-        print(f"sampler's obtain_trajs -> cur_samples: {self.cur_samples}, max_samples: {max_samples}")
         self.cur_samples = 0
         return trajs
 
@@ -46,6 +46,7 @@ class Sampler:
         values = []
         log_probs = []
 
+        cur_step = 0
         obs = self.env.reset()
         action = np.zeros(self.action_dim)
         reward = np.zeros(1)
@@ -53,7 +54,7 @@ class Sampler:
         pi_hidden = np.zeros((1, self.hidden_dim))
         v_hidden = np.zeros((1, self.hidden_dim))
 
-        while not (done or self.cur_samples == max_samples):
+        while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
             tran = np.concatenate((obs, action, reward, done), axis=-1).reshape(1, -1)
             action, log_prob, next_pi_hidden = self.agent.get_action(tran, pi_hidden)
             value, next_v_hidden = self.agent.get_value(tran, v_hidden)
@@ -77,9 +78,8 @@ class Sampler:
             obs = next_obs.reshape(-1)
             pi_hidden = next_pi_hidden[0]
             v_hidden = next_v_hidden[0]
+            cur_step += 1
             self.cur_samples += 1
-        print(f"sampler's rollout -> cur_samples: {self.cur_samples}, max_samples: {max_samples}")
-
         return dict(
             trans=np.array(trans),
             pi_hiddens=np.array(pi_hiddens),

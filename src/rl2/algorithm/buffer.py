@@ -53,7 +53,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
     def add_trajs(self, trajs):
         """Add trajectories to the buffer"""
         for traj in trajs:
-            for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob,) in zip(
+            for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
                 traj["trans"],
                 traj["pi_hiddens"],
                 traj["v_hiddens"],
@@ -73,7 +73,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
                     value=value,
                     log_prob=log_prob,
                 )
-            print(f"buffer's add_trajs -> top: {self._top}, max_size: {self._max_size}")
 
     def compute_gae(self):
         """Compute return and GAE"""
@@ -101,7 +100,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def get_samples(self):
         """Get samples in the buffer"""
-        print(f"buffer's get_samples -> top: {self._top}, max_size: {self._max_size}")
         assert self._top == self._max_size
         self._top = 0
 
