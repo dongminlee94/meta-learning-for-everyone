@@ -154,11 +154,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         # Check if np.mean(self.dq) satisfies early stopping condition
         if self.env_name == "cheetah-dir":
-            self.dq.append(test_results["return_after_infer"])
+            self.dq.append(test_results["return"])
             if np.mean(self.dq) >= self.stopping_goal_mean:
                 self.early_stopping = True
         elif self.env_name == "cheetah-vel":
-            self.dq.append(test_results["sum_run_cost_after_infer"])
+            self.dq.append(test_results["sum_run_cost"])
             if np.mean(self.dq) <= self.stopping_goal_mean:
                 self.early_stopping = True
 
