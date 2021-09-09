@@ -1,7 +1,7 @@
 # RL^2 Experiment configs
 
 # Select either cheetah-dir or cheetah-vel
-env_name: "cheetah-vel"
+env_name: "cheetah-dir"
 
 # Set an experiment name
 exp_name: "exp_1"

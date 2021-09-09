@@ -20,6 +20,10 @@ rl2_params:
     num_samples: 1200
     # Maximum step for the environment
     max_step: 200
+    # Number of early stopping conditions
+    num_stopping_conditions: 5
+    # Goal mean value used to early stopping condition
+    stopping_goal_mean: 20
 
 # PPO setup
 # ---------
