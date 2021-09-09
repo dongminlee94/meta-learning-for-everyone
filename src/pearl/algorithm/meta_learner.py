@@ -6,6 +6,7 @@ Meta-train and meta-test implementations with PEARL algorithm
 import datetime
 import os
 import time
+from collections import deque
 
 import numpy as np
 import torch
@@ -55,7 +56,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.sampler = Sampler(env=env, agent=agent, max_step=config["max_step"], device=device)
 
-        # separate replay buffers for
+        # Separate replay buffers for
         # - training RL update
         # - training encoder update
         self.rl_replay_buffer = MultiTaskReplayBuffer(
@@ -81,6 +82,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 file_name,
             )
         )
+
+        # Set up early stopping condition
+        self.dq = deque(maxlen=config["num_stopping_conditions"])
+        self.stopping_goal_mean = config["stopping_goal_mean"]
+        self.early_stopping = False
 
     def collect_train_data(self, task_index, max_samples, update_posterior, add_to_enc_buffer):
         """Data collecting for meta-train"""
@@ -219,6 +225,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
+            if self.early_stopping:
+                print(f"End meta-training because early stopping condition is {self.early_stopping}")
+                break
+
     def collect_test_data(self, max_samples, update_posterior):
         """Data collecting for meta-test"""
         self.agent.encoder.clear_z()
@@ -237,7 +247,44 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return cur_trajs
 
-    # pylint: disable=too-many-locals
+    def visualize_within_tensorboard(self, test_results, iteration):
+        """Tensorboard visualization"""
+        self.writer.add_scalar(
+            "test/return_before_infer", test_results["return_before_infer"], iteration
+        )
+        self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
+        if self.env_name == "cheetah-vel":
+            self.writer.add_scalar(
+                "test/sum_run_cost_before_infer",
+                test_results["sum_run_cost_before_infer"],
+                iteration,
+            )
+            self.writer.add_scalar(
+                "test/sum_run_cost_after_infer", test_results["sum_run_cost_after_infer"], iteration
+            )
+            for step in range(len(test_results["run_cost_before_infer"])):
+                self.writer.add_scalar(
+                    "run_cost_before_infer/iteration_" + str(iteration),
+                    test_results["run_cost_before_infer"][step],
+                    step,
+                )
+                self.writer.add_scalar(
+                    "run_cost_after_infer/iteration_" + str(iteration),
+                    test_results["run_cost_after_infer"][step],
+                    step,
+                )
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
+        self.writer.add_scalar("train/qf1_loss", test_results["qf1_loss"], iteration)
+        self.writer.add_scalar("train/qf2_loss", test_results["qf2_loss"], iteration)
+        self.writer.add_scalar("train/encoder_loss", test_results["encoder_loss"], iteration)
+        self.writer.add_scalar("train/alpha_loss", test_results["alpha_loss"], iteration)
+        self.writer.add_scalar("train/alpha", test_results["alpha"], iteration)
+        self.writer.add_scalar("train/z_mean", test_results["z_mean"], iteration)
+        self.writer.add_scalar("train/z_var", test_results["z_var"], iteration)
+        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
+
+    # pylint: disable=too-many-locals, too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         test_results = {}
@@ -278,58 +325,18 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
 
-        # Tensorboard
-        self.writer.add_scalar(
-            "test/return_before_infer", test_results["return_before_infer"], iteration
-        )
-        self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
-        if self.env_name == "cheetah-vel":
-            self.writer.add_scalar(
-                "test/sum_run_cost_before_infer",
-                test_results["sum_run_cost_before_infer"],
-                iteration,
-            )
-            self.writer.add_scalar(
-                "test/sum_run_cost_after_infer", test_results["sum_run_cost_after_infer"], iteration
-            )
-            for step in range(len(test_results["run_cost_before_infer"])):
-                self.writer.add_scalar(
-                    "run_cost_before_infer/iteration_" + str(iteration),
-                    test_results["run_cost_before_infer"][step],
-                    step,
-                )
-                self.writer.add_scalar(
-                    "run_cost_after_infer/iteration_" + str(iteration),
-                    test_results["run_cost_after_infer"][step],
-                    step,
-                )
-        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
-        self.writer.add_scalar("train/qf1_loss", test_results["qf1_loss"], iteration)
-        self.writer.add_scalar("train/qf2_loss", test_results["qf2_loss"], iteration)
-        self.writer.add_scalar("train/encoder_loss", test_results["encoder_loss"], iteration)
-        self.writer.add_scalar("train/alpha_loss", test_results["alpha_loss"], iteration)
-        self.writer.add_scalar("train/alpha", test_results["alpha"], iteration)
-        self.writer.add_scalar("train/z_mean", test_results["z_mean"], iteration)
-        self.writer.add_scalar("train/z_var", test_results["z_var"], iteration)
-        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
+        self.visualize_within_tensorboard(test_results, iteration)
 
-        # Logging
-        print(
-            f"--------------------------------------- \n"
-            f'return: {round(test_results["return_after_infer"], 2)} \n'
-            f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
-            f'qf1_loss: {round(test_results["qf1_loss"], 2)} \n'
-            f'qf2_loss: {round(test_results["qf2_loss"], 2)} \n'
-            f'encoder_loss: {round(test_results["encoder_loss"], 2)} \n'
-            f'alpha_loss: {round(test_results["alpha_loss"], 2)} \n'
-            f'alpha: {round(test_results["alpha"], 2)} \n'
-            f'z_mean: {test_results["z_mean"]} \n'
-            f'z_var: {test_results["z_var"]} \n'
-            f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
-            f'total_time: {round(test_results["total_time"], 2)} \n'
-            f"--------------------------------------- \n"
-        )
+        # Check if np.mean(self.dq) satisfies early stopping condition
+        if self.env_name == "cheetah-dir":
+            self.dq.append(test_results["return_after_infer"])
+            if np.mean(self.dq) >= self.stopping_goal_mean:
+                self.early_stopping = True
+        elif self.env_name == "cheetah-vel":
+            self.dq.append(test_results["sum_run_cost_after_infer"])
+            if np.mean(self.dq) <= self.stopping_goal_mean:
+                self.early_stopping = True
 
-        # Save the trained model
-        # TBU
+        # Save the trained models
+        if self.early_stopping:
+            pass

@@ -2,10 +2,10 @@
 Meta-train and meta-test codes with RL^2 algorithm
 """
 
-
 import datetime
 import os
 import time
+from collections import deque
 
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
@@ -71,6 +71,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
+        # Set up early stopping condition
+        self.dq = deque(maxlen=config["num_stopping_conditions"])
+        self.stopping_goal_mean = config["stopping_goal_mean"]
+        self.early_stopping = False
+
     def meta_train(self):
         """RL^2 meta-training"""
         total_start_time = time.time()
@@ -96,6 +101,27 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
+
+            if self.early_stopping:
+                print(f"End meta-training because early stopping condition is {self.early_stopping}")
+                break
+
+    def visualize_within_tensorboard(self, test_results, iteration):
+        """Tensorboard visualization"""
+        self.writer.add_scalar("test/return", test_results["return"], iteration)
+        if self.env_name == "cheetah-vel":
+            self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
+            for step in range(len(test_results["run_cost"])):
+                self.writer.add_scalar(
+                    "run_cost/iteration_" + str(iteration),
+                    test_results["run_cost"][step],
+                    step,
+                )
+        self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
+        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
+        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """RL^2 meta-testing"""
@@ -124,33 +150,18 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
 
-        # Tensorboard
-        self.writer.add_scalar("test/return", test_results["return"], iteration)
-        if self.env_name == "cheetah-vel":
-            self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
-            for step in range(len(test_results["run_cost"])):
-                self.writer.add_scalar(
-                    "run_cost/iteration_" + str(iteration),
-                    test_results["run_cost"][step],
-                    step,
-                )
-        self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
-        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
-        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
-        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
+        self.visualize_within_tensorboard(test_results, iteration)
 
-        # Logging
-        print(
-            f"--------------------------------------- \n"
-            f'return: {round(test_results["return"], 2)} \n'
-            f'total_loss: {round(test_results["total_loss"], 2)} \n'
-            f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
-            f'value_loss: {round(test_results["value_loss"], 2)} \n'
-            f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
-            f'total_time: {round(test_results["total_time"], 2)} \n'
-            f"--------------------------------------- \n"
-        )
+        # Check if np.mean(self.dq) satisfies early stopping condition
+        if self.env_name == "cheetah-dir":
+            self.dq.append(test_results["return_after_infer"])
+            if np.mean(self.dq) >= self.stopping_goal_mean:
+                self.early_stopping = True
+        elif self.env_name == "cheetah-vel":
+            self.dq.append(test_results["sum_run_cost_after_infer"])
+            if np.mean(self.dq) <= self.stopping_goal_mean:
+                self.early_stopping = True
 
-        # Save the trained model
-        # TBU
+        # Save the trained models
+        if self.early_stopping:
+            pass
