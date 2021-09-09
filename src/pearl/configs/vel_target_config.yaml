@@ -38,6 +38,10 @@ pearl_params:
     max_step: 200
     # How many samples to store
     max_buffer_size: 1000000
+    # Number of early stopping conditions
+    num_stopping_conditions: 5
+    # Goal mean value used to early stopping condition
+    stopping_goal_mean: 20
 
 # SAC setup
 # ---------
