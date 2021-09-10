@@ -3,7 +3,7 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 15
+train_tasks: 300
 
 # Number of tasks for meta-test
 test_tasks: 15
@@ -15,7 +15,7 @@ maml_params:
     # Number of training iterations
     num_iterations: 1000
     # Number of task samples for training
-    num_sample_tasks: 5
+    num_sample_tasks: 40
     # Number of samples to train
     num_samples: 200
     # Maximum steps for the environment
