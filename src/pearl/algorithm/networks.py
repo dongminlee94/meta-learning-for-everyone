@@ -187,7 +187,7 @@ class TanhGaussianPolicy(MLP):
         std = torch.exp(log_std)
 
         if self.is_deterministic:
-            action = torch.tanh(mean)
+            action = mean
             log_prob = None
         else:
             normal = Normal(mean, std)
@@ -212,5 +212,5 @@ class TanhGaussianPolicy(MLP):
             log_prob -= 2 * (np.log(2) - action - F.softplus(-2 * action))
             log_prob = log_prob.sum(-1, keepdim=True)
 
-            action = torch.tanh(action)
+        action = torch.tanh(action)
         return action, log_prob
