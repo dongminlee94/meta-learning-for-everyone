@@ -55,18 +55,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        self.train_inner_buffer = MultiBuffer(
+        self.train_buffer = MultiBuffer(
             observ_dim=observ_dim,
             action_dim=action_dim,
-            num_buffers=self.num_sample_tasks * self.num_adapt_epochs,
-            max_size=self.num_samples,
-            device=device,
-        )
-
-        self.train_outer_buffer = MultiBuffer(
-            observ_dim=observ_dim,
-            action_dim=action_dim,
-            num_buffers=self.num_sample_tasks,
+            num_tasks=self.num_sample_tasks,
+            num_episodes=(self.num_adapt_epochs + 1),  # [num of adapatation for train] + [validation]
             max_size=self.num_samples,
             device=device,
         )
@@ -76,11 +69,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         )
 
         self.inner_optimizer = torch.optim.SGD(
-            list(self.agent.model.parameters()),
+            list(self.agent.policy.parameters()),
             lr=config["inner_learning_rate"],
         )
         self.outer_optimizer = torch.optim.Adam(
-            list(self.agent.model.parameters()),
+            list(self.agent.policy.parameters()),
             lr=config["outer_learning_rate"],
         )
 
@@ -95,98 +88,109 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
+    def meta_update(self):
+        """Update meta-policy using PPO algorithm"""
+        sum_policy_loss = 0
+        # Repeat meta-update as PPO steps
+        for _ in range(self.num_maml_epochs):
+
+            # Compute loss for each sampled task
+            self.outer_optimizer.zero_grad()
+            for cur_task in range(self.num_sample_tasks):
+
+                # Get branches of meta-poicy as inner-policy
+                with higher.innerloop_ctx(
+                    self.agent.policy,
+                    self.inner_optimizer,
+                    copy_initial_weights=False,
+                ) as (inner_policy, inner_optimizer_branch):
+
+                    # Adapt inner-policy to each task with n-steps grandients
+                    inner_policy.is_deterministic = False
+                    for cur_adapt in range(self.num_adapt_epochs):
+
+                        # Get pre-adapted samples for the current task
+                        pre_adapted_batch = self.train_buffer.get_samples(cur_task, cur_adapt)
+
+                        # Adapt the inner-policy
+                        inner_policy_loss = self.agent.compute_losses(
+                            inner_policy, pre_adapted_batch, a2c_loss=True, clip_loss=False
+                        )
+                        inner_optimizer_branch.step(inner_policy_loss)
+
+                    # Get post-adapted samples for the current task
+                    post_adapted_batch = self.train_buffer.get_samples(cur_task, self.num_adapt_epochs)
+
+                    # Compute PPO loss and backpropagate it through the meta-policy
+                    policy_loss = self.agent.compute_losses(
+                        inner_policy, post_adapted_batch, a2c_loss=False, clip_loss=True
+                    )
+                    policy_loss.backward()
+                    sum_policy_loss += policy_loss.item() / self.num_sample_tasks
+
+            self.outer_optimizer.step()
+            policy_loss_mean = sum_policy_loss / self.num_maml_epochs
+
+        log_values = dict(
+            policy_loss=policy_loss_mean,
+        )
+        return log_values
+
     # pylint: disable=too-many-locals
     def meta_train(self):
         """MAML meta-training"""
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
-            total_loss_sum = 0
-            policy_loss_sum = 0
-            value_loss_sum = 0
 
             print(f"=============== Iteration {iteration} ===============")
             # Sample tasks randomly from train tasks distribution.
             indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
+            for cur_task, index in enumerate(indices):
+                self.env.reset_task(index)
+                self.agent.policy.is_deterministic = False
 
-            for ppo_step in range(self.num_maml_epochs):
+                print(f"[{cur_task + 1}/{self.num_sample_tasks}] collecting task adapation samples")
+                # Get branches of meta-poicy as inner-policy
+                with higher.innerloop_ctx(
+                    self.agent.policy,
+                    self.inner_optimizer,
+                    copy_initial_weights=False,
+                ) as (inner_policy, inner_optimizer_branch):
 
-                print(
-                    f"[{ppo_step+1}/{self.num_maml_epochs}] adapting inner-loop models to sampled tasks"
-                )
-                self.outer_optimizer.zero_grad()
-                for cur_task, index in enumerate(indices):
-                    self.env.reset_task(index)
-                    self.agent.model.policy.is_deterministic = False
+                    # Adapt meta-policy to each task with n-steps grandients
+                    inner_policy.is_deterministic = False
+                    for cur_adapt in range(self.num_adapt_epochs):
 
-                    # Branch meta-models(poicy&value) and its optimizer by Higher
-                    with higher.innerloop_ctx(
-                        self.agent.model,
-                        self.inner_optimizer,
-                        copy_initial_weights=False,
-                    ) as (inner_model, inner_optimizer_branch):
-
-                        # Adapt meta-models to each task with n-steps grandients
-                        inner_model.policy.is_deterministic = False
-                        for cur_adapt in range(self.num_adapt_epochs):
-                            # Sample pre-adapted trajectory with branched policy of the meta-policy
-                            if ppo_step == 0:
-                                pre_adapted_trajs = self.sampler.obtain_trajs(
-                                    inner_model,
-                                    max_samples=self.num_samples,
-                                    max_steps=self.max_steps,
-                                )
-                                self.train_inner_buffer.add_trajs(
-                                    cur_task, cur_adapt, pre_adapted_trajs
-                                )
-
-                            # Get post-adapted samples for the current task
-                            pre_adapted_batch = self.train_inner_buffer.get_samples(cur_task, cur_adapt)
-
-                            # Adapt the value function and the policy
-                            inner_total_loss, _, _ = self.agent.compute_losses(
-                                inner_model, pre_adapted_batch, clip_loss=False
-                            )
-                            inner_optimizer_branch.step(inner_total_loss)
-
-                        # Sample post-adapted trajectory with adapted policy
-                        if ppo_step == 0:
-                            inner_model.policy.is_deterministic = False
-                            post_adapted_trajs = self.sampler.obtain_trajs(
-                                inner_model,
-                                max_samples=self.num_samples,
-                                max_steps=self.max_steps,
-                            )
-                            self.train_outer_buffer.add_trajs(cur_task, 0, post_adapted_trajs)
-
-                        # Get post-adapted samples for the current task
-                        post_adapted_batch = self.train_outer_buffer.get_samples(cur_task, 0)
-
-                        # Compute value and policy loesses of the adapted models
-                        total_loss, policy_loss, value_loss = self.agent.compute_losses(
-                            inner_model, post_adapted_batch
+                        # Sample pre-adapted trajectory with branched policy of the meta-policy
+                        pre_adapted_trajs = self.sampler.obtain_trajs(
+                            inner_policy,
+                            max_samples=self.num_samples,
+                            max_steps=self.max_steps,
                         )
-                        total_loss.backward()
+                        self.train_buffer.add_trajs(cur_task, cur_adapt, pre_adapted_trajs)
 
-                        total_loss_sum += total_loss.item() / self.num_sample_tasks
-                        policy_loss_sum += policy_loss.item() / self.num_sample_tasks
-                        value_loss_sum += value_loss.item() / self.num_sample_tasks
+                        # Get pre-adapted samples for the current task
+                        pre_adapted_batch = self.train_buffer.get_samples(cur_task, cur_adapt)
 
-                # Meta update
-                self.outer_optimizer.step()
+                        # Adapt the inner-policy
+                        inner_policy_loss = self.agent.compute_losses(
+                            inner_policy, pre_adapted_batch, a2c_loss=True, clip_loss=False
+                        )
+                        inner_optimizer_branch.step(inner_policy_loss)
 
-            self.train_inner_buffer.clear()
-            self.train_outer_buffer.clear()
+                    # Sample post-adapted trajectory with adapted policy
+                    inner_policy.is_deterministic = False
+                    post_adapted_trajs = self.sampler.obtain_trajs(
+                        inner_policy,
+                        max_samples=self.num_samples,
+                        max_steps=self.max_steps,
+                    )
+                    self.train_buffer.add_trajs(cur_task, self.num_adapt_epochs, post_adapted_trajs)
 
-            total_loss_mean = total_loss_sum / self.num_maml_epochs
-            policy_loss_mean = policy_loss_sum / self.num_maml_epochs
-            value_loss_mean = value_loss_sum / self.num_maml_epochs
-
-            log_values = dict(
-                total_loss=total_loss_mean,
-                policy_loss=policy_loss_mean,
-                value_loss=value_loss_mean,
-            )
+            # Meta update
+            log_values = self.meta_update()
+            self.train_buffer.clear()
 
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
@@ -205,19 +209,20 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             test_trajs = []
             self.env.reset_task(index)
 
-            # Branch meta-models(poicy&value) and its optimizer by Higher
+            # Get branches of meta-poicy as inner-policy
             with higher.innerloop_ctx(
-                self.agent.model,
+                self.agent.policy,
                 self.inner_optimizer,
                 copy_initial_weights=False,
-            ) as (inner_model, inner_optimizer_branch):
+            ) as (inner_policy, inner_optimizer_branch):
 
-                # Adapt meta-models to each task with n-steps grandients
-                inner_model.policy.is_deterministic = False
+                # Adapt meta-policy to each task with n-steps grandients
+                inner_policy.is_deterministic = False
                 for _ in range(self.num_adapt_epochs):
+
                     # Sample pre-adapted trajectory with branched policy of the meta-policy
                     pre_adapted_trajs = self.sampler.obtain_trajs(
-                        inner_model,
+                        inner_policy,
                         max_samples=self.num_samples,
                         max_steps=self.max_steps,
                     )
@@ -225,19 +230,19 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     test_trajs.append(pre_adapted_trajs[0])
 
                     # Get pre-adapted samples for the current task
-                    batch = self.test_buffer.get_samples()
+                    pre_adapted_batch = self.test_buffer.get_samples()
                     self.test_buffer.clear()
 
-                    # Adapt the value function and the policy
-                    inner_total_loss, _, _ = self.agent.compute_losses(
-                        inner_model, batch, clip_loss=False
+                    # Adapt the inner-policy
+                    inner_policy_loss = self.agent.compute_losses(
+                        inner_policy, pre_adapted_batch, a2c_loss=True, clip_loss=False
                     )
-                    inner_optimizer_branch.step(inner_total_loss)
+                    inner_optimizer_branch.step(inner_policy_loss)
 
                 # Sample post-adapted trajectory with adapted policy
-                inner_model.policy.is_deterministic = True
+                inner_policy.is_deterministic = True
                 post_adapted_trajs = self.sampler.obtain_trajs(
-                    inner_model,
+                    inner_policy,
                     max_samples=self.num_samples,
                     max_steps=self.max_steps,
                 )
@@ -259,9 +264,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             test_results["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
             test_results["total_run_cost_before_grad"] = sum(test_results["run_cost_before_grad"])
             test_results["total_run_cost_after_grad"] = sum(test_results["run_cost_after_grad"])
-        test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
-        test_results["value_loss"] = log_values["value_loss"]
 
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
@@ -289,9 +292,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     test_results["run_cost_after_grad"][step],
                     step,
                 )
-        self.writer.add_scalar("train/total_loss", test_results["total_loss"], iteration)
         self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
-        self.writer.add_scalar("train/value_loss", test_results["value_loss"], iteration)
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
@@ -300,9 +301,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             f"--------------------------------------- \n"
             f'return_before_grad: {round(test_results["return_before_grad"], 2)} \n'
             f'return_after_grad: {round(test_results["return_after_grad"], 2)} \n'
-            f'total_loss: {round(test_results["total_loss"], 2)} \n'
             f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
-            f'value_loss: {round(test_results["value_loss"], 2)} \n'
             f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
             f'total_time: {round(test_results["total_time"], 2)} \n'
             f"--------------------------------------- \n"
