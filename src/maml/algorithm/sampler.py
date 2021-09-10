@@ -18,13 +18,13 @@ class Sampler:
 
         self.env = env
         self.agent = agent
-        self.model = agent.model
+        self.policy = agent.policy
         self.action_dim = action_dim
         self.device = device
 
-    def obtain_trajs(self, model, max_samples, max_steps, use_rendering=False):
+    def obtain_trajs(self, policy, max_samples, max_steps, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
-        self.model = model
+        self.policy = policy
         trajs = []
         cur_samples = 0
 
@@ -45,7 +45,6 @@ class Sampler:
         rewards = []
         dones = []
         infos = []
-        values = []
         log_probs = []
 
         cur_step = 0
@@ -58,8 +57,7 @@ class Sampler:
             self.env.render()
 
         while cur_step < max_steps:
-            action, log_prob = self.agent.get_action(self.model, obs, self.device)
-            value = self.agent.get_value(obs)
+            action, log_prob = self.agent.get_action(self.policy, obs, self.device)
             next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)
@@ -69,7 +67,6 @@ class Sampler:
             rewards.append(reward)
             dones.append(done)
             infos.append(info["run_cost"])
-            values.append(value.reshape(-1))
             if log_prob:
                 log_probs.append(log_prob.reshape(-1))
 
@@ -84,6 +81,5 @@ class Sampler:
             rewards=np.array(rewards),
             next_obs=np.vstack((cur_obs[1:], np.expand_dims(next_obs, 0))),
             dones=np.array(dones),
-            values=np.array(values),
             log_probs=np.array(log_probs),
         )
