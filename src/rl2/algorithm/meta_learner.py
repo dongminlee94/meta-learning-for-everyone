@@ -60,21 +60,15 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        if file_name is None:
+        if not file_name:
             file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.writer = SummaryWriter(
-            log_dir=os.path.join(
-                ".",
-                "results",
-                exp_name,
-                file_name,
-            )
-        )
+        self.writer = SummaryWriter(log_dir=os.path.join("results", exp_name, file_name))
 
         # Set up early stopping condition
-        self.dq = deque(maxlen=config["num_stopping_conditions"])
-        self.stopping_goal_mean = config["stopping_goal_mean"]
-        self.early_stopping = False
+        self.dq = deque(maxlen=config["num_stop_conditions"])
+        self.num_stop_conditions = config["num_stop_conditions"]
+        self.stop_goal = config["stop_goal"]
+        self.is_early_stopping = False
 
     def meta_train(self):
         """RL^2 meta-training"""
@@ -102,8 +96,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
-            if self.early_stopping:
-                print(f"End meta-training because early stopping condition is {self.early_stopping}")
+            if self.is_early_stopping:
+                print(
+                    f"\n================================================== \n"
+                    f"The last {self.num_stop_conditions} meta-testing results are {self.dq}. \n"
+                    f"And early stopping condition is {self.is_early_stopping}. \n"
+                    f"Therefore, meta-training is terminated."
+                )
                 break
 
     def visualize_within_tensorboard(self, test_results, iteration):
@@ -152,16 +151,16 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # Check if np.mean(self.dq) satisfies early stopping condition
+        # Check if each element of self.dq satisfies early stopping condition
         if self.env_name == "cheetah-dir":
             self.dq.append(test_results["return"])
-            if np.mean(self.dq) >= self.stopping_goal_mean:
-                self.early_stopping = True
+            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
         elif self.env_name == "cheetah-vel":
             self.dq.append(test_results["sum_run_cost"])
-            if np.mean(self.dq) <= self.stopping_goal_mean:
-                self.early_stopping = True
+            if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
 
         # Save the trained models
-        if self.early_stopping:
+        if self.is_early_stopping:
             pass

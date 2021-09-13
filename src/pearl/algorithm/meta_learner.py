@@ -72,21 +72,15 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             max_size=config["max_buffer_size"],
         )
 
-        if file_name is None:
+        if not file_name:
             file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.writer = SummaryWriter(
-            log_dir=os.path.join(
-                ".",
-                "results",
-                exp_name,
-                file_name,
-            )
-        )
+        self.writer = SummaryWriter(log_dir=os.path.join("results", exp_name, file_name))
 
         # Set up early stopping condition
-        self.dq = deque(maxlen=config["num_stopping_conditions"])
-        self.stopping_goal_mean = config["stopping_goal_mean"]
-        self.early_stopping = False
+        self.dq = deque(maxlen=config["num_stop_conditions"])
+        self.num_stop_conditions = config["num_stop_conditions"]
+        self.stop_goal = config["stop_goal"]
+        self.is_early_stopping = False
 
     def collect_train_data(self, task_index, max_samples, update_posterior, add_to_enc_buffer):
         """Data collecting for meta-train"""
@@ -225,8 +219,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
-            if self.early_stopping:
-                print(f"End meta-training because early stopping condition is {self.early_stopping}")
+            if self.is_early_stopping:
+                print(
+                    f"\n================================================== \n"
+                    f"The last {self.num_stop_conditions} meta-testing results are {self.dq}. \n"
+                    f"And early stopping condition is {self.is_early_stopping}. \n"
+                    f"Therefore, meta-training is terminated."
+                )
                 break
 
     def collect_test_data(self, max_samples, update_posterior):
@@ -284,7 +283,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
-    # pylint: disable=too-many-locals, too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """PEARL meta-testing"""
         test_results = {}
@@ -327,16 +325,16 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # Check if np.mean(self.dq) satisfies early stopping condition
+        # Check if each element of self.dq satisfies early stopping condition
         if self.env_name == "cheetah-dir":
             self.dq.append(test_results["return_after_infer"])
-            if np.mean(self.dq) >= self.stopping_goal_mean:
-                self.early_stopping = True
+            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
         elif self.env_name == "cheetah-vel":
             self.dq.append(test_results["sum_run_cost_after_infer"])
-            if np.mean(self.dq) <= self.stopping_goal_mean:
-                self.early_stopping = True
+            if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
 
         # Save the trained models
-        if self.early_stopping:
+        if self.is_early_stopping:
             pass
