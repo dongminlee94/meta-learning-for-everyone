@@ -15,11 +15,15 @@ hidden_dim: 256
 # ----------
 rl2_params:
     # Number of training iterations
-    num_iterations: 100
+    num_iterations: 10000
     # Number of samples to train
-    num_samples: 400
+    num_samples: 800
     # Maximum step for the environment
     max_step: 200
+    # Number of early stopping conditions
+    num_stop_conditions: 3
+    # Goal value used to early stopping condition
+    stop_goal: 180
 
 # PPO setup
 # ---------

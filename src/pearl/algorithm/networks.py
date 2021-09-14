@@ -187,7 +187,7 @@ class TanhGaussianPolicy(MLP):
         std = torch.exp(log_std)
 
         if self.is_deterministic:
-            action = torch.tanh(mean)
+            action = mean
             log_prob = None
         else:
             normal = Normal(mean, std)
