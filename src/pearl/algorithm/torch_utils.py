@@ -2,36 +2,23 @@
 troch_utils support PyTorch related methods
 """
 
+from typing import Dict, List
+
 import numpy as np
 import torch
 
 
-def ndarray_to_tensor(elements):
-    """Change numpy elements to torch variable"""
-    if isinstance(elements, tuple):
-        return tuple(ndarray_to_tensor(e) for e in elements)
-    return torch.from_numpy(elements).float()
-
-
-def filter_batch(np_batch):
-    """Filter bool type into int type in numpy batch"""
-    for key, value in np_batch.items():
-        if value.dtype == np.bool:
-            yield key, value.astype(int)
-        else:
-            yield key, value
-
-
-def np_to_torch_batch(np_batch):
+def np_to_torch_batch(np_batch: Dict[str, np.ndarray]) -> Dict[str, torch.Tensor]:
     """Change numpy batch to torch batch"""
-    return {
-        k: ndarray_to_tensor(x)
-        for k, x in filter_batch(np_batch)
-        if x.dtype != np.dtype("O")  # ignore object (e.g. dictionaries)
-    }
+    batch_dict = {}
+    for key, value in np_batch.items():
+        if value.dtype == bool:
+            value.astype(int)
+        batch_dict[key] = torch.Tensor(value)
+    return batch_dict
 
 
-def unpack_batch(batch):
+def unpack_batch(batch: Dict[str, torch.Tensor]) -> List[torch.Tensor]:
     """Unpack a batch and return individual elements"""
     cur_obs = batch["cur_obs"][None, ...]
     actions = batch["actions"][None, ...]
