@@ -89,7 +89,7 @@ class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
     def get_all_task_idx(self):
         """Get index of all the tasks"""
-        return range(len(self.tasks))
+        return list(range(len(self.tasks)))
 
     def reset_task(self, index):
         """Reset velocity target to index of task"""
