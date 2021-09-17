@@ -17,7 +17,6 @@ from torch.utils.tensorboard import SummaryWriter
 from src.pearl.algorithm.buffers import MultiTaskReplayBuffer
 from src.pearl.algorithm.sac import SAC
 from src.pearl.algorithm.sampler import Sampler
-from src.pearl.algorithm.torch_utils import np_to_torch_batch, unpack_batch
 
 
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
@@ -111,50 +110,33 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def sample_context(self, indices: np.ndarray) -> torch.Tensor:
         """Sample batch of context from a list of tasks from the replay buffer"""
-        # This batch consists of context sampled randomly from encoder's replay buffer
         context_batch = []
         for index in indices:
-            np_batch: Dict[str, np.ndarray] = self.encoder_replay_buffer.sample_batch(
-                task=index, batch_size=self.batch_size
+            batch = self.encoder_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
+            context_batch.append(
+                np.concatenate((batch["cur_obs"], batch["actions"], batch["rewards"]), axis=-1)
             )
-            torch_batch: Dict[str, torch.Tensor] = np_to_torch_batch(np_batch)
-            unpacked_batch: List[torch.Tensor] = unpack_batch(torch_batch)
-            context_batch.append(unpacked_batch)
-
-        # Group like elements together
-        context_batch_1: List[List[torch.Tensor]] = [
-            [context[i] for context in context_batch] for i in range(len(context_batch[0]))
-        ]
-        context_batch_2: List[torch.Tensor] = [torch.cat(context, dim=0) for context in context_batch_1]
-
-        # Full context consists of [obs, action, reward, next_obs, done]
-        # If dynamics don't change across tasks,
-        # don't include next_obs and done in context
-        context_batch_3: torch.Tensor = torch.cat(context_batch_2[:-2], dim=2)
-        return context_batch_3.to(self.device)
+        return torch.Tensor(context_batch).to(self.device)
 
     def sample_transition(self, indices: np.ndarray) -> List[torch.Tensor]:
         """
         Sample batch of transitions from a list of tasks for training the actor-critic
         """
-        # This batch consists of transitions sampled randomly from RL's replay buffer
-        transition_batch = []
+        cur_obs, actions, rewards, next_obs, dones = [], [], [], [], []
         for index in indices:
-            np_batch: Dict[str, np.ndarray] = self.rl_replay_buffer.sample_batch(
-                task=index, batch_size=self.batch_size
-            )
-            torch_batch: Dict[str, torch.Tensor] = np_to_torch_batch(np_batch)
-            unpacked_batch: List[torch.Tensor] = unpack_batch(torch_batch)
-            transition_batch.append(unpacked_batch)
+            batch = self.rl_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
+            cur_obs.append(batch["cur_obs"])
+            actions.append(batch["actions"])
+            rewards.append(batch["rewards"])
+            next_obs.append(batch["next_obs"])
+            dones.append(batch["dones"])
 
-        # Group like elements together
-        transition_batch_1: List[List[torch.Tensor]] = [
-            [transition[i] for transition in transition_batch] for i in range(len(transition_batch[0]))
-        ]
-        transition_batch_2: List[torch.Tensor] = [
-            torch.cat(transition, dim=0).to(self.device) for transition in transition_batch_1
-        ]
-        return transition_batch_2
+        cur_obs = torch.Tensor(cur_obs).view(len(indices), self.batch_size, -1).to(self.device)
+        actions = torch.Tensor(actions).view(len(indices), self.batch_size, -1).to(self.device)
+        rewards = torch.Tensor(rewards).view(len(indices), self.batch_size, -1).to(self.device)
+        next_obs = torch.Tensor(next_obs).view(len(indices), self.batch_size, -1).to(self.device)
+        dones = torch.Tensor(dones).view(len(indices), self.batch_size, -1).to(self.device)
+        return [cur_obs, actions, rewards, next_obs, dones]
 
     def meta_train(self) -> None:
         """PEARL meta-training"""
@@ -239,7 +221,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def collect_test_data(
         self, max_samples: int, update_posterior: bool
-    ) -> List[Dict[str, np.ndarray]]:
+    ) -> List[List[Dict[str, np.ndarray]]]:
         """Data collecting for meta-test"""
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = True
@@ -252,7 +234,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 update_posterior=update_posterior,
                 accum_context=True,
             )
-            cur_trajs += trajs
+            cur_trajs.append(trajs)
             cur_samples += num_samples
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return cur_trajs
@@ -263,7 +245,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             "test/return_before_infer", test_results["return_before_infer"], iteration
         )
         self.writer.add_scalar("test/return_after_infer", test_results["return_after_infer"], iteration)
-        if self.env_name == "cheetah-vel":
+        if self.env_name == "vel":
             self.writer.add_scalar(
                 "test/sum_run_cost_before_infer",
                 test_results["sum_run_cost_before_infer"],
@@ -306,21 +288,22 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         for index in self.test_tasks:
             self.env.reset_task(index)
-            trajs: List[Dict[str, np.ndarray]] = self.collect_test_data(
+            trajs: List[List[Dict[str, np.ndarray]]] = self.collect_test_data(
                 max_samples=self.max_step * 2,
                 update_posterior=True,
             )
-            return_before_infer += np.sum(trajs[0]["rewards"])
-            return_after_infer += np.sum(trajs[1]["rewards"])
-            if self.env_name == "cheetah-vel":
+
+            return_before_infer += np.sum(trajs[0][0]["rewards"])
+            return_after_infer += np.sum(trajs[1][0]["rewards"])
+            if self.env_name == "vel":
                 for i in range(self.max_step):
-                    run_cost_before_infer[i] += trajs[0]["infos"][i]
-                    run_cost_after_infer[i] += trajs[1]["infos"][i]
+                    run_cost_before_infer[i] += trajs[0][0]["infos"][i]
+                    run_cost_after_infer[i] += trajs[1][0]["infos"][i]
 
         # Collect meta-test results
         test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
         test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
-        if self.env_name == "cheetah-vel":
+        if self.env_name == "vel":
             test_results["run_cost_before_infer"] = run_cost_before_infer / len(self.test_tasks)
             test_results["run_cost_after_infer"] = run_cost_after_infer / len(self.test_tasks)
             test_results["sum_run_cost_before_infer"] = sum(
@@ -343,11 +326,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.visualize_within_tensorboard(test_results, iteration)
 
         # Check if each element of self.dq satisfies early stopping condition
-        if self.env_name == "cheetah-dir":
+        if self.env_name == "dir":
             self.dq.append(test_results["return_after_infer"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
-        elif self.env_name == "cheetah-vel":
+        elif self.env_name == "vel":
             self.dq.append(test_results["sum_run_cost_after_infer"])
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True

@@ -8,11 +8,9 @@ from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from . import register_env
 
 
-@register_env("cheetah-vel")
+@register_env("vel")
 class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with velocity target reward"""
-
-    environment_name = "cheetah-vel"
 
     def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)

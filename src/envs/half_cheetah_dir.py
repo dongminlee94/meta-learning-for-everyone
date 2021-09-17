@@ -8,11 +8,9 @@ from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
 from . import register_env
 
 
-@register_env("cheetah-dir")
+@register_env("dir")
 class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with direction target reward"""
-
-    environment_name = "cheetah-dir"
 
     def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)

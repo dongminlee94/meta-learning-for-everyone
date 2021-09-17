@@ -2,6 +2,7 @@
 PEARL trainer based on half-cheetah environment
 """
 
+import os
 from typing import Any, Dict, List
 
 import numpy as np
@@ -15,16 +16,14 @@ from src.pearl.algorithm.sac import SAC
 
 if __name__ == "__main__":
     # Experiment configuration setup
-    with open("./configs/experiment_config.yaml", "r") as file:
+    with open(os.path.join("configs", "experiment_config.yaml"), "r") as file:
         experiment_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
     # Target reward configuration setup
-    if experiment_config["env_name"] == "cheetah-dir":
-        with open("./configs/dir_target_config.yaml", "r") as file:
-            env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
-    elif experiment_config["env_name"] == "cheetah-vel":
-        with open("./configs/vel_target_config.yaml", "r") as file:
-            env_target_config = yaml.load(file, Loader=yaml.FullLoader)
+    with open(
+        os.path.join("configs", experiment_config["env_name"] + "_target_config.yaml"), "r"
+    ) as file:
+        env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
     # Create a multi-task environment and sample tasks
     env: HalfCheetahBulletEnv = ENVS[experiment_config["env_name"]](

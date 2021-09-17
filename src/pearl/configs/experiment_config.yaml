@@ -1,7 +1,7 @@
 # PEARL Experiment configs
 
-# Select either cheetah-dir or cheetah-vel
-env_name: "cheetah-dir"
+# Select either dir or vel
+env_name: "dir"
 
 # Set an experiment name
 exp_name: "exp_1"
