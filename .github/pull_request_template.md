@@ -10,7 +10,6 @@
 
 - [ ] **Assignees** ran the [make format](https://github.com/dongminlee94/meta-rl#development).
 - [ ] **Assignees** ran the [make lint](https://github.com/dongminlee94/meta-rl#development) command and the code passed the linters.
-- [ ] **Assignees** added necessary unit tests, and the code passes the [make utest](https://github.com/dongminlee94/meta-rl#development) command.
 - [ ] **Assignees** updated the README, if necessary.
 - [ ] **Assignees** checked the runnability of the code.
 - [ ] **Reviewers** checked the runnability of the code.
