@@ -212,9 +212,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
             if self.is_early_stopping:
                 print(
-                    f"\n================================================== \n"
-                    f"The last {self.num_stop_conditions} meta-testing results are {self.dq}. \n"
-                    f"And early stopping condition is {self.is_early_stopping}. \n"
+                    f"\n==================================================\n"
+                    f"The last {self.num_stop_conditions} meta-testing results are {self.dq}.\n"
+                    f"And early stopping condition is {self.is_early_stopping}.\n"
                     f"Therefore, meta-training is terminated."
                 )
                 break
