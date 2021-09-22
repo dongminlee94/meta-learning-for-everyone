@@ -49,43 +49,7 @@ class MLP(nn.Module):
         return x
 
 
-class LinearValue(nn.Module):
-    """Linear observation-value function based on handcrafted features"""
-
-    # Adapted from Tristan Deleu's implementation.
-    # **References**
-    # 1. Duan et al. 2016. “Benchmarking Deep Reinforcement Learning for Continuous Control.”
-    # 2. https://github.com/tristandeleu/pytorch-maml-rl
-    # 3. https://github.com/learnables/cherry/blob/master/cherry/models/robotics.py
-    def __init__(self, input_dim, reg=1e-5):
-        super().__init__()
-        self.linear = nn.Linear(2 * input_dim + 4, 1, bias=False)
-        self.reg = reg
-
-    @staticmethod
-    def features(obs):
-        """Handcrafted Linear features"""
-        length = obs.size(0)
-        ones = torch.ones(length, 1)
-        al = torch.arange(length, dtype=torch.float32).view(-1, 1) / 100.0
-        return torch.cat([obs, obs ** 2, al, al ** 2, al ** 3, ones], dim=1)
-
-    def fit(self, obs, returns):
-        """Fit feature parameters to observation and returns by minimizing least-squares """
-        features = LinearValue.features(obs)
-        reg = self.reg * torch.eye(features.size(1))
-        A = features.t() @ features + reg
-        b = features.t() @ returns
-        coeffs, _ = torch.lstsq(b, A)
-        self.linear.weight.data = coeffs.data.t()
-
-    def forward(self, obs):
-        """Get value when observations are given"""
-        features = LinearValue.features(obs)
-        return self.linear(features)
-
-
-class TanhGaussianPolicy(MLP):
+class GaussianPolicy(MLP):
     """Gaussian policy network class"""
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -116,33 +80,15 @@ class TanhGaussianPolicy(MLP):
     def get_log_prob(self, obs, action):
         """Get log probability of Gaussian distribution using obs and action"""
         normal, _ = self.get_normal_dist(obs)
-        # Compute log prob from Gaussian,
-        # and then apply correction for Tanh squashing.
-        # NOTE: The correction formula is a little bit magic.
-        # To get an understanding of where it comes from,
-        # check out the original SAC paper
-        # (https://arxiv.org/abs/1801.01290) and look in appendix C.
-        # This is a more numerically-stable equivalent to Eq 21.
-        # Derivation:
-        #               log(1 - tanh(x)^2))
-        #               = log(sech(x)^2))
-        #               = 2 * log(sech(x)))
-        #               = 2 * log(2e^-x / (e^-2x + 1)))
-        #               = 2 * (log(2) - x - log(e^-2x + 1)))
-        #               = 2 * (log(2) - x - softplus(-2x)))
-        log_prob = normal.log_prob(action)
-        log_prob -= 2 * (np.log(2) - action - F.softplus(-2 * action))
-        log_prob = log_prob.sum(-1, keepdim=True)
-        return log_prob
+        return normal.log_prob(action).sum(dim=-1)
 
     def forward(self, x):
         normal, mean = self.get_normal_dist(x)
-
         if self.is_deterministic:
+            action = mean
             log_prob = None
-            action = torch.tanh(mean)
         else:
             action = normal.sample()
-            log_prob = self.get_log_prob(x, action)
-            action = torch.tanh(mean)
+            log_prob = normal.log_prob(action).sum(dim=-1)
+        action = action.view(-1)
         return action, log_prob
