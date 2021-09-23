@@ -2,8 +2,6 @@
 Proximal Policy Optimization algorithm implementation for training
 """
 
-import copy
-
 import torch
 
 from src.maml.algorithm.networks import MLP, GaussianPolicy
@@ -32,7 +30,6 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self.policy = GaussianPolicy(
             input_dim=observ_dim, output_dim=action_dim, hidden_dim=policy_hidden_dim
         ).to(device)
-        self.old_policy = copy.deepcopy(self.policy)
 
         self.vf = MLP(input_dim=observ_dim, output_dim=1, hidden_dim=vf_hidden_dim).to(device)
 
@@ -47,18 +44,18 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self.vf.load_state_dict(self.initial_vf_state)
 
     # pylint: disable=too-many-locals
-    def compute_loss(self, policy, batch, valid=False):
+    def compute_loss(self, new_policy, batch, meta_loss=False):
         """Compute policy losses according to PPO algorithm"""
         obs_batch = batch["obs"]
         action_batch = batch["actions"]
         advant_batch = batch["advants"]
 
         # Policy loss
-        if valid:
+        if meta_loss:
             old_log_prob_batch = batch["log_probs"]
         else:
-            old_log_prob_batch = self.old_policy.get_log_prob(obs_batch, action_batch)
-        new_log_prob_batch = policy.get_log_prob(obs_batch, action_batch)
+            old_log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch)
+        new_log_prob_batch = new_policy.get_log_prob(obs_batch, action_batch)
 
         ratio = torch.exp(new_log_prob_batch.view(-1, 1) - old_log_prob_batch)
         policy_loss = ratio * advant_batch

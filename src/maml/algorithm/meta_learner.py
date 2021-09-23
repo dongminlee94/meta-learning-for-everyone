@@ -2,8 +2,6 @@
 Meta-train and meta-test codes with MAML algorithm
 """
 
-
-import copy
 import datetime
 import os
 import time
@@ -101,7 +99,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 # Adapt policy to each task through few grandient steps
                 for cur_adapt in range(self.num_adapt_epochs + 1):
 
-                    # Sample trajectories while adaptating
+                    # Sample trajectory D while adaptating steps and trajectory D' after adaptation
                     if cur_adapt == self.num_adapt_epochs:
                         inner_policy.is_deterministic = eval_mode
                     trajs = self.sampler.obtain_samples(
@@ -113,11 +111,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
                     # Update policy except validation episode
                     if cur_adapt < self.num_adapt_epochs:
-                        # Get preprocessed batch samples for the current task and adaptation step
-                        batch_samples = self.buffer.get_samples(cur_task, cur_adapt)
+                        # Get adaptation trajectory D for the current task and adaptation step
+                        adaptation_batch = self.buffer.get_samples(cur_task, cur_adapt)
 
                         # Adapt the inner-policy
-                        inner_policy_loss = self.agent.compute_loss(inner_policy, batch_samples)
+                        inner_policy_loss = self.agent.compute_loss(inner_policy, adaptation_batch)
                         inner_optimizer.step(inner_policy_loss)
 
     def meta_update(self):
@@ -138,29 +136,26 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 # Adapt policy to each task through few grandient steps
                 for cur_adapt in range(self.num_adapt_epochs):
 
-                    # Get preprocessed batch samples for the current task and adaptation step
-                    batch_samples = self.buffer.get_samples(cur_task, cur_adapt)
+                    # Get adaptation trajectory D for the current task and adaptation step
+                    adaptation_batch = self.buffer.get_samples(cur_task, cur_adapt)
 
                     # Adapt the inner-policy
-                    inner_policy_loss = self.agent.compute_loss(inner_policy, batch_samples)
+                    inner_policy_loss = self.agent.compute_loss(inner_policy, adaptation_batch)
                     inner_optimizer.step(inner_policy_loss)
 
-                # Get validation batch samples for the current task
+                # Get validation trajectory D' for the current task
                 validation_batch = self.buffer.get_samples(cur_task, self.num_adapt_epochs)
 
                 # Compute Meta-loss and backpropagate it through the gradient steps.
-                # Losses across all of the sampled-batch tasks are cumulated
+                # Losses across all of the batch tasks are cumulated
                 # until `self.outer_optimizer.step()`
-                policy_loss = self.agent.compute_loss(inner_policy, validation_batch, valid=True)
+                policy_loss = self.agent.compute_loss(inner_policy, validation_batch, meta_loss=True)
                 policy_loss.backward()
 
                 policy_loss_mean += policy_loss.item() / self.num_sample_tasks
 
         self.outer_optimizer.step()
         self.buffer.clear()
-
-        # Replace the old_policy with the updated meta-policy
-        self.agent.old_policy = copy.deepcopy(self.agent.policy)
 
         return dict(policy_loss=policy_loss_mean)
 
