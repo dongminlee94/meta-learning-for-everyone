@@ -85,8 +85,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    # pylint: disable=too-many-locals
-    def meta_train(self):
+    def meta_train(self):  # pylint: disable=too-many-locals
         """MAML meta-training"""
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
@@ -183,8 +182,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         return dict(policy_loss=policy_loss_mean)
 
-    # pylint: disable=too-many-locals
-    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-locals, disable=too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """MAML meta-testing"""
 
