@@ -85,24 +85,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    def meta_train(self):  # pylint: disable=too-many-locals
-        """MAML meta-training"""
-        total_start_time = time.time()
-        for iteration in range(self.num_iterations):
-            start_time = time.time()
-
-            print(f"=============== Iteration {iteration} ===============")
-            # Sample batch of tasks randomly from train task distribution and
-            # Optain adaptating samples for the batch tasks
-            indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
-            self.obtain_samples(indices)
-
-            # Meta update
-            log_values = self.meta_update()
-
-            # Evaluate on test tasks
-            self.meta_test(iteration, total_start_time, start_time, log_values)
-
     def obtain_samples(self, indices, eval_mode=False):
         """Sample before & after gradient trajectories for batch of tasks"""
 
@@ -181,6 +163,24 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.agent.old_policy = copy.deepcopy(self.agent.policy)
 
         return dict(policy_loss=policy_loss_mean)
+
+    def meta_train(self):  # pylint: disable=too-many-locals
+        """MAML meta-training"""
+        total_start_time = time.time()
+        for iteration in range(self.num_iterations):
+            start_time = time.time()
+
+            print(f"=============== Iteration {iteration} ===============")
+            # Sample batch of tasks randomly from train task distribution and
+            # Optain adaptating samples for the batch tasks
+            indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
+            self.obtain_samples(indices)
+
+            # Meta update
+            log_values = self.meta_update()
+
+            # Evaluate on test tasks
+            self.meta_test(iteration, total_start_time, start_time, log_values)
 
     # pylint: disable=too-many-locals, disable=too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
