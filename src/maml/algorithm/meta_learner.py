@@ -85,13 +85,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    def obtain_samples(self, indices, eval_mode=False):
-        """Sample before & after gradient trajectories for batch of tasks"""
+    def collect_train_data(self, indices, eval_mode=False):
+        """Collect data before & after gradient for task batch"""
 
         for cur_task, task_index in enumerate(indices):
             self.env.reset_task(task_index)
             if not eval_mode:
-                print(f"[{cur_task + 1}/{len(indices)}] collecting samples for task batch")
+                print(f"[{cur_task + 1}/{len(indices)}] collecting data for task batch")
 
             # Get branches of outer-poicy as inner-policy
             with higher.innerloop_ctx(
@@ -104,7 +104,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     # Sample trajectories while adaptating
                     if cur_adapt == self.num_adapt_epochs:
                         inner_policy.is_deterministic = eval_mode
-                    trajs = self.sampler.obtain_trajs(
+                    trajs = self.sampler.obtain_samples(
                         inner_policy,
                         max_samples=self.num_samples,
                         max_steps=self.max_steps,
@@ -174,7 +174,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Sample batch of tasks randomly from train task distribution and
             # Optain adaptating samples for the batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
-            self.obtain_samples(indices)
+            self.collect_train_data(indices)
 
             # Meta update
             log_values = self.meta_update()
@@ -192,7 +192,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         run_cost_before_grad = np.zeros(self.max_steps)
         run_cost_after_grad = np.zeros(self.max_steps)
 
-        self.obtain_samples(self.test_tasks, eval_mode=True)
+        self.collect_train_data(self.test_tasks, eval_mode=True)
 
         returns_before_grad = [
             torch.sum(self.buffer.get_samples(task, 0, log=True)["rewards"][: self.max_steps]).item()

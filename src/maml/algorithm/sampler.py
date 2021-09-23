@@ -23,7 +23,7 @@ class Sampler:
         self.action_dim = action_dim
         self.device = device
 
-    def obtain_trajs(self, policy, max_samples, max_steps, use_rendering=False):
+    def obtain_samples(self, policy, max_samples, max_steps, use_rendering=False):
         """Obtain samples up to the number of maximum samples"""
         self.policy = policy
         trajs = []
