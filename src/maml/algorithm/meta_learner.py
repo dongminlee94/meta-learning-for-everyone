@@ -157,7 +157,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.outer_optimizer.step()
         self.buffer.clear()
 
-        return dict(policy_loss=policy_loss_mean)
+        return policy_loss_mean
 
     def meta_train(self):  # pylint: disable=too-many-locals
         """MAML meta-training"""
@@ -229,7 +229,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             test_results["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
             test_results["total_run_cost_before_grad"] = sum(test_results["run_cost_before_grad"])
             test_results["total_run_cost_after_grad"] = sum(test_results["run_cost_after_grad"])
-        test_results["policy_loss"] = log_values["policy_loss"]
+        test_results["policy_loss"] = log_values
 
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
