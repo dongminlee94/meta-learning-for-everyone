@@ -3,8 +3,13 @@ Sample collection implementation through interaction between agent and environme
 """
 
 
+from typing import Dict, List, Tuple
+
 import numpy as np
 import torch
+from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+
+from src.pearl.algorithm.sac import SAC
 
 
 class Sampler:
@@ -12,18 +17,20 @@ class Sampler:
 
     def __init__(
         self,
-        env,
-        agent,
-        max_step,
-        device,
-    ):
+        env: HalfCheetahBulletEnv,
+        agent: SAC,
+        max_step: int,
+        device: torch.device,
+    ) -> None:
 
         self.env = env
         self.agent = agent
         self.max_step = max_step
         self.device = device
 
-    def obtain_samples(self, max_samples, update_posterior, accum_context=True):
+    def obtain_samples(
+        self, max_samples: int, update_posterior: bool, accum_context: bool = True
+    ) -> Tuple[List[Dict[str, np.ndarray]], int]:
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         cur_samples = 0
@@ -38,13 +45,14 @@ class Sampler:
                 break
         return trajs, cur_samples
 
-    def rollout(self, accum_context=True):
+    def rollout(self, accum_context: bool = True) -> Dict[str, np.ndarray]:
         """Rollout up to maximum trajectory length"""
-        cur_obs = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
+        _cur_obs = []
+        _actions = []
+        _rewards = []
+        _next_obs = []
+        _dones = []
+        _infos = []
 
         obs = self.env.reset()
         done = False
@@ -58,26 +66,25 @@ class Sampler:
             if accum_context:
                 self.update_context(obs, action, reward)
 
-            cur_obs.append(obs)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info["run_cost"])
+            _cur_obs.append(obs)
+            _actions.append(action)
+            _rewards.append(reward)
+            _next_obs.append(next_obs)
+            _dones.append(done)
+            _infos.append(info["run_cost"])
 
             cur_step += 1
             obs = next_obs
-
-        cur_obs = np.array(cur_obs)
         return dict(
-            cur_obs=cur_obs,
-            actions=np.array(actions),
-            rewards=np.array(rewards).reshape(-1, 1),
-            next_obs=np.vstack((cur_obs[1:, :], np.expand_dims(next_obs, 0))),
-            dones=np.array(dones).reshape(-1, 1),
-            infos=np.array(infos),
+            cur_obs=np.array(_cur_obs),
+            actions=np.array(_actions),
+            rewards=np.array(_rewards).reshape(-1, 1),
+            next_obs=np.array(_next_obs),
+            dones=np.array(_dones).reshape(-1, 1),
+            infos=np.array(_infos),
         )
 
-    def update_context(self, obs, action, reward):
+    def update_context(self, obs: np.ndarray, action: np.ndarray, reward: float) -> None:
         """Append single transition to the current context"""
         obs = torch.from_numpy(obs[None, None, ...]).float().to(self.device)
         action = torch.from_numpy(action[None, None, ...]).float().to(self.device)

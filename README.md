@@ -1,6 +1,6 @@
 <div align="center">
   <br>
-  <img src="./assets/meta-rl.png" width="500">
+  <img src="./img/meta-rl.png" width="500">
 </div>
 
 [Image source](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)

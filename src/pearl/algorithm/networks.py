@@ -2,6 +2,8 @@
 Various network architecture implementations used in PEARL algorithm
 """
 
+from typing import Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,12 +16,12 @@ class MLP(nn.Module):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        input_dim,
-        output_dim,
-        hidden_dim,
-        hidden_activation=F.relu,
-        init_w=3e-3,
-    ):
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int,
+        hidden_activation: torch.nn.functional = F.relu,
+        init_w: float = 3e-3,
+    ) -> None:
         super().__init__()
 
         self.input_dim = input_dim
@@ -42,7 +44,7 @@ class MLP(nn.Module):
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Get output when input is given"""
         for fc_layer in self.fc_layers:
             x = self.hidden_activation(fc_layer(x))
@@ -56,7 +58,7 @@ class FlattenMLP(MLP):
     If there are multiple inputs, concatenate along dim -1
     """
 
-    def forward(self, *x):
+    def forward(self, *x: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         x = torch.cat(x, dim=-1)
         return super().forward(x)
 
@@ -69,12 +71,12 @@ class MLPEncoder(FlattenMLP):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        input_dim,
-        output_dim,
-        latent_dim,
-        hidden_dim,
-        device,
-    ):
+        input_dim: int,
+        output_dim: int,
+        latent_dim: int,
+        hidden_dim: int,
+        device: torch.device,
+    ) -> None:
         super().__init__(input_dim=input_dim, output_dim=output_dim, hidden_dim=hidden_dim)
 
         self.output_dim = output_dim
@@ -86,7 +88,7 @@ class MLPEncoder(FlattenMLP):
         self.task_z = None
         self.clear_z()
 
-    def clear_z(self, num_tasks=1):
+    def clear_z(self, num_tasks: int = 1) -> None:
         """
         Reset q(z|c) to the prior r(z)
         Sample a new z from the prior r(z)
@@ -102,7 +104,7 @@ class MLPEncoder(FlattenMLP):
         # Reset the context collected so far
         self.context = None
 
-    def sample_z(self):
+    def sample_z(self) -> None:
         """Sample z ~ r(z) or z ~ q(z|c)"""
         dists = []
         for mean, var in zip(torch.unbind(self.z_mean), torch.unbind(self.z_var)):
@@ -112,14 +114,16 @@ class MLPEncoder(FlattenMLP):
         self.task_z = torch.stack(sampled_z).to(self.device)
 
     @classmethod
-    def product_of_gaussians(cls, mean, var):
+    def product_of_gaussians(
+        cls, mean: torch.Tensor, var: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute mean, stddev of product of gaussians (POG)"""
         var = torch.clamp(var, min=1e-7)
         pog_var = 1.0 / torch.sum(torch.reciprocal(var), dim=0)
         pog_mean = pog_var * torch.sum(mean / var, dim=0)
         return pog_mean, pog_var
 
-    def infer_posterior(self, context):
+    def infer_posterior(self, context: torch.Tensor) -> None:
         """Compute q(z|c) as a function of input context and sample new z from it"""
         params = self.forward(context)
         params = params.view(context.size(0), -1, self.output_dim).to(self.device)
@@ -133,7 +137,7 @@ class MLPEncoder(FlattenMLP):
         self.z_var = torch.stack([z_param[1] for z_param in z_params]).to(self.device)
         self.sample_z()
 
-    def compute_kl_div(self):
+    def compute_kl_div(self) -> torch.Tensor:
         """Compute KL( q(z|c) || r(z) )"""
         prior = torch.distributions.Normal(
             torch.zeros(self.latent_dim).to(self.device),
@@ -159,12 +163,12 @@ class TanhGaussianPolicy(MLP):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        input_dim,
-        output_dim,
-        hidden_dim,
-        is_deterministic=False,
-        init_w=1e-3,
-    ):
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int,
+        is_deterministic: bool = False,
+        init_w: float = 1e-3,
+    ) -> None:
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
@@ -177,7 +181,7 @@ class TanhGaussianPolicy(MLP):
         self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
         self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         for fc_layer in self.fc_layers:
             x = self.hidden_activation(fc_layer(x))
 
