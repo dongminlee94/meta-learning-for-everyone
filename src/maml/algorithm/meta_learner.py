@@ -177,6 +177,34 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
+    def visualize_within_tensorboard(self, test_results, iteration):
+        """Tensorboard visualization"""
+        self.writer.add_scalar("test/return_before_grad", test_results["return_before_grad"], iteration)
+        self.writer.add_scalar("test/return_after_grad", test_results["return_after_grad"], iteration)
+        if self.env_name == "cheetah-vel":
+            self.writer.add_scalar(
+                "test/total_run_cost_before_grad",
+                test_results["total_run_cost_before_grad"],
+                iteration,
+            )
+            self.writer.add_scalar(
+                "test/total_run_cost_after_grad", test_results["total_run_cost_after_grad"], iteration
+            )
+            for step in range(len(test_results["run_cost_before_grad"])):
+                self.writer.add_scalar(
+                    "run_cost_before_grad/iteration_" + str(iteration),
+                    test_results["run_cost_before_grad"][step],
+                    step,
+                )
+                self.writer.add_scalar(
+                    "run_cost_after_grad/iteration_" + str(iteration),
+                    test_results["run_cost_after_grad"][step],
+                    step,
+                )
+        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
+        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
+        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
+
     # pylint: disable=too-many-locals, disable=too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """MAML meta-testing"""
@@ -234,43 +262,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["total_time"] = time.time() - total_start_time
         test_results["time_per_iter"] = time.time() - start_time
 
-        # Tensorboard
-        self.writer.add_scalar("test/return_before_grad", test_results["return_before_grad"], iteration)
-        self.writer.add_scalar("test/return_after_grad", test_results["return_after_grad"], iteration)
-        if self.env_name == "cheetah-vel":
-            self.writer.add_scalar(
-                "test/total_run_cost_before_grad",
-                test_results["total_run_cost_before_grad"],
-                iteration,
-            )
-            self.writer.add_scalar(
-                "test/total_run_cost_after_grad", test_results["total_run_cost_after_grad"], iteration
-            )
-            for step in range(len(test_results["run_cost_before_grad"])):
-                self.writer.add_scalar(
-                    "run_cost_before_grad/iteration_" + str(iteration),
-                    test_results["run_cost_before_grad"][step],
-                    step,
-                )
-                self.writer.add_scalar(
-                    "run_cost_after_grad/iteration_" + str(iteration),
-                    test_results["run_cost_after_grad"][step],
-                    step,
-                )
-        self.writer.add_scalar("train/policy_loss", test_results["policy_loss"], iteration)
-        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
-
-        # Logging
-        print(
-            f"--------------------------------------- \n"
-            f'return_before_grad: {round(test_results["return_before_grad"], 2)} \n'
-            f'return_after_grad: {round(test_results["return_after_grad"], 2)} \n'
-            f'policy_loss: {round(test_results["policy_loss"], 2)} \n'
-            f'time_per_iter: {round(test_results["time_per_iter"], 2)} \n'
-            f'total_time: {round(test_results["total_time"], 2)} \n'
-            f"--------------------------------------- \n"
-        )
+        self.visualize_within_tensorboard(test_results, iteration)
 
         # Save the trained model
         # TBU
