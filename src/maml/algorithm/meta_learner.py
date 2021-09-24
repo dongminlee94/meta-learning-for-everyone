@@ -50,6 +50,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             env=env,
             agent=agent,
             action_dim=action_dim,
+            max_step=config["max_steps"],
             device=device,
         )
 

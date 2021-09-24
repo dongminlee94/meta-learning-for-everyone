@@ -9,37 +9,34 @@ import torch
 class Sampler:
     """Data sampling class"""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
         agent,
         action_dim,
+        max_step,
         device,
     ):
 
         self.env = env
         self.agent = agent
-        self.policy = agent.policy
+        self.sampling_policy = agent.policy
         self.action_dim = action_dim
+        self.max_step = max_step
         self.device = device
+        self.cur_samples = 0
 
-    def obtain_samples(self, policy, max_samples, max_steps, use_rendering=False):
+    def obtain_samples(self, policy, max_samples):
         """Obtain samples up to the number of maximum samples"""
-        self.policy = policy
+        self.sampling_policy = policy
         trajs = []
-        cur_samples = 0
-
-        while cur_samples < max_samples:
-            if max_steps > max_samples - cur_samples:
-                max_steps = max_samples - cur_samples
-            traj = self.rollout(max_steps=max_steps, use_rendering=use_rendering)
+        while not self.cur_samples == max_samples:
+            traj = self.rollout(max_samples)
             trajs.append(traj)
-
-            cur_samples += len(traj["cur_obs"])
+        self.cur_samples = 0
         return trajs
 
-    # pylint: disable=too-many-locals
-    def rollout(self, max_steps, use_rendering=False):
+    def rollout(self, max_samples):  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
@@ -54,11 +51,9 @@ class Sampler:
         reward = np.zeros(1)
         done = np.zeros(1)
 
-        if use_rendering:
-            self.env.render()
-
-        while cur_step < max_steps:
-            action, log_prob = self.policy(torch.Tensor(obs).to(self.device))
+        while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
+            # Get action
+            action, log_prob = self.sampling_policy(torch.Tensor(obs).to(self.device))
             action = action.detach().cpu().numpy()
             if log_prob:
                 log_prob = log_prob.detach().cpu().numpy()
