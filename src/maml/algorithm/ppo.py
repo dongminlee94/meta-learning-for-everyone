@@ -44,16 +44,20 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         self.vf.load_state_dict(self.initial_vf_state)
 
     # pylint: disable=too-many-locals
-    def compute_loss(self, new_policy, batch, meta_loss=False):
+    def compute_loss(self, new_policy, batch, is_metaloss=False):
         """Compute policy losses according to PPO algorithm"""
         obs_batch = batch["obs"]
         action_batch = batch["actions"]
         advant_batch = batch["advants"]
 
         # Policy loss
-        if meta_loss:
+        if is_metaloss:
+            # Outer-loop
+            # Set the adapted policy (theta') as an old policy for a surrogate advantage
             old_log_prob_batch = batch["log_probs"]
         else:
+            # Inner-loop
+            # Set the meta policy (theta) as an old policy for a surrogate adavantage
             old_log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch)
         new_log_prob_batch = new_policy.get_log_prob(obs_batch, action_batch)
 
