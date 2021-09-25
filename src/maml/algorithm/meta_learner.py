@@ -210,44 +210,34 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         """MAML meta-testing"""
 
         test_results = {}
-        return_before_grad = 0
-        return_after_grad = 0
-        run_cost_before_grad = np.zeros(self.max_steps)
-        run_cost_after_grad = np.zeros(self.max_steps)
+        returns_before_grad = []
+        returns_after_grad = []
+        run_costs_before_grad = []
+        run_costs_after_grad = []
 
         self.collect_train_data(self.test_tasks, eval_mode=True)
 
-        returns_before_grad = [
-            torch.sum(self.buffer.get_samples(task, 0)["rewards"][: self.max_steps]).item()
-            for task in range(len(self.test_tasks))
-        ]
-        returns_after_grad = [
-            torch.sum(
-                self.buffer.get_samples(task, self.num_adapt_epochs)["rewards"][: self.max_steps]
-            ).item()
-            for task in range(len(self.test_tasks))
-        ]
-        return_before_grad = sum(returns_before_grad)
-        return_after_grad = sum(returns_after_grad)
+        for task in range(len(self.test_tasks)):
+            batch_before_grad = self.buffer.get_samples(task, 0)
+            batch_after_grad = self.buffer.get_samples(task, self.num_adapt_epochs)
 
-        if self.env_name == "cheetah-vel":
-            run_cost_before_grad = [
-                self.buffer.get_samples(task, 0)["infos"][: self.max_steps]
-                for task in range(len(self.test_tasks))
-            ]
-            run_cost_before_grad = torch.sum(torch.cat(run_cost_before_grad, dim=1), 1).numpy()
+            rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
+            rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
+            returns_before_grad.append(torch.sum(rewards_before_grad).item())
+            returns_after_grad.append(torch.sum(rewards_after_grad).item())
 
-            run_cost_after_grad = [
-                self.buffer.get_samples(task, self.num_adapt_epochs)["infos"][: self.max_steps]
-                for task in range(len(self.test_tasks))
-            ]
-            run_cost_after_grad = torch.sum(torch.cat(run_cost_after_grad, dim=1), 1).numpy()
+            if self.env_name == "cheetah-vel":
+                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps])
+                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps])
+
+        run_cost_before_grad = torch.sum(torch.cat(run_costs_before_grad, dim=1), 1).numpy()
+        run_cost_after_grad = torch.sum(torch.cat(run_costs_after_grad, dim=1), 1).numpy()
 
         self.buffer.clear()
 
         # Collect meta-test results
-        test_results["return_before_grad"] = return_before_grad / len(self.test_tasks)
-        test_results["return_after_grad"] = return_after_grad / len(self.test_tasks)
+        test_results["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
+        test_results["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
         if self.env_name == "cheetah-vel":
             test_results["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
             test_results["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
