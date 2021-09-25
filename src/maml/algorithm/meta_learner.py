@@ -167,7 +167,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
             print(f"=============== Iteration {iteration} ===============")
             # Sample batch of tasks randomly from train task distribution and
-            # Optain adaptating samples for the batch tasks
+            # optain adaptating samples for the batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
             self.collect_train_data(indices)
 
@@ -218,16 +218,12 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.collect_train_data(self.test_tasks, eval_mode=True)
 
         returns_before_grad = [
-            torch.sum(
-                self.buffer.get_samples(task, 0, log_mode=True)["rewards"][: self.max_steps]
-            ).item()
+            torch.sum(self.buffer.get_samples(task, 0)["rewards"][: self.max_steps]).item()
             for task in range(len(self.test_tasks))
         ]
         returns_after_grad = [
             torch.sum(
-                self.buffer.get_samples(task, self.num_adapt_epochs, log_mode=True)["rewards"][
-                    : self.max_steps
-                ]
+                self.buffer.get_samples(task, self.num_adapt_epochs)["rewards"][: self.max_steps]
             ).item()
             for task in range(len(self.test_tasks))
         ]
@@ -236,15 +232,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         if self.env_name == "cheetah-vel":
             run_cost_before_grad = [
-                self.buffer.get_samples(task, 0, log_mode=True)["infos"][: self.max_steps]
+                self.buffer.get_samples(task, 0)["infos"][: self.max_steps]
                 for task in range(len(self.test_tasks))
             ]
             run_cost_before_grad = torch.sum(torch.cat(run_cost_before_grad, dim=1), 1).numpy()
 
             run_cost_after_grad = [
-                self.buffer.get_samples(task, self.num_adapt_epochs, log_mode=True)["infos"][
-                    : self.max_steps
-                ]
+                self.buffer.get_samples(task, self.num_adapt_epochs)["infos"][: self.max_steps]
                 for task in range(len(self.test_tasks))
             ]
             run_cost_after_grad = torch.sum(torch.cat(run_cost_after_grad, dim=1), 1).numpy()
