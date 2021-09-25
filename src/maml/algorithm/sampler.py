@@ -55,8 +55,7 @@ class Sampler:
             # Get action
             action, log_prob = self.sampling_policy(torch.Tensor(obs).to(self.device))
             action = action.detach().cpu().numpy()
-            if log_prob:
-                log_prob = log_prob.detach().cpu().numpy()
+            log_prob = log_prob.detach().cpu().numpy().reshape(-1)
 
             next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward).reshape(-1)
@@ -67,17 +66,11 @@ class Sampler:
             rewards.append(reward)
             dones.append(done)
             infos.append(info["run_cost"])
-            if log_prob:
-                log_probs.append(log_prob.reshape(-1))
-            else:
-                log_probs.append(None)
+            log_probs.append(log_prob)
 
-            obs = next_obs
+            obs = next_obs.reshape(-1)
             cur_step += 1
-
-            if done:
-                break
-
+            self.cur_samples += 1
         return dict(
             cur_obs=np.array(cur_obs),
             actions=np.array(actions),

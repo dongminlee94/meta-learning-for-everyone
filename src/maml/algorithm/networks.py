@@ -86,7 +86,7 @@ class GaussianPolicy(MLP):
         normal, mean = self.get_normal_dist(x)
         if self.is_deterministic:
             action = mean
-            log_prob = None
+            log_prob = torch.zeros(1)
         else:
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)
