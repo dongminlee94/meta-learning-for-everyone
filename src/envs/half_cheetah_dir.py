@@ -16,7 +16,8 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
     def __init__(self, num_tasks=4, seed=0):
         super().__init__(render=False)
-        self.tasks = [-1, 1, -1, 1]
+        directions = [-1, 1, -1, 1]
+        self.tasks = [{"direction": direction} for direction in directions]
         assert num_tasks == len(self.tasks)
         self._goal = None
         self._goal_dir = None
