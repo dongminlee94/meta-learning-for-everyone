@@ -106,7 +106,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     trajs = self.sampler.obtain_samples(
                         inner_policy,
                         max_samples=self.num_samples,
-                        max_steps=self.max_steps,
                     )
                     self.buffer.add_trajs(cur_task, cur_adapt, trajs)
 
@@ -219,12 +218,14 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.collect_train_data(self.test_tasks, eval_mode=True)
 
         returns_before_grad = [
-            torch.sum(self.buffer.get_samples(task, 0, log=True)["rewards"][: self.max_steps]).item()
+            torch.sum(
+                self.buffer.get_samples(task, 0, log_mode=True)["rewards"][: self.max_steps]
+            ).item()
             for task in range(len(self.test_tasks))
         ]
         returns_after_grad = [
             torch.sum(
-                self.buffer.get_samples(task, self.num_adapt_epochs, log=True)["rewards"][
+                self.buffer.get_samples(task, self.num_adapt_epochs, log_mode=True)["rewards"][
                     : self.max_steps
                 ]
             ).item()
@@ -235,13 +236,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         if self.env_name == "cheetah-vel":
             run_cost_before_grad = [
-                self.buffer.get_samples(task, 0, log=True)["infos"][: self.max_steps]
+                self.buffer.get_samples(task, 0, log_mode=True)["infos"][: self.max_steps]
                 for task in range(len(self.test_tasks))
             ]
             run_cost_before_grad = torch.sum(torch.cat(run_cost_before_grad, dim=1), 1).numpy()
 
             run_cost_after_grad = [
-                self.buffer.get_samples(task, self.num_adapt_epochs, log=True)["infos"][
+                self.buffer.get_samples(task, self.num_adapt_epochs, log_mode=True)["infos"][
                     : self.max_steps
                 ]
                 for task in range(len(self.test_tasks))

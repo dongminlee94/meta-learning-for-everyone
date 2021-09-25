@@ -40,9 +40,9 @@ class MultiTaskBuffer:
         """Add trajectories to the assigned task buffer"""
         self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_trajs(trajs)
 
-    def get_samples(self, cur_task, cur_adapt, log=False):
+    def get_samples(self, cur_task, cur_adapt, log_mode=False):
         """Sample batch of the sassigned task buffer"""
-        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_samples(log=log)
+        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_samples(log_mode=log_mode)
 
     def clear(self):
         """Clear variables of all task buffers"""
