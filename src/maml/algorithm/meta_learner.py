@@ -84,13 +84,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    def collect_train_data(self, indices, eval_mode=False):
-        """Collect data before & after gradient for task batch"""
+    def collect_train_samples(self, indices, eval_mode=False):
+        """Collect samples before & after gradient for task batch"""
 
         for cur_task, task_index in enumerate(indices):
             self.env.reset_task(task_index)
             if not eval_mode:
-                print(f"[{cur_task + 1}/{len(indices)}] collecting data for task batch")
+                print(f"[{cur_task + 1}/{len(indices)}] collecting samples for task batch")
 
             # Get branches of outer-poicy as inner-policy
             with higher.innerloop_ctx(
@@ -112,10 +112,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     # Update policy except validation episode
                     if cur_adapt < self.num_adapt_epochs:
                         # Get adaptation trajectory D for the current task and adaptation step
-                        adaptation_batch = self.buffer.get_samples(cur_task, cur_adapt)
+                        train_batch = self.buffer.get_samples(cur_task, cur_adapt)
 
                         # Adapt the inner-policy
-                        inner_policy_loss = self.agent.compute_loss(inner_policy, adaptation_batch)
+                        inner_policy_loss = self.agent.compute_loss(inner_policy, train_batch)
                         inner_optimizer.step(inner_policy_loss)
 
     def meta_update(self):
@@ -137,10 +137,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 for cur_adapt in range(self.num_adapt_epochs):
 
                     # Get adaptation trajectory D for the current task and adaptation step
-                    adaptation_batch = self.buffer.get_samples(cur_task, cur_adapt)
+                    train_batch = self.buffer.get_samples(cur_task, cur_adapt)
 
                     # Adapt the inner-policy
-                    inner_policy_loss = self.agent.compute_loss(inner_policy, adaptation_batch)
+                    inner_policy_loss = self.agent.compute_loss(inner_policy, train_batch)
                     inner_optimizer.step(inner_policy_loss)
 
                 # Get validation trajectory D' for the current task
@@ -149,7 +149,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 # Compute Meta-loss and backpropagate it through the gradient steps.
                 # Losses across all of the batch tasks are cumulated
                 # until `self.outer_optimizer.step()`
-                policy_loss = self.agent.compute_loss(inner_policy, validation_batch, is_metaloss=True)
+                policy_loss = self.agent.compute_loss(inner_policy, validation_batch, is_meta_loss=True)
                 policy_loss.backward()
 
                 policy_loss_mean += policy_loss.item() / self.num_sample_tasks
@@ -169,7 +169,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Sample batch of tasks randomly from train task distribution and
             # optain adaptating samples for the batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
-            self.collect_train_data(indices)
+            self.collect_train_samples(indices)
 
             # Meta update
             log_values = self.meta_update()
@@ -215,7 +215,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         run_costs_before_grad = []
         run_costs_after_grad = []
 
-        self.collect_train_data(self.test_tasks, eval_mode=True)
+        self.collect_train_samples(self.test_tasks, eval_mode=True)
 
         for task in range(len(self.test_tasks)):
             batch_before_grad = self.buffer.get_samples(task, 0)
@@ -227,11 +227,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             returns_after_grad.append(torch.sum(rewards_after_grad).item())
 
             if self.env_name == "cheetah-vel":
-                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps])
-                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps])
+                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps].numpy())
+                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps].numpy())
 
-        run_cost_before_grad = torch.sum(torch.cat(run_costs_before_grad, dim=1), 1).numpy()
-        run_cost_after_grad = torch.sum(torch.cat(run_costs_after_grad, dim=1), 1).numpy()
+        run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
+        run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
 
         self.buffer.clear()
 

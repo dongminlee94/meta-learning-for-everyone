@@ -40,12 +40,8 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         )
         self.initial_vf_state = self.vf.state_dict()
 
-    def reset_vf(self):
-        """Reset value fuction"""
-        self.vf.load_state_dict(self.initial_vf_state)
-
-    def compute_value(self, batch):
-        """Train value network and infer value for a current batch"""
+    def train_value_network(self, batch):
+        """Reset and train value network for a current batch"""
         obs_batch = batch["obs"]
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
@@ -58,7 +54,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             returns_batch[t] = running_return
 
         # Reset the value fuction to its initial state
-        self.reset_vf()
+        self.vf.load_state_dict(self.initial_vf_state)
         self.vf_optimizer.zero_grad()
 
         # Value function loss
@@ -68,17 +64,17 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         value_loss.backward()
         self.vf_optimizer.step()
 
-        return self.vf(obs_batch).detach().cpu().numpy()
-
     def compute_gae(self, batch):
         """Compute return and GAE"""
+        obs_batch = batch["obs"]
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
         advants_batch = torch.zeros_like(rewards_batch)
         prev_value = 0
         running_advant = 0
 
-        values_batch = self.compute_value(batch)
+        self.train_value_network(batch)
+        values_batch = self.vf(obs_batch).detach().cpu().numpy()
 
         for t in reversed(range(len(rewards_batch))):
             # Compute GAE
@@ -97,7 +93,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         return advants_batch
 
     # pylint: disable=too-many-locals
-    def compute_loss(self, new_policy, batch, is_metaloss=False):
+    def compute_loss(self, new_policy, batch, is_meta_loss=False):
         """Compute policy losses according to PPO algorithm"""
         obs_batch = batch["obs"]
         action_batch = batch["actions"]
@@ -105,17 +101,17 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advant_batch = self.compute_gae(batch)
 
         # Policy loss
-        if is_metaloss:
+        if is_meta_loss:
             # Outer-loop
             # Set the adapted policy (theta') as an old policy for a surrogate advantage
-            old_log_prob_batch = batch["log_probs"]
+            log_prob_batch = batch["log_probs"]
         else:
             # Inner-loop
             # Set the meta policy (theta) as an old policy for a surrogate adavantage
-            old_log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch)
+            log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch)
         new_log_prob_batch = new_policy.get_log_prob(obs_batch, action_batch)
 
-        ratio = torch.exp(new_log_prob_batch.view(-1, 1) - old_log_prob_batch)
+        ratio = torch.exp(new_log_prob_batch.view(-1, 1) - log_prob_batch)
         policy_loss = ratio * advant_batch
         clipped_loss = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * advant_batch
         policy_loss = -torch.min(policy_loss, clipped_loss).mean()

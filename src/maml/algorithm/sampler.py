@@ -26,17 +26,16 @@ class Sampler:
         self.device = device
         self.cur_samples = 0
 
-    def obtain_samples(self, policy, max_samples):
+    def obtain_samples(self, sampling_policy, max_samples):
         """Obtain samples up to the number of maximum samples"""
-        self.sampling_policy = policy
         trajs = []
         while not self.cur_samples == max_samples:
-            traj = self.rollout(max_samples)
+            traj = self.rollout(sampling_policy, max_samples)
             trajs.append(traj)
         self.cur_samples = 0
         return trajs
 
-    def rollout(self, max_samples):  # pylint: disable=too-many-locals
+    def rollout(self, sampling_policy, max_samples):  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
@@ -53,14 +52,13 @@ class Sampler:
 
         while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
             # Get action
-            action, log_prob = self.sampling_policy(torch.Tensor(obs).to(self.device))
+            action, log_prob = sampling_policy(torch.Tensor(obs).to(self.device))
             action = action.detach().cpu().numpy()
             log_prob = log_prob.detach().cpu().numpy().reshape(-1)
 
             next_obs, reward, done, info = self.env.step(action)
-            reward = np.array(reward).reshape(-1)
-            done = np.array(int(done)).reshape(-1)
-
+            reward = np.array(reward)
+            done = np.array(int(done))
             cur_obs.append(obs)
             actions.append(action)
             rewards.append(reward)
@@ -68,7 +66,7 @@ class Sampler:
             infos.append(info["run_cost"])
             log_probs.append(log_prob)
 
-            obs = next_obs.reshape(-1)
+            obs = next_obs
             cur_step += 1
             self.cur_samples += 1
         return dict(
