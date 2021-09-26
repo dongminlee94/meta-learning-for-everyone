@@ -3,6 +3,8 @@ Multi-task replay buffer implementation
 """
 
 
+from typing import Dict, List
+
 import numpy as np
 
 
@@ -11,11 +13,11 @@ class MultiTaskReplayBuffer:
 
     def __init__(
         self,
-        observ_dim,
-        action_dim,
-        tasks,
-        max_size,
-    ):
+        observ_dim: int,
+        action_dim: int,
+        tasks: List[int],
+        max_size: int,
+    ) -> None:
 
         self.task_buffers = {}
         for i in tasks:
@@ -25,15 +27,14 @@ class MultiTaskReplayBuffer:
                 max_size=max_size,
             )
 
-    def add_trajs(self, task, trajs):
+    def add_trajs(self, task: int, trajs: List[Dict[str, np.ndarray]]) -> None:
         """Add trajectories of the task to multi-task replay buffer"""
         for traj in trajs:
             self.task_buffers[task].add_traj(traj)
 
-    def sample_batch(self, task, batch_size):
+    def sample_batch(self, task: int, batch_size: int) -> Dict[str, np.ndarray]:
         """Sample batch of the task in multi-task replay buffer"""
-        batch = self.task_buffers[task].sample(batch_size)
-        return batch
+        return self.task_buffers[task].sample(batch_size)
 
 
 class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
@@ -41,10 +42,10 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        observ_dim,
-        action_dim,
-        max_size,
-    ):
+        observ_dim: int,
+        action_dim: int,
+        max_size: int,
+    ) -> None:
 
         self._cur_obs = np.zeros((max_size, observ_dim))
         self._actions = np.zeros((max_size, action_dim))
@@ -52,21 +53,22 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self._next_obs = np.zeros((max_size, observ_dim))
         self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._max_size = max_size
+        self._top = 0
+        self._size = 0
 
-        self._top = None
-        self._size = None
-        self._episode_starts = None
-        self._cur_episode_start = None
-        self.clear()
-
-    def clear(self):
+    def clear(self) -> None:
         """Clear variables of replay buffer"""
         self._top = 0
         self._size = 0
-        self._episode_starts = []
-        self._cur_episode_start = 0
 
-    def add(self, obs, action, reward, next_obs, done):  # pylint: disable=too-many-arguments
+    def add(  # pylint: disable=too-many-arguments
+        self,
+        obs: np.ndarray,
+        action: np.ndarray,
+        reward: np.ndarray,
+        next_obs: np.ndarray,
+        done: np.ndarray,
+    ) -> None:
         """Add transition to replay buffer"""
         self._cur_obs[self._top] = obs
         self._actions[self._top] = action
@@ -78,12 +80,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         if self._size < self._max_size:
             self._size += 1
 
-    def termination(self):
-        """Store episode beginning once episode is over"""
-        self._episode_starts.append(self._cur_episode_start)
-        self._cur_episode_start = self._top
-
-    def add_traj(self, traj):
+    def add_traj(self, traj: Dict[str, np.ndarray]) -> None:
         """Add trajectory to replay buffer"""
         for (obs, action, reward, next_obs, done) in zip(
             traj["cur_obs"],
@@ -93,11 +90,10 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
             traj["dones"],
         ):
             self.add(obs, action, reward, next_obs, done)
-        self.termination()
 
-    def sample(self, batch_size):
+    def sample(self, batch_size: int) -> Dict[str, np.ndarray]:
         """Sample batch in replay buffer"""
-        indices = np.random.randint(0, self._size, batch_size)
+        indices: np.ndarray = np.random.randint(0, self._size, batch_size)
         return dict(
             cur_obs=self._cur_obs[indices],
             actions=self._actions[indices],

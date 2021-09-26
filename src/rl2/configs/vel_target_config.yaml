@@ -15,13 +15,15 @@ hidden_dim: 256
 # ----------
 rl2_params:
     # Number of training iterations
-    num_iterations: 200
-    # Number of sampled tasks to collect data for each iteration
-    num_sample_tasks: 5
+    num_iterations: 1000
     # Number of samples to train
     num_samples: 1200
     # Maximum step for the environment
     max_step: 200
+    # Number of early stopping conditions
+    num_stop_conditions: 3
+    # Goal value used to early stopping condition
+    stop_goal: 25
 
 # PPO setup
 # ---------
@@ -29,7 +31,7 @@ ppo_params:
     # Discount factor
     gamma: 0.99
     # Number of epochs per iteration
-    grad_iters: 5
+    num_epochs: 5
     # Number of minibatch within each epoch
     mini_batch_size: 128
     # PPO clip parameter

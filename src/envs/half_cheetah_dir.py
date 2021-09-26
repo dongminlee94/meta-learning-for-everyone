@@ -12,8 +12,6 @@ from . import register_env
 class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with direction target reward"""
 
-    environment_name = "cheetah-dir"
-
     def __init__(self, num_tasks=4, seed=0):
         super().__init__(render=False)
         directions = [-1, 1, -1, 1]
@@ -83,7 +81,7 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
     def get_all_task_idx(self):
         """Get index of all the tasks"""
-        return range(len(self.tasks))
+        return list(range(len(self.tasks)))
 
     def reset_task(self, index):
         """Reset direction target to index of task"""

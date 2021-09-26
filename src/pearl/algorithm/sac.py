@@ -2,12 +2,14 @@
 Soft Actor-Critic algorithm implementation for training when meta-train
 """
 
+from typing import Dict, List
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from src.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
+from src.pearl.algorithm.networks import MLP, FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
@@ -15,20 +17,20 @@ class SAC:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        observ_dim,
-        action_dim,
-        latent_dim,
-        hidden_dim,
-        encoder_input_dim,
-        encoder_output_dim,
-        device,
+        observ_dim: int,
+        action_dim: int,
+        latent_dim: int,
+        hidden_dim: int,
+        encoder_input_dim: int,
+        encoder_output_dim: int,
+        device: torch.device,
         **config,
-    ):
+    ) -> None:
 
         self.device = device
-        self.gamma = config["gamma"]
-        self.kl_lambda = config["kl_lambda"]
-        self.batch_size = config["batch_size"]
+        self.gamma: float = config["gamma"]
+        self.kl_lambda: float = config["kl_lambda"]
+        self.batch_size: int = config["batch_size"]
 
         # Instantiate networks
         self.policy = TanhGaussianPolicy(
@@ -71,11 +73,13 @@ class SAC:  # pylint: disable=too-many-instance-attributes
 
         self.policy_optimizer = optim.Adam(self.policy.parameters(), lr=config["policy_lr"])
         self.encoder_optimizer = optim.Adam(self.encoder.parameters(), lr=config["encoder_lr"])
-        self.qf_parameters = list(self.qf1.parameters()) + list(self.qf2.parameters())
+        self.qf_parameters: List[torch.nn.parameter.Parameter] = list(self.qf1.parameters()) + list(
+            self.qf2.parameters()
+        )
         self.qf_optimizer = optim.Adam(self.qf_parameters, lr=config["qf_lr"])
 
         # Initialize target entropy, log alpha, and alpha optimizer
-        self.target_entropy = -np.prod((action_dim,)).item()
+        self.target_entropy: int = -np.prod((action_dim,)).item()
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha = self.log_alpha.exp()
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=config["policy_lr"])
@@ -90,26 +94,32 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def hard_target_update(cls, main, target):
+    def hard_target_update(cls, main: FlattenMLP, target: FlattenMLP) -> None:
         """Update target network to be the same as main network"""
         target.load_state_dict(main.state_dict())
 
     @classmethod
-    def soft_target_update(cls, main, target, tau=0.005):
+    def soft_target_update(cls, main: FlattenMLP, target: FlattenMLP, tau: float = 0.005):
         """Update target network by polyak averaging."""
         for main_param, target_param in zip(main.parameters(), target.parameters()):
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
-    def get_action(self, obs):
+    def get_action(self, obs: np.ndarray) -> np.ndarray:
         """Sample action from the policy"""
         task_z = self.encoder.task_z
-        obs = torch.from_numpy(obs[None]).float().to(self.device)
+        obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
         action, _ = self.policy(inputs)
         return action.view(-1).detach().cpu().numpy()
 
     # pylint: disable=too-many-locals
-    def train_model(self, meta_batch_size, batch_size, context_batch, transition_batch):
+    def train_model(
+        self,
+        meta_batch_size: int,
+        batch_size: int,
+        context_batch: torch.Tensor,
+        transition_batch: List[torch.Tensor],
+    ) -> Dict[str, float]:
         """Train models according to training method of SAC algorithm"""
         # Data is (meta-batch, batch, feature)
         cur_obs, actions, rewards, next_obs, dones = transition_batch
@@ -188,11 +198,11 @@ class SAC:  # pylint: disable=too-many-instance-attributes
             encoder_loss=encoder_loss.item(),
             alpha_loss=alpha_loss.item(),
             alpha=self.alpha.item(),
-            z_mean=np.mean(self.encoder.z_mean.detach().cpu().numpy()),
-            z_var=np.mean(self.encoder.z_var.detach().cpu().numpy()),
+            z_mean=self.encoder.z_mean.detach().cpu().numpy().mean().item(),
+            z_var=self.encoder.z_var.detach().cpu().numpy().mean().item(),
         )
 
-    def save(self, path, net_dict=None):
+    def save(self, path: str, net_dict: Dict[str, MLP] = None) -> None:
         """Save data related to models in path"""
         if net_dict is None:
             net_dict = self.net_dict
@@ -201,7 +211,7 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         state_dict["alpha"] = self.log_alpha
         torch.save(state_dict, path)
 
-    def load(self, path, net_dict=None):
+    def load(self, path: str, net_dict: Dict[str, MLP] = None) -> None:
         """Load data stored as check point in models"""
         if net_dict is None:
             net_dict = self.net_dict
