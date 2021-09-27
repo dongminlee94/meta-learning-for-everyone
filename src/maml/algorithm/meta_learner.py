@@ -227,8 +227,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             returns_after_grad.append(torch.sum(rewards_after_grad).item())
 
             if self.env_name == "cheetah-vel":
-                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps].numpy())
-                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps].numpy())
+                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps].cpu().numpy())
+                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps].cpu().numpy())
 
         run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
         run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
