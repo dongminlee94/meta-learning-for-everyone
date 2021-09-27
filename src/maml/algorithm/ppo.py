@@ -74,7 +74,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         running_advant = 0
 
         self.train_value_network(batch)
-        values_batch = self.vf(obs_batch).detach().cpu().numpy()
+        values_batch = self.vf(obs_batch).detach().cpu()
 
         for t in reversed(range(len(rewards_batch))):
             # Compute GAE
