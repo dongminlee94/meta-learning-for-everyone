@@ -20,22 +20,21 @@ class Sampler:
 
         self.env = env
         self.agent = agent
-        self.sampling_policy = agent.policy
         self.action_dim = action_dim
         self.max_step = max_step
         self.device = device
         self.cur_samples = 0
 
-    def obtain_samples(self, sampling_policy, max_samples):
+    def obtain_samples(self, policy, max_samples):
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         while not self.cur_samples == max_samples:
-            traj = self.rollout(sampling_policy, max_samples)
+            traj = self.rollout(policy, max_samples)
             trajs.append(traj)
         self.cur_samples = 0
         return trajs
 
-    def rollout(self, sampling_policy, max_samples):  # pylint: disable=too-many-locals
+    def rollout(self, policy, max_samples):  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
@@ -52,7 +51,7 @@ class Sampler:
 
         while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
             # Get action
-            action, log_prob = sampling_policy(torch.Tensor(obs).to(self.device))
+            action, log_prob = policy(torch.Tensor(obs).to(self.device))
             action = action.detach().cpu().numpy()
             log_prob = log_prob.detach().cpu().numpy().reshape(-1)
 
@@ -73,7 +72,6 @@ class Sampler:
             cur_obs=np.array(cur_obs),
             actions=np.array(actions),
             rewards=np.array(rewards),
-            next_obs=np.vstack((cur_obs[1:], np.expand_dims(next_obs, 0))),
             dones=np.array(dones),
             infos=np.array(infos),
             log_probs=np.array(log_probs),

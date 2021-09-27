@@ -66,7 +66,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._cur_obs = np.zeros((max_size, observ_dim))
         self._actions = np.zeros((max_size, action_dim))
         self._rewards = np.zeros((max_size, 1))
-        self._next_obs = np.zeros((max_size, observ_dim))
         self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._infos = np.zeros((max_size, 1))
         self._log_probs = np.zeros((max_size, 1))
@@ -78,13 +77,12 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._top = 0
 
     # pylint: disable=too-many-arguments
-    def add(self, obs, action, reward, next_obs, done, info, log_prob):
+    def add(self, obs, action, reward, done, info, log_prob):
         """Add transition and log_prob to the buffer"""
         assert self._top < self._max_size
         self._cur_obs[self._top] = obs
         self._actions[self._top] = action
         self._rewards[self._top] = reward
-        self._next_obs[self._top] = next_obs
         self._dones[self._top] = done
         self._infos[self._top] = info
         self._log_probs[self._top] = log_prob
@@ -93,16 +91,15 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
     def add_trajs(self, trajs):
         """Add trajectories to the buffer"""
         for traj in trajs:
-            for (obs, action, reward, next_obs, done, info, log_prob) in zip(
+            for (obs, action, reward, done, info, log_prob) in zip(
                 traj["cur_obs"],
                 traj["actions"],
                 traj["rewards"],
-                traj["next_obs"],
                 traj["dones"],
                 traj["infos"],
                 traj["log_probs"],
             ):
-                self.add(obs, action, reward, next_obs, done, info, log_prob)
+                self.add(obs, action, reward, done, info, log_prob)
 
     def get_samples(self):
         """Get sample batch in buffer"""

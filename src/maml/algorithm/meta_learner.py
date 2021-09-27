@@ -144,12 +144,12 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     inner_optimizer.step(inner_policy_loss)
 
                 # Get validation trajectory D' for the current task
-                validation_batch = self.buffer.get_samples(cur_task, self.num_adapt_epochs)
+                valid_batch = self.buffer.get_samples(cur_task, self.num_adapt_epochs)
 
                 # Compute Meta-loss and backpropagate it through the gradient steps.
                 # Losses across all of the batch tasks are cumulated
                 # until `self.outer_optimizer.step()`
-                policy_loss = self.agent.compute_loss(inner_policy, validation_batch, is_meta_loss=True)
+                policy_loss = self.agent.compute_loss(inner_policy, valid_batch, is_meta_loss=True)
                 policy_loss.backward()
 
                 policy_loss_mean += policy_loss.item() / self.num_sample_tasks
