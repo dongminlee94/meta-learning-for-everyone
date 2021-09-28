@@ -74,7 +74,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         running_advant = 0
 
         self.train_value_network(batch)
-        values_batch = self.vf(obs_batch).detach()
+        values_batch = self.vf(obs_batch)
 
         for t in reversed(range(len(rewards_batch))):
             # Compute GAE
@@ -98,7 +98,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         obs_batch = batch["obs"]
         action_batch = batch["actions"]
 
-        advant_batch = self.compute_gae(batch)
+        advant_batch = self.compute_gae(batch).detach()
 
         # Policy loss
         if is_meta_loss:

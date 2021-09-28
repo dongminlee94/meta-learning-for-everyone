@@ -58,7 +58,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             observ_dim=observ_dim,
             action_dim=action_dim,
             agent=agent,
-            num_tasks=self.num_sample_tasks,
+            num_tasks=max(self.num_sample_tasks, len(test_tasks)),
             num_episodes=(self.num_adapt_epochs + 1),  # [num of adapatation for train] + [validation]
             max_size=self.num_samples,
             device=device,
@@ -89,8 +89,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         for cur_task, task_index in enumerate(indices):
             self.env.reset_task(task_index)
-            if not eval_mode:
-                print(f"[{cur_task + 1}/{len(indices)}] collecting samples for task batch")
+
+            mode = "test" if eval_mode else "train"
+            print(f"[{cur_task + 1}/{len(indices)}] collecting samples for {mode}-task batch")
 
             # Get branches of outer-poicy as inner-policy
             with higher.innerloop_ctx(
@@ -99,7 +100,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
                 # Adapt policy to each task through few grandient steps
                 for cur_adapt in range(self.num_adapt_epochs + 1):
-
                     # Sample trajectory D while adaptating steps and trajectory D' after adaptation
                     if cur_adapt == self.num_adapt_epochs:
                         inner_policy.is_deterministic = eval_mode
@@ -120,6 +120,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def meta_update(self):
         """Update meta-policy using PPO algorithm"""
+        print("Do Meta-update")
         self.outer_optimizer.zero_grad()
         policy_loss_mean = 0
 
@@ -208,7 +209,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-locals, disable=too-many-statements
     def meta_test(self, iteration, total_start_time, start_time, log_values):
         """MAML meta-testing"""
-
         test_results = {}
         returns_before_grad = []
         returns_after_grad = []
