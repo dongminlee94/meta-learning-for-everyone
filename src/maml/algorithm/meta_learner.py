@@ -64,7 +64,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        self.inner_optimizer = torch.optim.SGD(
+        self.inner_optimizer = torch.optim.Adam(
             list(self.agent.policy.parameters()),
             lr=config["inner_learning_rate"],
         )

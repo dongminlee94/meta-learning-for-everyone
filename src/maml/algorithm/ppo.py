@@ -19,7 +19,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         vf_hidden_dim,
         device,
         gamma=0.99,
-        lamda=0.97,
+        lamda=1.0,
         **config,
     ):
 
@@ -88,7 +88,7 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             prev_value = values_batch[t]
 
         # Normalize advantage
-        advants_batch = (advants_batch - advants_batch.mean()) / advants_batch.std()
+        advants_batch = (advants_batch - advants_batch.mean()) / (advants_batch.std() + 1e-8)
 
         return advants_batch
 
