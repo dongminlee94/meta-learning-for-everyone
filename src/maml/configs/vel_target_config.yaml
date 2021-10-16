@@ -20,7 +20,7 @@ maml_params:
     # Number of training iterations
     num_iterations: 10000
     # Number of task samples for training
-    num_sample_tasks: 20
+    num_sample_tasks: 40
     # Number of samples per task to train
     num_samples: 4000
     # Maximum steps for the environment

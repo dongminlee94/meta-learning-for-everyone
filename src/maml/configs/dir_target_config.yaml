@@ -22,7 +22,7 @@ maml_params:
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train
-    num_samples: 4000
+    num_samples: 8000
     # Maximum steps for the environment
     max_steps: 200
     # Number of inner adaptation iterations for the MAML algorithm
