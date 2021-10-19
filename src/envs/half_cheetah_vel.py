@@ -12,8 +12,6 @@ from . import register_env
 class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with velocity target reward"""
 
-    environment_name = "cheetah-vel"
-
     def __init__(self, num_tasks=2, seed=0):
         super().__init__(render=False)
         self.tasks = self.sample_tasks(num_tasks)
@@ -89,7 +87,7 @@ class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
 
     def get_all_task_idx(self):
         """Get index of all the tasks"""
-        return range(len(self.tasks))
+        return list(range(len(self.tasks)))
 
     def reset_task(self, index):
         """Reset velocity target to index of task"""

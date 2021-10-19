@@ -9,44 +9,38 @@ import torch
 class Sampler:
     """Data sampling class"""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         env,
         agent,
         action_dim,
+        max_step,
         device,
     ):
 
         self.env = env
         self.agent = agent
-        self.policy = agent.policy
         self.action_dim = action_dim
+        self.max_step = max_step
         self.device = device
+        self.cur_samples = 0
 
-    def obtain_trajs(self, policy, max_samples, max_step, use_rendering=False):
+    def obtain_samples(self, policy, max_samples):
         """Obtain samples up to the number of maximum samples"""
-        self.policy = policy
         trajs = []
-        cur_samples = 0
-
-        while cur_samples < max_samples:
-            if max_step > max_samples - cur_samples:
-                max_step = max_samples - cur_samples + 1
-            traj = self.rollout(max_step=max_step, use_rendering=use_rendering)
+        while not self.cur_samples == max_samples:
+            traj = self.rollout(policy, max_samples)
             trajs.append(traj)
-
-            cur_samples += len(traj["cur_obs"])
+        self.cur_samples = 0
         return trajs
 
-    # pylint: disable=too-many-locals
-    def rollout(self, max_step, use_rendering=False):
+    def rollout(self, policy, max_samples):  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
         cur_obs = []
         actions = []
         rewards = []
         dones = []
         infos = []
-        values = []
         log_probs = []
 
         cur_step = 0
@@ -55,44 +49,30 @@ class Sampler:
         reward = np.zeros(1)
         done = np.zeros(1)
 
-        if use_rendering:
-            self.env.render()
-
-        while cur_step < max_step:
-            action, log_prob = self.get_action(obs)
-            value = self.agent.get_value(obs)
+        while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
+            # Get action
+            action, log_prob = policy(torch.Tensor(obs).to(self.device))
+            action = action.detach().cpu().numpy()
+            log_prob = log_prob.detach().cpu().numpy().reshape(-1)
 
             next_obs, reward, done, info = self.env.step(action)
-            reward = np.array(reward).reshape(-1)
-            done = np.array(int(done)).reshape(-1)
-
+            reward = np.array(reward)
+            done = np.array(int(done))
             cur_obs.append(obs)
             actions.append(action)
             rewards.append(reward)
             dones.append(done)
             infos.append(info["run_cost"])
-            values.append(value.reshape(-1))
-            if log_prob:
-                log_probs.append(log_prob.reshape(-1))
+            log_probs.append(log_prob)
 
             obs = next_obs
             cur_step += 1
-
-            if done:
-                break
+            self.cur_samples += 1
         return dict(
             cur_obs=np.array(cur_obs),
             actions=np.array(actions),
             rewards=np.array(rewards),
-            next_obs=np.vstack((cur_obs[1:], np.expand_dims(next_obs, 0))),
             dones=np.array(dones),
-            values=np.array(values),
+            infos=np.array(infos),
             log_probs=np.array(log_probs),
         )
-
-    def get_action(self, obs):
-        """Get an action from the policy"""
-        action, log_prob = self.policy(torch.Tensor(obs).to(self.device))
-        if log_prob:
-            log_prob = log_prob.detach().cpu().numpy()
-        return action.detach().cpu().numpy(), log_prob

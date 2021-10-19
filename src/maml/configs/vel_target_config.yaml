@@ -3,40 +3,39 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 15
+train_tasks: 300
 
 # Number of tasks for meta-test
 test_tasks: 15
 
-# Number of hidden units in neural networks
-hidden_dims: [300, 300, 300]
+# Number of hidden units in policy networks
+policy_hidden_dim: 64
 
+# Number of hidden units in value networks
+value_function_hidden_dim: 32
+
+# MAML setup
+# ----------
 maml_params:
     # Number of training iterations
-    train_iters: 200
+    num_iterations: 10000
     # Number of task samples for training
-    num_sample_tasks: 5
-    # Number of samples to train
-    train_samples: 200
-    # Maximum step for the environment
-    max_step: 200
-    # Number of samples to test
-    test_samples: 200
-    # Number of inner adaptation steps for the MAML algorithm
-    inner_adaptation_steps: 1
+    num_sample_tasks: 40
+    # Number of samples per task to train
+    num_samples: 4000
+    # Maximum steps for the environment
+    max_steps: 200
+    # Number of inner adaptation iterations for the MAML algorithm
+    num_adapt_epochs: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
-    # Number of PPO steps per meta-update iteration
-    maml_optimizer_steps: 5
     # Learning rate of PPO losses
-    learning_rate: 0.001
+    outer_learning_rate: 0.001
 
 # PPO setup
 # ---------
 ppo_params:
     # PPO clip parameter
-    clip_param: 0.3
-    # coefficient of the value function 
-    vf_loss_coeff: 0.5
-    # Learning rate of value function
-    vf_learning_rate: 0.001
+    clip_param: 0.5
+    # Learning rate of value_fuction
+    vf_learning_rate: 0.1

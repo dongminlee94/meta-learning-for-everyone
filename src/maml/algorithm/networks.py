@@ -1,7 +1,6 @@
 """
 Various network architecture codes used in MAML algorithm
 """
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,25 +15,29 @@ class MLP(nn.Module):
         self,
         input_dim,
         output_dim,
-        hidden_dims,
+        hidden_dim,
         hidden_activation=F.relu,
         init_w=3e-3,
     ):
         super().__init__()
 
+        self.input_dim = input_dim
+        self.output_dim = output_dim
         self.hidden_activation = hidden_activation
 
         # Set fully connected layers
         self.fc_layers = nn.ModuleList()
-        in_dim = input_dim
-        for i, hidden_dim in enumerate(hidden_dims):
-            fc_layer = nn.Linear(in_dim, hidden_dim)
-            in_dim = hidden_dim
+        self.hidden_layers = [hidden_dim] * 2
+        in_layer = input_dim
+
+        for i, hidden_layer in enumerate(self.hidden_layers):
+            fc_layer = nn.Linear(in_layer, hidden_layer)
+            in_layer = hidden_layer
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
         # Set the output layer
-        self.last_fc_layer = nn.Linear(in_dim, output_dim)
+        self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
@@ -47,28 +50,24 @@ class MLP(nn.Module):
 
 
 class GaussianPolicy(MLP):
-    """Gaussian policy network class using MLP"""
+    """Gaussian policy network class"""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         input_dim,
         output_dim,
-        hidden_dims,
-        env_target,
+        hidden_dim,
         is_deterministic=False,
         init_w=1e-3,
     ):
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
-            hidden_dims=hidden_dims,
+            hidden_dim=hidden_dim,
             init_w=init_w,
         )
 
-        if env_target == "cheetah-dir":
-            self.log_std = -0.5 * np.ones(output_dim, dtype=np.float32)
-        elif env_target == "cheetah-vel":
-            self.log_std = -1.0 * np.ones(output_dim, dtype=np.float32)
+        self.log_std = -0.5 * np.ones(output_dim, dtype=np.float32)
         self.log_std = torch.nn.Parameter(torch.Tensor(self.log_std))
         self.is_deterministic = is_deterministic
 
@@ -87,8 +86,9 @@ class GaussianPolicy(MLP):
         normal, mean = self.get_normal_dist(x)
         if self.is_deterministic:
             action = mean
-            log_prob = None
+            log_prob = torch.zeros(1)
         else:
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)
+        action = action.view(-1)
         return action, log_prob

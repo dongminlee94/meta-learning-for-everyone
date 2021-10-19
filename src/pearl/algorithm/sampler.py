@@ -3,8 +3,13 @@ Sample collection implementation through interaction between agent and environme
 """
 
 
+from typing import Dict, List, Tuple
+
 import numpy as np
 import torch
+from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+
+from src.pearl.algorithm.sac import SAC
 
 
 class Sampler:
@@ -12,51 +17,48 @@ class Sampler:
 
     def __init__(
         self,
-        env,
-        agent,
-        max_step,
-        device,
-    ):
+        env: HalfCheetahBulletEnv,
+        agent: SAC,
+        max_step: int,
+        device: torch.device,
+    ) -> None:
 
         self.env = env
         self.agent = agent
         self.max_step = max_step
         self.device = device
 
-    def obtain_samples(self, max_samples, min_trajs, accum_context=True, use_rendering=False):
+    def obtain_samples(
+        self, max_samples: int, update_posterior: bool, accum_context: bool = True
+    ) -> Tuple[List[Dict[str, np.ndarray]], int]:
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        num_samples = 0
-        num_trajs = 0
+        cur_samples = 0
 
-        while num_samples < max_samples:
-            traj = self.rollout(accum_context=accum_context, use_rendering=use_rendering)
-
+        while cur_samples < max_samples:
+            traj = self.rollout(accum_context=accum_context)
             trajs.append(traj)
-            num_samples += len(traj["cur_obs"])
-            num_trajs += 1
-
+            cur_samples += len(traj["cur_obs"])
             self.agent.encoder.sample_z()
 
-            if min_trajs == 1:
+            if update_posterior:
                 break
-        return trajs, num_samples
+        return trajs, cur_samples
 
-    def rollout(self, accum_context=True, use_rendering=False):
+    def rollout(self, accum_context: bool = True) -> Dict[str, np.ndarray]:
         """Rollout up to maximum trajectory length"""
-        cur_obs = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
+        _cur_obs = []
+        _actions = []
+        _rewards = []
+        _next_obs = []
+        _dones = []
+        _infos = []
 
         obs = self.env.reset()
+        done = False
         cur_step = 0
 
-        if use_rendering:
-            self.env.render()
-
-        while cur_step < self.max_step:
+        while not (done or cur_step == self.max_step):
             action = self.agent.get_action(obs)
             next_obs, reward, done, info = self.env.step(action)
 
@@ -64,33 +66,25 @@ class Sampler:
             if accum_context:
                 self.update_context(obs, action, reward)
 
-            cur_obs.append(obs)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info["run_cost"])
+            _cur_obs.append(obs)
+            _actions.append(action)
+            _rewards.append(reward)
+            _next_obs.append(next_obs)
+            _dones.append(done)
+            _infos.append(info["run_cost"])
 
             cur_step += 1
             obs = next_obs
-            if done:
-                break
-
-        cur_obs = np.array(cur_obs)
-        actions = np.array(actions)
-        rewards = np.array(rewards).reshape(-1, 1)
-        next_obs = np.vstack((cur_obs[1:, :], np.expand_dims(next_obs, 0)))
-        dones = np.array(dones).reshape(-1, 1)
-        infos = np.array(infos)
         return dict(
-            cur_obs=cur_obs,
-            actions=actions,
-            rewards=rewards,
-            next_obs=next_obs,
-            dones=dones,
-            infos=infos,
+            cur_obs=np.array(_cur_obs),
+            actions=np.array(_actions),
+            rewards=np.array(_rewards).reshape(-1, 1),
+            next_obs=np.array(_next_obs),
+            dones=np.array(_dones).reshape(-1, 1),
+            infos=np.array(_infos),
         )
 
-    def update_context(self, obs, action, reward):
+    def update_context(self, obs: np.ndarray, action: np.ndarray, reward: float) -> None:
         """Append single transition to the current context"""
         obs = torch.from_numpy(obs[None, None, ...]).float().to(self.device)
         action = torch.from_numpy(action[None, None, ...]).float().to(self.device)
