@@ -12,11 +12,11 @@ from . import register_env
 class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-instance-attributes
     """Half-cheetah environment class with direction target reward"""
 
-    def __init__(self, num_tasks=2, seed=0):
+    def __init__(self, num_tasks=4, seed=0):
         super().__init__(render=False)
-        assert num_tasks == 4
-        directions = [-1, 1]
+        directions = [-1, 1, -1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
+        assert num_tasks == len(self.tasks)
         self._goal = None
         self._goal_dir = None
         self._task = None

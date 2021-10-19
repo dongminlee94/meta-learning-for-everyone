@@ -1,0 +1,41 @@
+# Velocity target reward configs
+
+# General setup
+# -------------
+# Number of tasks for meta-train
+train_tasks: 300
+
+# Number of tasks for meta-test
+test_tasks: 15
+
+# Number of hidden units in policy networks
+policy_hidden_dim: 64
+
+# Number of hidden units in value networks
+value_function_hidden_dim: 32
+
+# MAML setup
+# ----------
+maml_params:
+    # Number of training iterations
+    num_iterations: 10000
+    # Number of task samples for training
+    num_sample_tasks: 40
+    # Number of samples per task to train
+    num_samples: 4000
+    # Maximum steps for the environment
+    max_steps: 200
+    # Number of inner adaptation iterations for the MAML algorithm
+    num_adapt_epochs: 1
+    # Learning rate of inner adaptation
+    inner_learning_rate: 0.1
+    # Learning rate of PPO losses
+    outer_learning_rate: 0.001
+
+# PPO setup
+# ---------
+ppo_params:
+    # PPO clip parameter
+    clip_param: 0.5
+    # Learning rate of value_fuction
+    vf_learning_rate: 0.1
