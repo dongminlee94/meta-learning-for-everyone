@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import torch
-from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from src.pearl.algorithm.buffers import MultiTaskReplayBuffer
@@ -24,7 +24,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        env: HalfCheetahBulletEnv,
+        env: HalfCheetahEnv,
         env_name: str,
         agent: SAC,
         observ_dim: int,

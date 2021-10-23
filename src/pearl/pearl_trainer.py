@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import numpy as np
 import torch
 import yaml
-from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 
 from src.envs import ENVS
 from src.pearl.algorithm.meta_learner import MetaLearner
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
     # Create a multi-task environment and sample tasks
-    env: HalfCheetahBulletEnv = ENVS["cheetah-" + experiment_config["env_name"]](
+    env: HalfCheetahEnv = ENVS["cheetah-" + experiment_config["env_name"]](
         num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"]
     )
     tasks: List[int] = env.get_all_task_idx()

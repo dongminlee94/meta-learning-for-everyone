@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-from pybullet_envs.gym_locomotion_envs import HalfCheetahBulletEnv
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 
 from src.pearl.algorithm.sac import SAC
 
@@ -17,7 +17,7 @@ class Sampler:
 
     def __init__(
         self,
-        env: HalfCheetahBulletEnv,
+        env: HalfCheetahEnv,
         agent: SAC,
         max_step: int,
         device: torch.device,
