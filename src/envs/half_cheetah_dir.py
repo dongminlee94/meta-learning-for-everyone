@@ -86,6 +86,5 @@ class HalfCheetahDirEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
     def reset_task(self, index):
         """Reset direction target to index of task"""
         self._task = self.tasks[index]
-        self._goal_dir = self._task["direction"]
-        self._goal = self._goal_dir
+        self._goal = self._goal_dir = self._task["direction"]
         self.reset()

@@ -92,6 +92,5 @@ class HalfCheetahVelEnv(HalfCheetahBulletEnv):  # pylint: disable=too-many-insta
     def reset_task(self, index):
         """Reset velocity target to index of task"""
         self._task = self.tasks[index]
-        self._goal_vel = self._task["velocity"]
-        self._goal = self._goal_vel
+        self._goal = self._goal_vel = self._task["velocity"]
         self.reset()
