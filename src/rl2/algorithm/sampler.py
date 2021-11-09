@@ -72,8 +72,7 @@ class Sampler:
             dones.append(done)
             infos.append(info["run_cost"])
             values.append(value.reshape(-1))
-            if log_prob:
-                log_probs.append(log_prob.reshape(-1))
+            log_probs.append(log_prob.reshape(-1))
 
             obs = next_obs.reshape(-1)
             pi_hidden = next_pi_hidden[0]
