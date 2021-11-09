@@ -22,7 +22,7 @@ from src.pearl.algorithm.sampler import Sampler
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
     """PEARL meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
         self,
         env: HalfCheetahEnv,
         env_name: str,
@@ -31,8 +31,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         action_dim: int,
         train_tasks: List[int],
         test_tasks: List[int],
-        exp_name: str,
-        file_name: str,
+        save_exp_name: str,
+        save_file_name: str,
+        load_exp_name: str,
+        load_file_name: str,
+        load_ckpt_num: int,
         device: torch.device,
         **config,
     ) -> None:
@@ -74,9 +77,27 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             max_size=config["max_buffer_size"],
         )
 
-        if not file_name:
-            file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.writer = SummaryWriter(log_dir=os.path.join("results", exp_name, file_name))
+        if not save_file_name:
+            save_file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.result_path = os.path.join("results", save_exp_name, save_file_name)
+        self.writer = SummaryWriter(log_dir=self.result_path)
+
+        if load_exp_name and load_file_name:
+            ckpt_path = os.path.join(
+                "results", load_exp_name, load_file_name, "checkpoint_" + str(load_ckpt_num) + ".pt"
+            )
+            ckpt = torch.load(ckpt_path)
+
+            self.agent.policy.load_state_dict(ckpt["policy"])
+            self.agent.encoder.load_state_dict(ckpt["encoder"])
+            self.agent.qf1.load_state_dict(ckpt["qf1"])
+            self.agent.qf2.load_state_dict(ckpt["qf2"])
+            self.agent.target_qf1.load_state_dict(ckpt["target_qf1"])
+            self.agent.target_qf2.load_state_dict(ckpt["target_qf2"])
+            self.agent.log_alpha = ckpt["log_alpha"]
+            self.agent.alpha = ckpt["alpha"]
+            self.rl_replay_buffer = ckpt["rl_replay_buffer"]
+            self.encoder_replay_buffer = ckpt["encoder_replay_buffer"]
 
         # Set up early stopping condition
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
@@ -154,7 +175,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                         add_to_enc_buffer=True,
                     )
 
-            print(f"=============== Iteration {iteration} ===============")
+            print(f"\n=============== Iteration {iteration} ===============")
             # Sample data randomly from train tasks.
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
@@ -337,4 +358,19 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         # Save the trained models
         if self.is_early_stopping:
-            pass
+            ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
+            torch.save(
+                {
+                    "policy": self.agent.policy.state_dict(),
+                    "encoder": self.agent.encoder.state_dict(),
+                    "qf1": self.agent.qf1.state_dict(),
+                    "qf2": self.agent.qf2.state_dict(),
+                    "target_qf1": self.agent.target_qf1.state_dict(),
+                    "target_qf2": self.agent.target_qf2.state_dict(),
+                    "log_alpha": self.agent.log_alpha,
+                    "alpha": self.agent.alpha,
+                    "rl_replay_buffer": self.rl_replay_buffer,
+                    "encoder_replay_buffer": self.encoder_replay_buffer,
+                },
+                ckpt_path,
+            )

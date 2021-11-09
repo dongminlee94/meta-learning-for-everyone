@@ -3,11 +3,20 @@
 # Select either dir or vel
 env_name: "dir"
 
-# Set an experiment name
-exp_name: "exp_1"
+# Set an experiment name to save
+save_exp_name: "exp_1"
 
-# Set a file name
-file_name: null
+# Set a file name to save
+save_file_name: null
+
+# Set an experiment name to load
+load_exp_name: null
+
+# Set a file name to load
+load_file_name: null
+
+# Set a checkpoint number
+load_ckpt_num: 0
 
 # Set a GPU index
 gpu_index: 0
