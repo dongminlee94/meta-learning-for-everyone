@@ -65,8 +65,11 @@ if __name__ == "__main__":
         action_dim=action_dim,
         train_tasks=tasks[: env_target_config["train_tasks"]],
         test_tasks=tasks[-env_target_config["test_tasks"] :],
-        exp_name=experiment_config["exp_name"],
-        file_name=experiment_config["file_name"],
+        save_exp_name=experiment_config["save_exp_name"],
+        save_file_name=experiment_config["save_file_name"],
+        load_exp_name=experiment_config["load_exp_name"],
+        load_file_name=experiment_config["load_file_name"],
+        load_ckpt_num=experiment_config["load_ckpt_num"],
         device=device,
         **env_target_config["pearl_params"],
     )

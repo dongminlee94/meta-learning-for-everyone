@@ -77,7 +77,7 @@ class GaussianGRU(GRU):
         normal, mean, hidden = self.get_normal_dist(x, h)
         if self.is_deterministic:
             action = mean
-            log_prob = None
+            log_prob = torch.zeros(1)
         else:
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)

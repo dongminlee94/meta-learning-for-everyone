@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from src.pearl.algorithm.networks import MLP, FlattenMLP, MLPEncoder, TanhGaussianPolicy
+from src.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
 class SAC:  # pylint: disable=too-many-instance-attributes
@@ -83,15 +83,6 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha = self.log_alpha.exp()
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=config["policy_lr"])
-
-        self.net_dict = {
-            "actor": self.policy,
-            "encoder": self.encoder,
-            "qf1": self.qf1,
-            "qf2": self.qf2,
-            "target_qf1": self.target_qf1,
-            "target_qf2": self.target_qf2,
-        }
 
     @classmethod
     def hard_target_update(cls, main: FlattenMLP, target: FlattenMLP) -> None:
@@ -201,24 +192,3 @@ class SAC:  # pylint: disable=too-many-instance-attributes
             z_mean=self.encoder.z_mean.detach().cpu().numpy().mean().item(),
             z_var=self.encoder.z_var.detach().cpu().numpy().mean().item(),
         )
-
-    def save(self, path: str, net_dict: Dict[str, MLP] = None) -> None:
-        """Save data related to models in path"""
-        if net_dict is None:
-            net_dict = self.net_dict
-
-        state_dict = {name: net.state_dict() for name, net in net_dict.items()}
-        state_dict["alpha"] = self.log_alpha
-        torch.save(state_dict, path)
-
-    def load(self, path: str, net_dict: Dict[str, MLP] = None) -> None:
-        """Load data stored as check point in models"""
-        if net_dict is None:
-            net_dict = self.net_dict
-
-        checkpoint = torch.load(path)
-        for name, net in net_dict.items():
-            if name == "alpha":
-                self.log_alpha.load(net)
-            else:
-                net.load_state_dict(checkpoint[name])
