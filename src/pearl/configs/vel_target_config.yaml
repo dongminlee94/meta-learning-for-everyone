@@ -3,10 +3,10 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 15
+train_tasks: 100
 
 # Number of tasks for meta-test
-test_tasks: 15
+test_tasks: 30
 
 # Dimension of the latent context vector
 latent_dim: 5
@@ -29,7 +29,7 @@ pearl_params:
     # that are only used to train the policy and NOT the encoder
     num_posterior_samples: 600
     # Number of meta-gradient taken per iteration
-    num_meta_grads: 2000
+    num_meta_grads: 1500
     # Number of tasks to average the gradient across
     meta_batch_size: 16
     # Number of samples in the context batch
