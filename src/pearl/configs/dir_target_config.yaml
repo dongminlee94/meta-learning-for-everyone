@@ -29,7 +29,7 @@ pearl_params:
     # that are only used to train the policy and NOT the encoder
     num_posterior_samples: 1000
     # Number of meta-gradient taken per iteration
-    num_meta_grads: 2000
+    num_meta_grads: 1500
     # Number of tasks to average the gradient across
     meta_batch_size: 4
     # Number of samples in the context batch
@@ -41,7 +41,7 @@ pearl_params:
     # Number of early stopping conditions
     num_stop_conditions: 3
     # Goal value used to early stopping condition
-    stop_goal: 190 
+    stop_goal: 1900
 
 # SAC setup
 # ---------
