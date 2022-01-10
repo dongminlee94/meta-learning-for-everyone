@@ -1,10 +1,8 @@
 """
 Various network architecture codes used in MAML algorithm
 """
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.distributions import Normal
 
 
@@ -16,8 +14,7 @@ class MLP(nn.Module):
         input_dim,
         output_dim,
         hidden_dim,
-        hidden_activation=F.relu,
-        init_w=3e-3,
+        hidden_activation=torch.tanh,
     ):
         super().__init__()
 
@@ -32,14 +29,16 @@ class MLP(nn.Module):
 
         for i, hidden_layer in enumerate(self.hidden_layers):
             fc_layer = nn.Linear(in_layer, hidden_layer)
+            nn.init.xavier_uniform_(fc_layer.weight.data)
+            fc_layer.bias.data.zero_()
             in_layer = hidden_layer
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
         # Set the output layer
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
-        self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
-        self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
+        nn.init.xavier_uniform_(self.last_fc_layer.weight.data)
+        self.last_fc_layer.bias.data.zero_()
 
     def forward(self, x):
         """Get output when input is given"""
@@ -58,28 +57,39 @@ class GaussianPolicy(MLP):
         output_dim,
         hidden_dim,
         is_deterministic=False,
-        init_w=1e-3,
+        init_std=1.0,
+        min_std=1e6,
+        max_std=None,
     ):
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
             hidden_dim=hidden_dim,
-            init_w=init_w,
         )
 
-        self.log_std = -0.5 * np.ones(output_dim, dtype=np.float32)
+        self.log_std = torch.Tensor([init_std]).log()
         self.log_std = torch.nn.Parameter(torch.Tensor(self.log_std))
+        self.min_log_std = None
+        self.max_log_std = None
+
+        if min_std is not None:
+            self.min_log_std = torch.Tensor([min_std]).log()
+        if max_std is not None:
+            self.max_log_std = torch.Tensor([max_std]).log()
+
         self.is_deterministic = is_deterministic
 
     def get_normal_dist(self, x):
         """Get Gaussian distribtion"""
         mean = super().forward(x)
-        std = torch.exp(self.log_std)
+        std = torch.exp(self.log_std.clamp(min=self.min_log_std, max=self.max_log_std))
+
         return Normal(mean, std), mean
 
     def get_log_prob(self, obs, action):
         """Get log probability of Gaussian distribution using obs and action"""
         normal, _ = self.get_normal_dist(obs)
+
         return normal.log_prob(action).sum(dim=-1)
 
     def forward(self, x):
@@ -91,4 +101,5 @@ class GaussianPolicy(MLP):
             action = normal.sample()
             log_prob = normal.log_prob(action).sum(dim=-1)
         action = action.view(-1)
+
         return action, log_prob
