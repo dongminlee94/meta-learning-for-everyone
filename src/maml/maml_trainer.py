@@ -8,7 +8,7 @@ import yaml
 
 from src.envs import ENVS
 from src.maml.algorithm.meta_learner import MetaLearner
-from src.maml.algorithm.ppo import PPO
+from src.maml.algorithm.trpo import PolicyGradient
 
 if __name__ == "__main__":
     # Experiment configuration setup
@@ -45,13 +45,13 @@ if __name__ == "__main__":
         else torch.device("cpu")
     )
 
-    agent = PPO(
+    agent = PolicyGradient(
         observ_dim=observ_dim,
         action_dim=action_dim,
         policy_hidden_dim=policy_hidden_dim,
         vf_hidden_dim=vf_hidden_dim,
         device=device,
-        **env_target_config["ppo_params"],
+        **env_target_config["pg_params"],
     )
 
     maml = MetaLearner(
