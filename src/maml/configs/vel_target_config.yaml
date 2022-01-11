@@ -29,6 +29,10 @@ maml_params:
     num_adapt_epochs: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
+    # Number of early stopping conditions
+    num_stop_conditions: 3
+    # Goal value used to early stopping condition
+    stop_goal: 0
 
 # TRPO setup
 # ---------

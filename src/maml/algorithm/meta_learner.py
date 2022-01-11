@@ -6,34 +6,41 @@ Meta-train and meta-test codes with MAML algorithm
 import datetime
 import os
 import time
+from collections import deque
 from copy import deepcopy
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from src.maml.algorithm.buffer import MultiTaskBuffer
 from src.maml.algorithm.optimizer import DifferentiableSGD
 from src.maml.algorithm.sampler import Sampler
+from src.maml.algorithm.trpo import PolicyGradient
 
 
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
     """MAML meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
         self,
-        env,
-        env_name,
-        agent,
-        observ_dim,
-        action_dim,
-        train_tasks,
-        test_tasks,
-        exp_name,
-        file_name,
-        device,
+        env: HalfCheetahEnv,
+        env_name: str,
+        agent: PolicyGradient,
+        observ_dim: int,
+        action_dim: int,
+        train_tasks: List[int],
+        test_tasks: List[int],
+        save_exp_name: str,
+        save_file_name: str,
+        load_exp_name: str,
+        load_file_name: str,
+        load_ckpt_num: int,
+        device: torch.device,
         **config,
-    ):
+    ) -> None:
 
         self.env = env
         self.env_name = env_name
@@ -74,19 +81,27 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             lr=config["inner_learning_rate"],
         )
 
-        if file_name is None:
-            file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.writer = SummaryWriter(
-            log_dir=os.path.join(
-                ".",
-                "results",
-                exp_name,
-                file_name,
-            )
-        )
+        if not save_file_name:
+            save_file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.result_path = os.path.join("results", save_exp_name, save_file_name)
+        self.writer = SummaryWriter(log_dir=self.result_path)
 
-    def collect_train_samples(self, indices, is_eval=False):
-        """Collect samples before & after gradient for task batch"""
+        if load_exp_name and load_file_name:
+            ckpt_path = os.path.join(
+                "results", load_exp_name, load_file_name, "checkpoint_" + str(load_ckpt_num) + ".pt"
+            )
+            ckpt = torch.load(ckpt_path)
+
+            self.agent.policy.load_state_dict(ckpt["policy"])
+
+        # Set up early stopping condition
+        self.dq: deque = deque(maxlen=config["num_stop_conditions"])
+        self.num_stop_conditions: int = config["num_stop_conditions"]
+        self.stop_goal: int = config["stop_goal"]
+        self.is_early_stopping = False
+
+    def collect_train_data(self, indices: List[int], is_eval: bool = False) -> None:
+        """Collect data before & after gradient for each task batch"""
         losses = []
         backup_params = dict(self.agent.policy.named_parameters())
 
@@ -130,7 +145,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Restore to pre-updated policy
             self.agent.update_model(self.agent.policy, backup_params)
 
-    def meta_surrogate_loss(self, set_grad=True):  # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals
+    def meta_surrogate_loss(self, set_grad: bool = True) -> Tuple[torch.Tensor, ...]:
         """Compute meta-surrogate loss across batch tasks"""
         losses, kls, entropies = [], [], []
         backup_params = dict(self.agent.policy.named_parameters())
@@ -174,7 +190,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         return torch.stack(losses).mean(), torch.stack(kls).mean(), torch.stack(entropies).mean()
 
-    def meta_update(self):  # pylint: disable=too-many-locals
+    def meta_update(self) -> Dict[str, float]:  # pylint: disable=too-many-locals
         """Update meta-policy using TRPO algorithm"""
 
         # Compute initial descent steps of line search
@@ -183,7 +199,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         gradient = self.agent.flat_grad(gradient)
         Hvp = self.agent.hessian_vector_product(kl_before, self.agent.policy.parameters())
         search_dir = self.agent.conjugate_gradient(Hvp, gradient)
-        descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.agent.policy, self.max_kl)
+        descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
 
         assert len(descent_step) == len(list(self.agent.policy.parameters()))
         loss_before.detach_()
@@ -201,15 +217,12 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             loss_new, kl_new, _ = self.meta_surrogate_loss(set_grad=False)
 
             # Update the policy, when the KL constraint is satisfied
-            improvement = loss_new < loss_before
-            constraint = kl_new <= self.max_kl
-            print(
-                f"{i}-Backtracks |\
-             Loss {loss_new} < Loss_old {loss_before} : {improvement} |\
-             KL {kl_new} <= maxKL {self.max_kl} : {constraint}"
-            )
+            is_improved = loss_new < loss_before
+            is_constrained = kl_new <= self.max_kl
+            print(f"{i}-Backtracks | Loss {loss_new:.4f} < Loss_old {loss_before:.4f} : ", end="")
+            print(f"{is_improved} | KL {kl_new:.4f} <= maxKL {self.max_kl:.4f} : {is_constrained}")
 
-            if loss_new < loss_before and kl_new <= self.max_kl:
+            if is_improved and is_constrained:
                 print(f"Update meta-policy through {i+1} backtracking line search step(s)")
                 break
 
@@ -229,17 +242,17 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             policy_entropy=policy_entropy.item(),
         )
 
-    def meta_train(self):  # pylint: disable=too-many-locals
+    def meta_train(self) -> None:  # pylint: disable=too-many-locals
         """MAML meta-training"""
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
-            print(f"=============== Iteration {iteration} ===============")
+            print(f"\n=============== Iteration {iteration} ===============")
             # Sample batch of tasks randomly from train task distribution and
-            # optain adaptating samples for the batch tasks
+            # optain adaptating data for each batch task
             indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
-            self.collect_train_samples(indices)
+            self.collect_train_data(indices)
 
             # Meta update
             log_values = self.meta_update()
@@ -247,18 +260,27 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
-    def visualize_within_tensorboard(self, test_results, iteration):
+            if self.is_early_stopping:
+                print(
+                    f"\n==================================================\n"
+                    f"The last {self.num_stop_conditions} meta-testing results are {self.dq}.\n"
+                    f"And early stopping condition is {self.is_early_stopping}.\n"
+                    f"Therefore, meta-training is terminated."
+                )
+                break
+
+    def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
         """Tensorboard visualization"""
-        self.writer.add_scalar("test/return_before_grad", test_results["return_before"], iteration)
-        self.writer.add_scalar("test/return_after_grad", test_results["return_after"], iteration)
-        if self.env_name == "cheetah-vel":
+        self.writer.add_scalar("test/return_before_grad", test_results["return_before_grad"], iteration)
+        self.writer.add_scalar("test/return_after_grad", test_results["return_after_grad"], iteration)
+        if self.env_name == "vel":
             self.writer.add_scalar(
-                "test/total_run_cost_before_grad",
-                test_results["total_run_cost_before_grad"],
+                "test/sum_run_cost_before_grad",
+                test_results["sum_run_cost_before_grad"],
                 iteration,
             )
             self.writer.add_scalar(
-                "test/total_run_cost_after_grad", test_results["total_run_cost_after_grad"], iteration
+                "test/sum_run_cost_after_grad", test_results["sum_run_cost_after_grad"], iteration
             )
             for step in range(len(test_results["run_cost_before_grad"])):
                 self.writer.add_scalar(
@@ -282,7 +304,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
     # pylint: disable=too-many-locals, disable=too-many-statements
-    def meta_test(self, iteration, total_start_time, start_time, log_values):
+    def meta_test(
+        self, iteration: int, total_start_time: float, start_time: float, log_values: Dict[str, float]
+    ) -> None:
         """MAML meta-testing"""
         test_results = {}
         returns_before_grad = []
@@ -290,7 +314,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         run_costs_before_grad = []
         run_costs_after_grad = []
 
-        self.collect_train_samples(self.test_tasks, is_eval=True)
+        self.collect_train_data(self.test_tasks, is_eval=True)
 
         for task in range(len(self.test_tasks)):
             batch_before_grad = self.buffer.get_samples(task, 0)
@@ -301,7 +325,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             returns_before_grad.append(torch.sum(rewards_before_grad).item())
             returns_after_grad.append(torch.sum(rewards_after_grad).item())
 
-            if self.env_name == "cheetah-vel":
+            if self.env_name == "vel":
                 run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps].cpu().numpy())
                 run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps].cpu().numpy())
 
@@ -311,13 +335,17 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.buffer.clear()
 
         # Collect meta-test results
-        test_results["return_before"] = sum(returns_before_grad) / len(self.test_tasks)
-        test_results["return_after"] = sum(returns_after_grad) / len(self.test_tasks)
-        if self.env_name == "cheetah-vel":
+        test_results["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
+        test_results["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
+        if self.env_name == "vel":
             test_results["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
             test_results["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
-            test_results["total_run_cost_before_grad"] = sum(test_results["run_cost_before_grad"])
-            test_results["total_run_cost_after_grad"] = sum(test_results["run_cost_after_grad"])
+            test_results["sum_run_cost_before_grad"] = sum(
+                abs(run_cost_before_grad / len(self.test_tasks))
+            )
+            test_results["sum_run_cost_after_grad"] = sum(
+                abs(run_cost_after_grad / len(self.test_tasks))
+            )
         test_results["loss_before"] = log_values["loss_before"]
         test_results["loss_after"] = log_values["loss_after"]
         test_results["loss_diff"] = log_values["loss_before"] - log_values["loss_after"]
@@ -330,5 +358,17 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # Save the trained model
-        # TBU
+        # Check if each element of self.dq satisfies early stopping condition
+        if self.env_name == "dir":
+            self.dq.append(test_results["return_after_grad"])
+            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
+        elif self.env_name == "vel":
+            self.dq.append(test_results["sum_run_cost_after_grad"])
+            if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
+
+        # Save the trained models
+        if self.is_early_stopping:
+            ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
+            torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)

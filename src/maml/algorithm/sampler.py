@@ -2,7 +2,13 @@
 Sample collection code through interaction between agent and environment
 """
 
+from typing import Dict, List
+
 import numpy as np
+import torch
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
+
+from src.maml.algorithm.trpo import PolicyGradient
 
 
 class Sampler:
@@ -10,12 +16,12 @@ class Sampler:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        env,
-        agent,
-        action_dim,
-        max_step,
-        device,
-    ):
+        env: HalfCheetahEnv,
+        agent: PolicyGradient,
+        action_dim: int,
+        max_step: int,
+        device: torch.device,
+    ) -> None:
 
         self.env = env
         self.agent = agent
@@ -24,7 +30,7 @@ class Sampler:
         self.device = device
         self.cur_samples = 0
 
-    def obtain_samples(self, max_samples):
+    def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         cur_samples = 0
@@ -36,13 +42,13 @@ class Sampler:
 
         return trajs
 
-    def rollout(self):  # pylint: disable=too-many-locals
+    def rollout(self) -> Dict[str, np.ndarray]:  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
-        cur_obs = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
+        _cur_obs = []
+        _actions = []
+        _rewards = []
+        _dones = []
+        _infos = []
 
         cur_step = 0
         obs = self.env.reset()
@@ -57,19 +63,19 @@ class Sampler:
             next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward)
             done = np.array(int(done))
-            cur_obs.append(obs)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info["run_cost"])
+            _cur_obs.append(obs)
+            _actions.append(action)
+            _rewards.append(reward)
+            _dones.append(done)
+            _infos.append(info["run_cost"])
 
             obs = next_obs
             cur_step += 1
 
         return dict(
-            cur_obs=np.array(cur_obs),
-            actions=np.array(actions),
-            rewards=np.array(rewards),
-            dones=np.array(dones),
-            infos=np.array(infos),
+            cur_obs=np.array(_cur_obs),
+            actions=np.array(_actions),
+            rewards=np.array(_rewards),
+            dones=np.array(_dones),
+            infos=np.array(_infos),
         )

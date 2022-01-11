@@ -4,8 +4,11 @@ Proximal Policy Optimization algorithm implementation for training
 
 
 from copy import deepcopy
+from typing import Callable, Dict, Iterable, Tuple
 
+import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
@@ -43,7 +46,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
     # methods for TRPO
     @classmethod
-    def flat_grad(cls, gradients, is_hessian=False):
+    def flat_grad(cls, gradients: Tuple[torch.Tensor, ...], is_hessian: bool = False) -> torch.Tensor:
         """Flat gradients"""
         if is_hessian:
             grads = [g.contiguous() for g in gradients]
@@ -52,7 +55,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
         return parameters_to_vector(grads)
 
     @classmethod
-    def update_model(cls, module, new_params):
+    def update_model(cls, module: nn.Module, new_params: Dict[str, Iterable[torch.Tensor]]):
         """Replace model's parameters with new parameters"""
         named_modules = dict(module.named_modules())
 
@@ -71,7 +74,9 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
                 update(module, name, new_param)
 
     @classmethod
-    def hessian_vector_product(cls, kl, parameters, hvp_reg_coeff=1e-5):
+    def hessian_vector_product(
+        cls, kl: torch.Tensor, parameters: Iterable[torch.Tensor], hvp_reg_coeff: float = 1e-5
+    ) -> Callable:
         """Returns a callable that computes Hessian-vector product"""
         parameters = list(parameters)
         kl_grad = torch.autograd.grad(kl, parameters, create_graph=True)
@@ -90,7 +95,14 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     # pylint: disable=too-many-arguments
-    def conjugate_gradient(cls, fnc_Ax, b, num_iters=10, residual_tol=1e-10, eps=1e-8):
+    def conjugate_gradient(
+        cls,
+        fnc_Ax: Callable,
+        b: torch.Tensor,
+        num_iters: int = 10,
+        residual_tol: float = 1e-10,
+        eps: float = 1e-8,
+    ) -> torch.Tensor:
         """Conjugate gradient algorithm"""
         x = torch.zeros_like(b)
         r = b
@@ -111,18 +123,19 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
         return x
 
-    @classmethod
-    def compute_descent_step(cls, Hvp, search_dir, policy, max_kl):
+    def compute_descent_step(
+        self, Hvp: Callable, search_dir: torch.Tensor, max_kl: float
+    ) -> Iterable[torch.Tensor]:
         """Calculate descent step for backtracking line search according to kl constraint"""
         sHs = torch.dot(search_dir, Hvp(search_dir))
         lagrange_multiplier = torch.sqrt(sHs / (2 * max_kl))
         step = search_dir / lagrange_multiplier
-        step_param = [torch.zeros_like(params.data) for params in policy.parameters()]
+        step_param = [torch.zeros_like(params.data) for params in self.policy.parameters()]
         vector_to_parameters(step, step_param)
 
         return step_param
 
-    def infer_baselines(self, batch):
+    def infer_baselines(self, batch: Dict[str, torch.Tensor]):
         """Train value function and infer values as baselines"""
         obs_batch = batch["obs"]
         rewards_batch = batch["rewards"]
@@ -151,7 +164,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
         return baselines.cpu().numpy()
 
-    def compute_gae(self, batch):
+    def compute_gae(self, batch: Dict[str, torch.Tensor]):
         """Compute return and GAE"""
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
@@ -176,7 +189,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
         return advants_batch
 
-    def kl_divergence(self, batch):
+    def kl_divergence(self, batch: Dict[str, torch.Tensor]):
         """Compute KL divergence between old policy and new policy"""
         obs_batch = batch["obs"]
 
@@ -188,7 +201,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
         return kl_constraint.mean()
 
-    def compute_policy_entropy(self, batch):
+    def compute_policy_entropy(self, batch: Dict[str, torch.Tensor]):
         """Compute policy entropy"""
         obs_batch = batch["obs"]
 
@@ -198,14 +211,14 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
         return policy_entropy.mean()
 
-    def get_action(self, obs):
+    def get_action(self, obs: np.ndarray) -> np.ndarray:
         """Sample action from the policy"""
         action, _ = self.policy(torch.Tensor(obs).to(self.device))
 
         return action.detach().cpu().numpy()
 
     # pylint: disable=too-many-locals
-    def policy_loss(self, batch, is_meta_loss=False):
+    def policy_loss(self, batch: Dict[str, torch.Tensor], is_meta_loss: bool = False):
         """Compute policy losses according to TRPO algorithm"""
         obs_batch = batch["obs"]
         action_batch = batch["actions"]

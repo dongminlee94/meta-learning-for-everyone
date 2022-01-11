@@ -9,9 +9,8 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
+from src.envs import register_env
 from src.envs.half_cheetah import HalfCheetahEnv
-
-from . import register_env
 
 
 @register_env("cheetah-vel")
@@ -39,7 +38,7 @@ class HalfCheetahVelEnv(HalfCheetahEnv):
     def __init__(self, num_tasks: int) -> None:
         self.tasks = self.sample_tasks(num_tasks)
         self._task = self.tasks[0]
-        self._goal = self._goal_vel = self._task["velocity"]
+        self._goal_vel = self._task["velocity"]
         super().__init__()
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool, Dict[str, Any]]:
@@ -69,5 +68,5 @@ class HalfCheetahVelEnv(HalfCheetahEnv):
 
     def reset_task(self, idx: int) -> None:
         self._task = self.tasks[idx]
-        self._goal = self._goal_vel = self._task["velocity"]
+        self._goal_vel = self._task["velocity"]
         self.reset()
