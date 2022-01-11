@@ -2,19 +2,21 @@
 Differentiable Optimizer for higher-ogder optimization
 """
 
+import torch.nn as nn
+
 
 class DifferentiableSGD:
     """Differenctialble SGD avoiding parameter's in-place update of torch.optim"""
 
-    def __init__(self, model, lr=1e-3):
-        self.model = model
-        self.lr = lr
+    def __init__(self, model, lr=1e-3) -> None:
+        self.model: nn.Module = model
+        self.lr: float = lr
 
-    def step(self):
+    def step(self) -> None:
         """Update papareter"""
         module_set = set()
 
-        def update(model):
+        def update(model: nn.Module) -> None:
             for sub_module in model.children():
                 if sub_module not in module_set:
                     module_set.add(sub_module)
@@ -34,7 +36,7 @@ class DifferentiableSGD:
 
         update(self.model)
 
-    def zero_grad(self, set_to_none=False):
+    def zero_grad(self, set_to_none: bool = False) -> None:
         """Set grdients of parameters to zero or None"""
 
         for param in self.model.parameters():

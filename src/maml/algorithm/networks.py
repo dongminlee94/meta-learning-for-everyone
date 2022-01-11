@@ -1,6 +1,9 @@
 """
 Various network architecture codes used in MAML algorithm
 """
+
+from typing import Any, Tuple
+
 import torch
 import torch.nn as nn
 from torch.distributions import Normal
@@ -11,11 +14,11 @@ class MLP(nn.Module):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        input_dim,
-        output_dim,
-        hidden_dim,
-        hidden_activation=torch.tanh,
-    ):
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int,
+        hidden_activation: Any = torch.tanh,
+    ) -> None:
         super().__init__()
 
         self.input_dim = input_dim
@@ -40,7 +43,7 @@ class MLP(nn.Module):
         nn.init.xavier_uniform_(self.last_fc_layer.weight.data)
         self.last_fc_layer.bias.data.zero_()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Get output when input is given"""
         for fc_layer in self.fc_layers:
             x = self.hidden_activation(fc_layer(x))
@@ -53,14 +56,14 @@ class GaussianPolicy(MLP):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        input_dim,
-        output_dim,
-        hidden_dim,
-        is_deterministic=False,
-        init_std=1.0,
-        min_std=1e6,
-        max_std=None,
-    ):
+        input_dim: int,
+        output_dim: int,
+        hidden_dim: int,
+        is_deterministic: bool = False,
+        init_std: float = 1.0,
+        min_std: float = 1e-6,
+        max_std: float = None,
+    ) -> None:
         super().__init__(
             input_dim=input_dim,
             output_dim=output_dim,
@@ -68,7 +71,7 @@ class GaussianPolicy(MLP):
         )
 
         self.log_std = torch.Tensor([init_std]).log()
-        self.log_std = torch.nn.Parameter(torch.Tensor(self.log_std))
+        self.log_std = torch.nn.Parameter(self.log_std)
         self.min_log_std = None
         self.max_log_std = None
 
@@ -79,20 +82,20 @@ class GaussianPolicy(MLP):
 
         self.is_deterministic = is_deterministic
 
-    def get_normal_dist(self, x):
+    def get_normal_dist(self, x: torch.Tensor) -> Tuple[Normal, torch.Tensor]:
         """Get Gaussian distribtion"""
         mean = super().forward(x)
         std = torch.exp(self.log_std.clamp(min=self.min_log_std, max=self.max_log_std))
 
         return Normal(mean, std), mean
 
-    def get_log_prob(self, obs, action):
+    def get_log_prob(self, obs: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
         """Get log probability of Gaussian distribution using obs and action"""
         normal, _ = self.get_normal_dist(obs)
 
         return normal.log_prob(action).sum(dim=-1)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         normal, mean = self.get_normal_dist(x)
         if self.is_deterministic:
             action = mean
