@@ -6,7 +6,7 @@
 train_tasks: 2
 
 # Number of tasks sampled from train-task set for meta-test
-num_test_tasks: 15
+num_test_tasks: 2
 
 # Number of hidden units in policy networks
 policy_hidden_dim: 64
