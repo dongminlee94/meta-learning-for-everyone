@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from src.maml.algorithm.buffer import MultiTaskBuffer
 from src.maml.algorithm.optimizer import DifferentiableSGD
@@ -32,7 +33,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         observ_dim: int,
         action_dim: int,
         train_tasks: List[int],
-        test_tasks: List[int],
+        num_test_tasks: int,
+        test_interval: int,
         save_exp_name: str,
         save_file_name: str,
         load_exp_name: str,
@@ -46,7 +48,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.env_name = env_name
         self.agent = agent
         self.train_tasks = train_tasks
-        self.test_tasks = test_tasks
+        self.num_test_tasks = num_test_tasks
+        self.test_interval = test_interval
 
         self.num_iterations = config["num_iterations"]
         self.num_sample_tasks = config["num_sample_tasks"]
@@ -70,7 +73,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             observ_dim=observ_dim,
             action_dim=action_dim,
             agent=agent,
-            num_tasks=max(self.num_sample_tasks, len(test_tasks)),
+            num_tasks=max(self.num_sample_tasks, self.num_test_tasks),
             num_episodes=(self.num_adapt_epochs + 1),  # [num of adapatation for train] + [validation]
             max_size=self.num_samples,
             device=device,
@@ -100,15 +103,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
-    def collect_train_data(self, indices: List[int], is_eval: bool = False) -> None:
+    def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
         """Collect data before & after gradient for each task batch"""
-        losses = []
         backup_params = dict(self.agent.policy.named_parameters())
 
-        for cur_task, task_index in enumerate(indices):
-
-            mode = "test" if is_eval else "train"
-            print(f"[{cur_task + 1}/{len(indices)}] collecting samples for {mode}-task batch")
+        mode = "test" if is_eval else "train"
+        print(f"Collecting samples for meta-{mode} from batch tasks")
+        for cur_task, task_index in enumerate(tqdm(indices)):
 
             self.env.reset_task(task_index)
             # Adapt policy to each task through few grandient steps
@@ -133,7 +134,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     self.inner_optimizer.zero_grad(set_to_none=True)
                     require_grad = cur_adapt < self.num_adapt_epochs - 1
                     inner_loss.backward(create_graph=require_grad)
-                    losses.append(inner_loss.item())
 
                     with torch.set_grad_enabled(require_grad):
                         self.inner_optimizer.step()
@@ -144,6 +144,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             )
             # Restore to pre-updated policy
             self.agent.update_model(self.agent.policy, backup_params)
+            self.agent.policy.is_deterministic = False
 
     # pylint: disable=too-many-locals
     def meta_surrogate_loss(self, set_grad: bool = True) -> Tuple[torch.Tensor, ...]:
@@ -214,13 +215,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             for params, step in zip(self.agent.policy.parameters(), descent_step):
                 params.data.add_(step, alpha=-ratio)
 
-            loss_new, kl_new, _ = self.meta_surrogate_loss(set_grad=False)
+            loss_after, kl_after, policy_entropy = self.meta_surrogate_loss(set_grad=False)
 
             # Update the policy, when the KL constraint is satisfied
-            is_improved = loss_new < loss_before
-            is_constrained = kl_new <= self.max_kl
-            print(f"{i}-Backtracks | Loss {loss_new:.4f} < Loss_old {loss_before:.4f} : ", end="")
-            print(f"{is_improved} | KL {kl_new:.4f} <= maxKL {self.max_kl:.4f} : {is_constrained}")
+            is_improved = loss_after < loss_before
+            is_constrained = kl_after <= self.max_kl
+            print(f"{i}-Backtracks | Loss {loss_after:.4f} < Loss_old {loss_before:.4f} : ", end="")
+            print(f"{is_improved} | KL {kl_after:.4f} <= maxKL {self.max_kl:.4f} : {is_constrained}")
 
             if is_improved and is_constrained:
                 print(f"Update meta-policy through {i+1} backtracking line search step(s)")
@@ -231,7 +232,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             if i == self.backtrack_iters - 1:
                 print("Keep current meta-policy skipping meta-update")
 
-        loss_after, kl_after, policy_entropy = self.meta_surrogate_loss(set_grad=False)
         self.buffer.clear()
 
         return dict(
@@ -257,8 +257,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Meta update
             log_values = self.meta_update()
 
-            # Evaluate on test tasks
-            self.meta_test(iteration, total_start_time, start_time, log_values)
+            # log meta-train process
+            self.log_summary(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
                 print(
@@ -269,106 +269,122 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 )
                 break
 
-    def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
+    def visualize_within_tensorboard(self, results_summary: Dict[str, Any], iteration: int) -> None:
         """Tensorboard visualization"""
-        self.writer.add_scalar("test/return_before_grad", test_results["return_before_grad"], iteration)
-        self.writer.add_scalar("test/return_after_grad", test_results["return_after_grad"], iteration)
-        if self.env_name == "vel":
-            self.writer.add_scalar(
-                "test/sum_run_cost_before_grad",
-                test_results["sum_run_cost_before_grad"],
-                iteration,
-            )
-            self.writer.add_scalar(
-                "test/sum_run_cost_after_grad", test_results["sum_run_cost_after_grad"], iteration
-            )
-            for step in range(len(test_results["run_cost_before_grad"])):
-                self.writer.add_scalar(
-                    "run_cost_before_grad/iteration_" + str(iteration),
-                    test_results["run_cost_before_grad"][step],
-                    step,
-                )
-                self.writer.add_scalar(
-                    "run_cost_after_grad/iteration_" + str(iteration),
-                    test_results["run_cost_after_grad"][step],
-                    step,
-                )
-        self.writer.add_scalar("train/loss_before", test_results["loss_before"], iteration)
-        self.writer.add_scalar("train/loss_after", test_results["loss_after"], iteration)
-        self.writer.add_scalar("train/loss_diff", test_results["loss_diff"], iteration)
-        self.writer.add_scalar("train/kl_before", test_results["kl_before"], iteration)
-        self.writer.add_scalar("train/kl_after", test_results["kl_after"], iteration)
-        self.writer.add_scalar("train/policy_entropy", test_results["policy_entropy"], iteration)
 
-        self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
-        self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
+        self.writer.add_scalar("train/loss_before", results_summary["loss_before"], iteration)
+        self.writer.add_scalar("train/loss_after", results_summary["loss_after"], iteration)
+        self.writer.add_scalar("train/loss_diff", results_summary["loss_diff"], iteration)
+        self.writer.add_scalar("train/kl_before", results_summary["kl_before"], iteration)
+        self.writer.add_scalar("train/kl_after", results_summary["kl_after"], iteration)
+        self.writer.add_scalar("train/policy_entropy", results_summary["policy_entropy"], iteration)
+
+        if iteration % self.test_interval == 0:
+            self.writer.add_scalar(
+                "test/return_before_grad", results_summary["return_before_grad"], iteration
+            )
+            self.writer.add_scalar(
+                "test/return_after_grad", results_summary["return_after_grad"], iteration
+            )
+            if self.env_name == "vel":
+                self.writer.add_scalar(
+                    "test/sum_run_cost_before_grad",
+                    results_summary["sum_run_cost_before_grad"],
+                    iteration,
+                )
+                self.writer.add_scalar(
+                    "test/sum_run_cost_after_grad",
+                    results_summary["sum_run_cost_after_grad"],
+                    iteration,
+                )
+                for step in range(len(results_summary["run_cost_before_grad"])):
+                    self.writer.add_scalar(
+                        "run_cost_before_grad/iteration_" + str(iteration),
+                        results_summary["run_cost_before_grad"][step],
+                        step,
+                    )
+                    self.writer.add_scalar(
+                        "run_cost_after_grad/iteration_" + str(iteration),
+                        results_summary["run_cost_after_grad"][step],
+                        step,
+                    )
+
+        self.writer.add_scalar("time/total_time", results_summary["total_time"], iteration)
+        self.writer.add_scalar("time/time_per_iter", results_summary["time_per_iter"], iteration)
 
     # pylint: disable=too-many-locals, disable=too-many-statements
-    def meta_test(
+    def log_summary(
         self, iteration: int, total_start_time: float, start_time: float, log_values: Dict[str, float]
     ) -> None:
         """MAML meta-testing"""
-        test_results = {}
+        results_summary = {}
         returns_before_grad = []
         returns_after_grad = []
         run_costs_before_grad = []
         run_costs_after_grad = []
 
-        self.collect_train_data(self.test_tasks, is_eval=True)
+        results_summary["loss_before"] = log_values["loss_before"]
+        results_summary["loss_after"] = log_values["loss_after"]
+        results_summary["loss_diff"] = log_values["loss_before"] - log_values["loss_after"]
+        results_summary["kl_before"] = log_values["kl_before"]
+        results_summary["kl_after"] = log_values["kl_after"]
+        results_summary["policy_entropy"] = log_values["policy_entropy"]
 
-        for task in range(len(self.test_tasks)):
-            batch_before_grad = self.buffer.get_samples(task, 0)
-            batch_after_grad = self.buffer.get_samples(task, self.num_adapt_epochs)
+        results_summary["total_time"] = time.time() - total_start_time
+        results_summary["time_per_iter"] = time.time() - start_time
 
-            rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
-            rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
-            returns_before_grad.append(torch.sum(rewards_before_grad).item())
-            returns_after_grad.append(torch.sum(rewards_after_grad).item())
+        if iteration % self.test_interval == 0:
+            indices = np.random.randint(len(self.train_tasks), size=self.num_test_tasks)
+            self.collect_train_data(indices, is_eval=True)
 
+            for task in range(self.num_test_tasks):
+                batch_before_grad = self.buffer.get_samples(task, 0)
+                batch_after_grad = self.buffer.get_samples(task, self.num_adapt_epochs)
+
+                rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
+                rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
+                returns_before_grad.append(torch.sum(rewards_before_grad).item())
+                returns_after_grad.append(torch.sum(rewards_after_grad).item())
+
+                if self.env_name == "vel":
+                    run_costs_before_grad.append(
+                        batch_before_grad["infos"][: self.max_steps].cpu().numpy()
+                    )
+                    run_costs_after_grad.append(
+                        batch_after_grad["infos"][: self.max_steps].cpu().numpy()
+                    )
+
+            run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
+            run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
+
+            self.buffer.clear()
+
+            # Collect meta-test results
+            results_summary["return_before_grad"] = sum(returns_before_grad) / self.num_test_tasks
+            results_summary["return_after_grad"] = sum(returns_after_grad) / self.num_test_tasks
             if self.env_name == "vel":
-                run_costs_before_grad.append(batch_before_grad["infos"][: self.max_steps].cpu().numpy())
-                run_costs_after_grad.append(batch_after_grad["infos"][: self.max_steps].cpu().numpy())
+                results_summary["run_cost_before_grad"] = run_cost_before_grad / self.num_test_tasks
+                results_summary["run_cost_after_grad"] = run_cost_after_grad / self.num_test_tasks
+                results_summary["sum_run_cost_before_grad"] = sum(
+                    abs(run_cost_before_grad / self.num_test_tasks)
+                )
+                results_summary["sum_run_cost_after_grad"] = sum(
+                    abs(run_cost_after_grad / self.num_test_tasks)
+                )
 
-        run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
-        run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
+            # Check if each element of self.dq satisfies early stopping condition
+            if self.env_name == "dir":
+                self.dq.append(results_summary["return_after_grad"])
+                if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+                    self.is_early_stopping = True
+            elif self.env_name == "vel":
+                self.dq.append(results_summary["sum_run_cost_after_grad"])
+                if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
+                    self.is_early_stopping = True
 
-        self.buffer.clear()
+            # Save the trained models
+            if self.is_early_stopping:
+                ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
+                torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)
 
-        # Collect meta-test results
-        test_results["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
-        test_results["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
-        if self.env_name == "vel":
-            test_results["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
-            test_results["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
-            test_results["sum_run_cost_before_grad"] = sum(
-                abs(run_cost_before_grad / len(self.test_tasks))
-            )
-            test_results["sum_run_cost_after_grad"] = sum(
-                abs(run_cost_after_grad / len(self.test_tasks))
-            )
-        test_results["loss_before"] = log_values["loss_before"]
-        test_results["loss_after"] = log_values["loss_after"]
-        test_results["loss_diff"] = log_values["loss_before"] - log_values["loss_after"]
-        test_results["kl_before"] = log_values["kl_before"]
-        test_results["kl_after"] = log_values["kl_after"]
-        test_results["policy_entropy"] = log_values["policy_entropy"]
-
-        test_results["total_time"] = time.time() - total_start_time
-        test_results["time_per_iter"] = time.time() - start_time
-
-        self.visualize_within_tensorboard(test_results, iteration)
-
-        # Check if each element of self.dq satisfies early stopping condition
-        if self.env_name == "dir":
-            self.dq.append(test_results["return_after_grad"])
-            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
-                self.is_early_stopping = True
-        elif self.env_name == "vel":
-            self.dq.append(test_results["sum_run_cost_after_grad"])
-            if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
-                self.is_early_stopping = True
-
-        # Save the trained models
-        if self.is_early_stopping:
-            ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
-            torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)
+        self.visualize_within_tensorboard(results_summary, iteration)

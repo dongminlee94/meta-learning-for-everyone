@@ -42,6 +42,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
             list(self.vf.parameters()),
             lr=config["vf_learning_rate"],
         )
+        self.vf_learning_iters = config["vf_learning_iters"]
         self.initial_vf_params = deepcopy(self.vf.state_dict())
 
     # methods for TRPO
@@ -72,6 +73,9 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
                     update(named_modules[module_name], param_name, new_param)
             else:
                 update(module, name, new_param)
+
+        for param in module.parameters():
+            param.grad = None
 
     @classmethod
     def hessian_vector_product(
@@ -152,13 +156,14 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
         self.vf.load_state_dict(self.initial_vf_params)
 
         # Update value function
-        self.vf_optimizer.zero_grad()
-        value_batch = self.vf(obs_batch.to(self.device))
-        value_loss = F.mse_loss(value_batch.view(-1, 1), returns_batch.to(self.device))
-        value_loss.backward()
-        self.vf_optimizer.step()
+        for _ in range(self.vf_learning_iters):
+            self.vf_optimizer.zero_grad()
+            value_batch = self.vf(obs_batch.to(self.device))
+            value_loss = F.mse_loss(value_batch.view(-1, 1), returns_batch.to(self.device))
+            value_loss.backward()
+            self.vf_optimizer.step()
 
-        # Infer baseline with the fitted value function
+        # Infer baseline with the updated value function
         with torch.no_grad():
             baselines = self.vf(obs_batch)
 

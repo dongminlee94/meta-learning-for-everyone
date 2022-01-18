@@ -3,10 +3,10 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 300
+train_tasks: 200
 
-# Number of tasks for meta-test
-test_tasks: 15
+# Number of tasks sampled from train-task set for meta-test
+num_test_tasks: 15
 
 # Number of hidden units in policy networks
 policy_hidden_dim: 64
@@ -18,7 +18,7 @@ value_function_hidden_dim: 32
 # ----------
 maml_params:
     # Number of training iterations
-    num_iterations: 500
+    num_iterations: 200
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train
@@ -26,7 +26,7 @@ maml_params:
     # Maximum steps for the environment
     max_steps: 200
     # Number of inner adaptation iterations for the MAML algorithm
-    num_adapt_epochs: 2
+    num_adapt_epochs: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
     # Number of early stopping conditions
@@ -43,8 +43,10 @@ maml_params:
     # KL-divergence limit
     max_kl: 0.01
 pg_params:
-    # Learning rate of value_fuction
+    # Learning rate of value_fuction as a baseline fitting
     vf_learning_rate: 0.1
+    # Learning iterations of value_fuction as a baseline fitting
+    vf_learning_iters: 2000
     gamma: 0.99
     lamda: 1.0
 

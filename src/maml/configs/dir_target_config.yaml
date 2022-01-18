@@ -5,8 +5,8 @@
 # Number of tasks for meta-train
 train_tasks: 2
 
-# Number of tasks for meta-test
-test_tasks: 2
+# Number of tasks sampled from train-task set for meta-test
+num_test_tasks: 15
 
 # Number of hidden units in policy networks
 policy_hidden_dim: 64
@@ -18,7 +18,7 @@ value_function_hidden_dim: 32
 # ----------
 maml_params:
     # Number of training iterations
-    num_iterations: 500
+    num_iterations: 200
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train
@@ -43,9 +43,13 @@ maml_params:
     # KL-divergence limit
     max_kl: 0.01
 pg_params:
-    # Learning rate of value_fuction
+    # Learning rate of value_fuction as a baseline fitting
     vf_learning_rate: 0.1
+    # Learning iterations of value_fuction as a baseline fitting
+    vf_learning_iters: 2000
+    # RL discount factor
     gamma: 0.99
+    # gae parameters
     lamda: 1.0
 
 
