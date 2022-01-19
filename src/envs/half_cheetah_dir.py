@@ -34,7 +34,7 @@ class HalfCheetahDirEnv(HalfCheetahEnv):
     """
 
     def __init__(self, num_tasks: int) -> None:
-        directions = [-1, 1, -1, 1]
+        directions = [-1, 1]
         self.tasks = [{"direction": direction} for direction in directions]
         assert num_tasks == len(self.tasks)
         self._task = self.tasks[0]
