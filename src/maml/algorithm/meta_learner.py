@@ -334,7 +334,10 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         results_summary["time_per_iter"] = time.time() - start_time
 
         if iteration % self.test_interval == 0:
-            indices = np.random.randint(len(self.train_tasks), size=self.num_test_tasks)
+            if self.env_name == "dir":
+                indices = np.array(self.train_tasks)
+            elif self.env_name == "vel":
+                indices = np.random.randint(len(self.train_tasks), size=self.num_test_tasks)
             self.collect_train_data(indices, is_eval=True)
 
             for task in range(self.num_test_tasks):

@@ -2,7 +2,7 @@
 # Experiment configs
 
 # Select either dir or vel (str)
-env_name: "vel"
+env_name: "dir"
 
 # Set meta test interval (int)
 test_interval: 10
