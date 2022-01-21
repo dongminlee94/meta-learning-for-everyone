@@ -18,11 +18,11 @@ value_function_hidden_dim: 32
 # ----------
 maml_params:
     # Number of training iterations
-    num_iterations: 200
+    num_iterations: 500
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train
-    num_samples: 4000
+    num_samples: 2000
     # Maximum steps for the environment
     max_steps: 200
     # Number of inner adaptation iterations for the MAML algorithm
@@ -32,7 +32,7 @@ maml_params:
     # Number of early stopping conditions
     num_stop_conditions: 3
     # Goal value used to early stopping condition
-    stop_goal: 200
+    stop_goal: 2000
 
 # TRPO setup
 # ---------
@@ -46,7 +46,7 @@ pg_params:
     # Learning rate of value_fuction as a baseline fitting
     vf_learning_rate: 0.1
     # Learning iterations of value_fuction as a baseline fitting
-    vf_learning_iters: 2000
+    vf_learning_iters: 1
     # RL discount factor
     gamma: 0.99
     # gae parameters
