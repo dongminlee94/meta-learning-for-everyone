@@ -33,7 +33,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         observ_dim: int,
         action_dim: int,
         train_tasks: List[int],
-        num_test_tasks: int,
+        test_tasks: List[int],
         test_interval: int,
         save_exp_name: str,
         save_file_name: str,
@@ -48,7 +48,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.env_name = env_name
         self.agent = agent
         self.train_tasks = train_tasks
-        self.num_test_tasks = num_test_tasks
+        self.test_tasks = test_tasks
         self.test_interval = test_interval
 
         self.num_iterations = config["num_iterations"]
@@ -73,7 +73,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             observ_dim=observ_dim,
             action_dim=action_dim,
             agent=agent,
-            num_tasks=max(self.num_sample_tasks, self.num_test_tasks),
+            num_tasks=max(self.num_sample_tasks, len(self.test_tasks)),
             num_episodes=(self.num_adapt_epochs + 1),  # [num of adapatation for train] + [validation]
             max_size=self.num_samples,
             device=device,
@@ -108,7 +108,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         backup_params = dict(self.agent.policy.named_parameters())
 
         mode = "test" if is_eval else "train"
-        print(f"Collecting samples for meta-{mode} from batch tasks")
+        print(f"Collecting samples for meta-{mode}")
         for cur_task, task_index in enumerate(tqdm(indices)):
 
             self.env.reset_task(task_index)
@@ -235,9 +235,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.buffer.clear()
 
         return dict(
-            loss_before=loss_before.item(),
             loss_after=loss_after.item(),
-            kl_before=kl_before.item(),
             kl_after=kl_after.item(),
             policy_entropy=policy_entropy.item(),
         )
@@ -272,10 +270,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     def visualize_within_tensorboard(self, results_summary: Dict[str, Any], iteration: int) -> None:
         """Tensorboard visualization"""
 
-        self.writer.add_scalar("train/loss_before", results_summary["loss_before"], iteration)
         self.writer.add_scalar("train/loss_after", results_summary["loss_after"], iteration)
-        self.writer.add_scalar("train/loss_diff", results_summary["loss_diff"], iteration)
-        self.writer.add_scalar("train/kl_before", results_summary["kl_before"], iteration)
         self.writer.add_scalar("train/kl_after", results_summary["kl_after"], iteration)
         self.writer.add_scalar("train/policy_entropy", results_summary["policy_entropy"], iteration)
 
@@ -323,10 +318,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         run_costs_before_grad = []
         run_costs_after_grad = []
 
-        results_summary["loss_before"] = log_values["loss_before"]
         results_summary["loss_after"] = log_values["loss_after"]
-        results_summary["loss_diff"] = log_values["loss_before"] - log_values["loss_after"]
-        results_summary["kl_before"] = log_values["kl_before"]
         results_summary["kl_after"] = log_values["kl_after"]
         results_summary["policy_entropy"] = log_values["policy_entropy"]
 
@@ -334,13 +326,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         results_summary["time_per_iter"] = time.time() - start_time
 
         if iteration % self.test_interval == 0:
-            if self.env_name == "dir":
-                indices = np.array(self.train_tasks)
-            elif self.env_name == "vel":
-                indices = np.random.randint(len(self.train_tasks), size=self.num_test_tasks)
-            self.collect_train_data(indices, is_eval=True)
+            self.collect_train_data(np.array(self.test_tasks), is_eval=True)
 
-            for task in range(self.num_test_tasks):
+            for task in range(len(self.test_tasks)):
                 batch_before_grad = self.buffer.get_samples(task, 0)
                 batch_after_grad = self.buffer.get_samples(task, self.num_adapt_epochs)
 
@@ -363,16 +351,16 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.buffer.clear()
 
             # Collect meta-test results
-            results_summary["return_before_grad"] = sum(returns_before_grad) / self.num_test_tasks
-            results_summary["return_after_grad"] = sum(returns_after_grad) / self.num_test_tasks
+            results_summary["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
+            results_summary["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
             if self.env_name == "vel":
-                results_summary["run_cost_before_grad"] = run_cost_before_grad / self.num_test_tasks
-                results_summary["run_cost_after_grad"] = run_cost_after_grad / self.num_test_tasks
+                results_summary["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
+                results_summary["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
                 results_summary["sum_run_cost_before_grad"] = sum(
-                    abs(run_cost_before_grad / self.num_test_tasks)
+                    abs(run_cost_before_grad / len(self.test_tasks))
                 )
                 results_summary["sum_run_cost_after_grad"] = sum(
-                    abs(run_cost_after_grad / self.num_test_tasks)
+                    abs(run_cost_after_grad / len(self.test_tasks))
                 )
 
             # Check if each element of self.dq satisfies early stopping condition

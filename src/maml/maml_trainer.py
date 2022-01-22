@@ -27,10 +27,9 @@ if __name__ == "__main__":
 
     # Create a multi-task environment and sample tasks
     env: HalfCheetahEnv = ENVS["cheetah-" + experiment_config["env_name"]](
-        num_tasks=env_target_config["train_tasks"]
+        num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"]
     )
     tasks: List[int] = env.get_all_task_idx()
-    num_test_tasks: int = env_target_config["num_test_tasks"]
 
     # Set a random seed
     env.seed(experiment_config["seed"])
@@ -63,8 +62,8 @@ if __name__ == "__main__":
         agent=agent,
         observ_dim=observ_dim,
         action_dim=action_dim,
-        train_tasks=tasks,
-        num_test_tasks=num_test_tasks,
+        train_tasks=tasks[: env_target_config["train_tasks"]],
+        test_tasks=tasks[-env_target_config["test_tasks"] :],
         test_interval=experiment_config["test_interval"],
         save_exp_name=experiment_config["save_exp_name"],
         save_file_name=experiment_config["save_file_name"],
