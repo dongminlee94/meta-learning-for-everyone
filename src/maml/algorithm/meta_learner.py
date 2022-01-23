@@ -364,14 +364,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 )
 
             # Check if each element of self.dq satisfies early stopping condition
-            if self.env_name == "dir":
-                self.dq.append(results_summary["return_after_grad"])
-                if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
-                    self.is_early_stopping = True
-            elif self.env_name == "vel":
-                self.dq.append(results_summary["sum_run_cost_after_grad"])
-                if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
-                    self.is_early_stopping = True
+            self.dq.append(results_summary["return_after_grad"])
+            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+                self.is_early_stopping = True
 
             # Save the trained models
             if self.is_early_stopping:
