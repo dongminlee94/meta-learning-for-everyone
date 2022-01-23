@@ -26,7 +26,7 @@ maml_params:
     # Maximum steps for the environment
     max_steps: 200
     # Number of inner adaptation iterations for the MAML algorithm
-    num_adapt_epochs: 2
+    num_adapt_epochs: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
     # Number of early stopping conditions
