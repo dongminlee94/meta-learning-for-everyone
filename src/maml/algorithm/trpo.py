@@ -4,18 +4,19 @@ Proximal Policy Optimization algorithm implementation for training
 
 
 from copy import deepcopy
-from typing import Callable, Dict, Iterable, Tuple
+from typing import Callable, Dict, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 from src.maml.algorithm.networks import MLP, GaussianPolicy
 
 
-class PolicyGradient:  # pylint: disable=too-many-instance-attributes
+class TRPO:  # pylint: disable=too-many-instance-attributes
     """Policy gradient based agent"""
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -38,7 +39,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
         self.old_policy = deepcopy(self.policy)
         self.vf = MLP(input_dim=observ_dim, output_dim=1, hidden_dim=vf_hidden_dim).to(device)
 
-        self.vf_optimizer = torch.optim.Adam(
+        self.vf_optimizer = optim.Adam(
             list(self.vf.parameters()),
             lr=config["vf_learning_rate"],
         )
@@ -56,8 +57,11 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
         return parameters_to_vector(grads)
 
     @classmethod
-    def update_model(cls, module: nn.Module, new_params: Dict[str, Iterable[torch.Tensor]]):
-        """Replace model's parameters with new parameters"""
+    def update_model(cls, module: nn.Module, new_params: Dict[str, torch.nn.parameter.Parameter]):
+        """
+        Replace model's parameters with new parameters
+        [source](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/_functions.py)
+        """
         named_modules = dict(module.named_modules())
 
         # pylint: disable=protected-access
@@ -79,7 +83,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def hessian_vector_product(
-        cls, kl: torch.Tensor, parameters: Iterable[torch.Tensor], hvp_reg_coeff: float = 1e-5
+        cls, kl: torch.Tensor, parameters: torch.nn.parameter.Parameter, hvp_reg_coeff: float = 1e-5
     ) -> Callable:
         """Returns a callable that computes Hessian-vector product"""
         parameters = list(parameters)
@@ -98,8 +102,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
         return hvp
 
     @classmethod
-    # pylint: disable=too-many-arguments
-    def conjugate_gradient(
+    def conjugate_gradient(  # pylint: disable=too-many-arguments
         cls,
         fnc_Ax: Callable,
         b: torch.Tensor,
@@ -129,7 +132,7 @@ class PolicyGradient:  # pylint: disable=too-many-instance-attributes
 
     def compute_descent_step(
         self, Hvp: Callable, search_dir: torch.Tensor, max_kl: float
-    ) -> Iterable[torch.Tensor]:
+    ) -> torch.nn.parameter.Parameter:
         """Calculate descent step for backtracking line search according to kl constraint"""
         sHs = torch.dot(search_dir, Hvp(search_dir))
         lagrange_multiplier = torch.sqrt(sHs / (2 * max_kl))

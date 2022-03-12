@@ -2,7 +2,7 @@
 Simple buffer code
 """
 
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
@@ -42,26 +42,28 @@ class MultiTaskBuffer:
 
     def add_trajs(self, cur_task: int, cur_adapt: int, trajs: List[Dict[str, np.ndarray]]) -> None:
         """Add trajectories to the assigned task buffer"""
-        self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_trajs(trajs)
+        self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_trajs(trajs)
 
     def add_params(
-        self, cur_task: int, cur_adapt: int, params: Dict[str, Iterable[torch.Tensor]]
+        self, cur_task: int, cur_adapt: int, params: Dict[str, torch.nn.parameter.Parameter]
     ) -> None:
         """Add adapted parameters to the assigned task buffer"""
-        self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_params(params)
+        self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_params(params)
 
-    def get_samples(self, cur_task: int, cur_adapt: int) -> Dict[str, torch.Tensor]:
-        """Sample batch of the sassigned task buffer"""
-        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_samples()
+    def get_trajs(self, cur_task: int, cur_adapt: int) -> Dict[str, torch.Tensor]:
+        """Get batch of the sassigned task buffer"""
+        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_trajs()
 
-    def get_params(self, cur_task: int, cur_adapt: int) -> Optional[Dict[str, Iterable[torch.Tensor]]]:
+    def get_params(
+        self, cur_task: int, cur_adapt: int
+    ) -> Optional[Dict[str, torch.nn.parameter.Parameter]]:
         """Get policy parameters at the sassigned task"""
-        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_params()
+        return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_params()
 
     def clear(self) -> None:
         """Clear variables of all task buffers"""
         for buffer_index in range(self.num_buffers):
-            self.task_buffers[buffer_index].clear()
+            self.task_buffers[buffer_index].clear_task()
 
 
 class Buffer:  # pylint: disable=too-many-instance-attributes
@@ -82,7 +84,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._baselines = np.zeros((max_size, 1))
         self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._infos = np.zeros((max_size, 1))
-        self._params = None  # type: Optional[Dict[str, Iterable[torch.Tensor]]]
+        self._params = None  # type: Optional[Dict[str, torch.nn.parameter.Parameter]]
         self.device = device
 
         self._max_size = max_size
@@ -106,7 +108,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._infos[self._top] = info
         self._top += 1
 
-    def add_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
+    def add_task_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
         """Add trajectories to the buffer"""
         for traj in trajs:
             for (obs, action, reward, done, info) in zip(
@@ -118,15 +120,15 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
             ):
                 self.add(obs, action, reward, done, info)
 
-        batch = self.get_samples()
+        batch = self.get_task_trajs()
         self._baselines = self.agent.infer_baselines(batch)
 
-    def add_params(self, params: Dict[str, Iterable[torch.Tensor]]) -> None:
+    def add_task_params(self, params: Dict[str, torch.nn.parameter.Parameter]) -> None:
         """Add parameters to the buffer"""
         self._params = params
 
-    def get_samples(self) -> Dict[str, torch.Tensor]:
-        """Get sample batch in buffer"""
+    def get_task_trajs(self) -> Dict[str, torch.Tensor]:
+        """Get batch of trajectories in buffer"""
         assert self._top == self._max_size and len(self._baselines) == self._max_size
 
         batch = dict(
@@ -139,13 +141,13 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         )
         return {key: torch.Tensor(value).to(self.device) for key, value in batch.items()}
 
-    def get_params(self) -> Optional[Dict[str, Iterable[torch.Tensor]]]:
+    def get_task_params(self) -> Optional[Dict[str, torch.nn.parameter.Parameter]]:
         """Get parameters in buffer"""
         assert self._top is not None
 
         return self._params
 
-    def clear(self) -> None:
+    def clear_task(self) -> None:
         """Clear variables of replay buffer"""
         self._top = 0
         self._params = None

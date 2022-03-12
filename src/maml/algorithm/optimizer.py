@@ -5,8 +5,11 @@ Differentiable Optimizer for higher-ogder optimization
 import torch.nn as nn
 
 
-class DifferentiableSGD:
-    """Differenctialble SGD avoiding parameter's in-place update of torch.optim"""
+class DifferentiableSGD:  # pylint: disable=too-many-instance-attributes, line-too-long
+    """
+    Differenctialble SGD avoiding parameter's in-place update of torch.optim
+    [source](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/optimizers/differentiable_sgd.py)
+    """
 
     def __init__(self, model, lr=1e-3) -> None:
         self.model: nn.Module = model

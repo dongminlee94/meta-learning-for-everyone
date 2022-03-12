@@ -19,7 +19,7 @@ from tqdm import tqdm
 from src.maml.algorithm.buffer import MultiTaskBuffer
 from src.maml.algorithm.optimizer import DifferentiableSGD
 from src.maml.algorithm.sampler import Sampler
-from src.maml.algorithm.trpo import PolicyGradient
+from src.maml.algorithm.trpo import TRPO
 
 
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
@@ -29,7 +29,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self,
         env: HalfCheetahEnv,
         env_name: str,
-        agent: PolicyGradient,
+        agent: TRPO,
         observ_dim: int,
         action_dim: int,
         train_tasks: List[int],
@@ -69,7 +69,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        self.buffer = MultiTaskBuffer(
+        self.buffers = MultiTaskBuffer(
             observ_dim=observ_dim,
             action_dim=action_dim,
             agent=agent,
@@ -112,22 +112,22 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         for cur_task, task_index in enumerate(tqdm(indices)):
 
             self.env.reset_task(task_index)
+
+            # Inner loop
             # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
-                if cur_adapt == self.num_adapt_epochs:
-                    self.agent.policy.is_deterministic = is_eval
-                else:
-                    self.agent.policy.is_deterministic = False
+                # Collect deterministic performance for evaluation
+                self.agent.policy.is_deterministic = cur_adapt == self.num_adapt_epochs and is_eval
 
                 # Sample trajectory while adaptating steps and trajectory after adaptation
                 trajs = self.sampler.obtain_samples(max_samples=self.num_samples)
-                self.buffer.add_trajs(cur_task, cur_adapt, trajs)
+                self.buffers.add_trajs(cur_task, cur_adapt, trajs)
 
+                # Update policy except validation episode
+                # Get adaptation trajectory for the current task and adaptation step
                 if cur_adapt < self.num_adapt_epochs:
-                    # Update policy except validation episode
-                    # Get adaptation trajectory for the current task and adaptation step
-                    train_batch = self.buffer.get_samples(cur_task, cur_adapt)
+                    train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
                     # Adapt the inner-policy
                     inner_loss = self.agent.policy_loss(train_batch)
@@ -139,7 +139,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                         self.inner_optimizer.step()
 
             # Save validation policy
-            self.buffer.add_params(
+            self.buffers.add_params(
                 cur_task, self.num_adapt_epochs, dict(self.agent.policy.named_parameters())
             )
             # Restore to pre-updated policy
@@ -147,20 +147,21 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.agent.policy.is_deterministic = False
 
     # pylint: disable=too-many-locals
-    def meta_surrogate_loss(self, set_grad: bool = True) -> Tuple[torch.Tensor, ...]:
+    def meta_surrogate_loss(self, set_grad: bool) -> Tuple[torch.Tensor, ...]:
         """Compute meta-surrogate loss across batch tasks"""
         losses, kls, entropies = [], [], []
         backup_params = dict(self.agent.policy.named_parameters())
 
         # Compute loss for each sampled task
         for cur_task in range(self.num_sample_tasks):
+            # Inner loop
             # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs):
 
                 require_grad = cur_adapt < self.num_adapt_epochs - 1 or set_grad
 
                 # Get adaptation trajectory
-                train_batch = self.buffer.get_samples(cur_task, cur_adapt)
+                train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
                 # Adapt the inner-policy by A2C
                 inner_loss = self.agent.policy_loss(train_batch)
@@ -171,11 +172,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                     self.inner_optimizer.step()
 
             # Get validation trajectory and policy
-            valid_batch = self.buffer.get_samples(cur_task, self.num_adapt_epochs)
-            valid_params = self.buffer.get_params(cur_task, self.num_adapt_epochs)
+            valid_batch = self.buffers.get_trajs(cur_task, self.num_adapt_epochs)
+            valid_params = self.buffers.get_params(cur_task, self.num_adapt_epochs)
             self.agent.update_model(self.agent.old_policy, valid_params)
 
-            # Compute average of surrogate loss across batch tasks
+            # Compute surrogate loss across batch tasks
             loss = self.agent.policy_loss(valid_batch, is_meta_loss=True)
             losses.append(loss)
 
@@ -193,18 +194,15 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def meta_update(self) -> Dict[str, float]:  # pylint: disable=too-many-locals
         """Update meta-policy using TRPO algorithm"""
-
+        # Outer loop
         # Compute initial descent steps of line search
-        loss_before, kl_before, _ = self.meta_surrogate_loss()
+        loss_before, kl_before, _ = self.meta_surrogate_loss(set_grad=True)
         gradient = torch.autograd.grad(loss_before, self.agent.policy.parameters(), retain_graph=True)
         gradient = self.agent.flat_grad(gradient)
         Hvp = self.agent.hessian_vector_product(kl_before, self.agent.policy.parameters())
         search_dir = self.agent.conjugate_gradient(Hvp, gradient)
         descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
-
-        assert len(descent_step) == len(list(self.agent.policy.parameters()))
         loss_before.detach_()
-        del Hvp, gradient
 
         # Backtracking line search
         backup_params = deepcopy(dict(self.agent.policy.named_parameters()))
@@ -232,7 +230,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             if i == self.backtrack_iters - 1:
                 print("Keep current meta-policy skipping meta-update")
 
-        self.buffer.clear()
+        self.buffers.clear()
 
         return dict(
             loss_after=loss_after.item(),
@@ -255,8 +253,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             # Meta update
             log_values = self.meta_update()
 
-            # log meta-train process
-            self.log_summary(iteration, total_start_time, start_time, log_values)
+            # # Evaluate on test tasks
+            self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
                 print(
@@ -308,7 +306,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("time/time_per_iter", results_summary["time_per_iter"], iteration)
 
     # pylint: disable=too-many-locals, disable=too-many-statements
-    def log_summary(
+    def meta_test(
         self, iteration: int, total_start_time: float, start_time: float, log_values: Dict[str, float]
     ) -> None:
         """MAML meta-testing"""
@@ -329,8 +327,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.collect_train_data(np.array(self.test_tasks), is_eval=True)
 
             for task in range(len(self.test_tasks)):
-                batch_before_grad = self.buffer.get_samples(task, 0)
-                batch_after_grad = self.buffer.get_samples(task, self.num_adapt_epochs)
+                batch_before_grad = self.buffers.get_samples(task, 0)
+                batch_after_grad = self.buffers.get_samples(task, self.num_adapt_epochs)
 
                 rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
                 rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
@@ -348,7 +346,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
             run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
 
-            self.buffer.clear()
+            self.buffers.clear()
 
             # Collect meta-test results
             results_summary["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
