@@ -18,25 +18,38 @@ value_function_hidden_dim: 32
 # ----------
 maml_params:
     # Number of training iterations
-    num_iterations: 10000
+    num_iterations: 500
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train
-    num_samples: 8000
+    num_samples: 2000
     # Maximum steps for the environment
     max_steps: 200
     # Number of inner adaptation iterations for the MAML algorithm
     num_adapt_epochs: 1
     # Learning rate of inner adaptation
     inner_learning_rate: 0.1
-    # Learning rate of PPO losses
-    outer_learning_rate: 0.001
+    # Number of early stopping conditions
+    num_stop_conditions: 3
+    # Goal value used to early stopping condition
+    stop_goal: 400
 
-# PPO setup
+# TRPO setup
 # ---------
-ppo_params:
-    # PPO clip parameter
-    clip_param: 0.5
-    # Learning rate of value_fuction
+    # Maximum iters for backtracking line search
+    backtrack_iters: 15
+    # Exponentially decreasing ratio for line searching step
+    backtrack_coeff: 0.8
+    # KL-divergence limit
+    max_kl: 0.01
+pg_params:
+    # Learning rate of value_fuction as a baseline fitting
     vf_learning_rate: 0.1
+    # Learning iterations of value_fuction as a baseline fitting
+    vf_learning_iters: 1
+    # RL discount factor
+    gamma: 0.99
+    # gae parameters
+    lamda: 1.0
+
 

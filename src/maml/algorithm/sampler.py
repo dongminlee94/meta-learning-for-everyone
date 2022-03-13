@@ -2,8 +2,13 @@
 Sample collection code through interaction between agent and environment
 """
 
+from typing import Dict, List
+
 import numpy as np
 import torch
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
+
+from src.maml.algorithm.trpo import TRPO
 
 
 class Sampler:
@@ -11,12 +16,12 @@ class Sampler:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        env,
-        agent,
-        action_dim,
-        max_step,
-        device,
-    ):
+        env: HalfCheetahEnv,
+        agent: TRPO,
+        action_dim: int,
+        max_step: int,
+        device: torch.device,
+    ) -> None:
 
         self.env = env
         self.agent = agent
@@ -25,23 +30,25 @@ class Sampler:
         self.device = device
         self.cur_samples = 0
 
-    def obtain_samples(self, policy, max_samples):
+    def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
         """Obtain samples up to the number of maximum samples"""
         trajs = []
-        while not self.cur_samples == max_samples:
-            traj = self.rollout(policy, max_samples)
+        cur_samples = 0
+
+        while cur_samples < max_samples:
+            traj = self.rollout()
             trajs.append(traj)
-        self.cur_samples = 0
+            cur_samples += len(traj["cur_obs"])
+
         return trajs
 
-    def rollout(self, policy, max_samples):  # pylint: disable=too-many-locals
+    def rollout(self) -> Dict[str, np.ndarray]:  # pylint: disable=too-many-locals
         """Rollout up to maximum trajectory length"""
-        cur_obs = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
-        log_probs = []
+        _cur_obs = []
+        _actions = []
+        _rewards = []
+        _dones = []
+        _infos = []
 
         cur_step = 0
         obs = self.env.reset()
@@ -49,30 +56,26 @@ class Sampler:
         reward = np.zeros(1)
         done = np.zeros(1)
 
-        while not (done or cur_step == self.max_step or self.cur_samples == max_samples):
+        while not (done or cur_step == self.max_step):
             # Get action
-            action, log_prob = policy(torch.Tensor(obs).to(self.device))
-            action = action.detach().cpu().numpy()
-            log_prob = log_prob.detach().cpu().numpy().reshape(-1)
+            action = self.agent.get_action(obs)
 
             next_obs, reward, done, info = self.env.step(action)
             reward = np.array(reward)
             done = np.array(int(done))
-            cur_obs.append(obs)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info["run_cost"])
-            log_probs.append(log_prob)
+            _cur_obs.append(obs)
+            _actions.append(action)
+            _rewards.append(reward)
+            _dones.append(done)
+            _infos.append(info["run_cost"])
 
             obs = next_obs
             cur_step += 1
-            self.cur_samples += 1
+
         return dict(
-            cur_obs=np.array(cur_obs),
-            actions=np.array(actions),
-            rewards=np.array(rewards),
-            dones=np.array(dones),
-            infos=np.array(infos),
-            log_probs=np.array(log_probs),
+            cur_obs=np.array(_cur_obs),
+            actions=np.array(_actions),
+            rewards=np.array(_rewards),
+            dones=np.array(_dones),
+            infos=np.array(_infos),
         )
