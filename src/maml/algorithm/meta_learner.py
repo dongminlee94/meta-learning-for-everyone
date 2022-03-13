@@ -103,6 +103,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
+    # pylint: disable=simplifiable-if-expression
     def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
         """Collect data before & after gradient for each task batch"""
         backup_params = dict(self.agent.policy.named_parameters())
@@ -118,7 +119,9 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
                 # Collect deterministic performance for evaluation
-                self.agent.policy.is_deterministic = cur_adapt == self.num_adapt_epochs and is_eval
+                self.agent.policy.is_deterministic = (
+                    True if cur_adapt == self.num_adapt_epochs and is_eval else False
+                )
 
                 # Sample trajectory while adaptating steps and trajectory after adaptation
                 trajs = self.sampler.obtain_samples(max_samples=self.num_samples)
