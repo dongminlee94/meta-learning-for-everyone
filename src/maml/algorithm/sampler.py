@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 
-from src.maml.algorithm.trpo import PolicyGradient
+from src.maml.algorithm.trpo import TRPO
 
 
 class Sampler:
@@ -17,7 +17,7 @@ class Sampler:
     def __init__(  # pylint: disable=too-many-arguments
         self,
         env: HalfCheetahEnv,
-        agent: PolicyGradient,
+        agent: TRPO,
         action_dim: int,
         max_step: int,
         device: torch.device,

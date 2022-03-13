@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 
-from src.maml.algorithm.trpo import PolicyGradient
+from src.maml.algorithm.trpo import TRPO
 
 
 class MultiTaskBuffer:
@@ -17,7 +17,7 @@ class MultiTaskBuffer:
         self,
         observ_dim: int,
         action_dim: int,
-        agent: PolicyGradient,
+        agent: TRPO,
         num_tasks: int,
         num_episodes: int,
         max_size: int,
@@ -71,7 +71,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        agent: PolicyGradient,
+        agent: TRPO,
         observ_dim: int,
         action_dim: int,
         max_size: int,

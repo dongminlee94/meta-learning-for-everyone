@@ -12,7 +12,7 @@ from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 
 from src.envs import ENVS
 from src.maml.algorithm.meta_learner import MetaLearner
-from src.maml.algorithm.trpo import PolicyGradient
+from src.maml.algorithm.trpo import TRPO
 
 if __name__ == "__main__":
     # Experiment configuration setup
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         else torch.device("cpu")
     )
 
-    agent = PolicyGradient(
+    agent = TRPO(
         observ_dim=observ_dim,
         action_dim=action_dim,
         policy_hidden_dim=policy_hidden_dim,

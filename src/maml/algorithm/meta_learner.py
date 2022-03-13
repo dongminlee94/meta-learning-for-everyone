@@ -330,8 +330,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.collect_train_data(np.array(self.test_tasks), is_eval=True)
 
             for task in range(len(self.test_tasks)):
-                batch_before_grad = self.buffers.get_samples(task, 0)
-                batch_after_grad = self.buffers.get_samples(task, self.num_adapt_epochs)
+                batch_before_grad = self.buffers.get_trajs(task, 0)
+                batch_after_grad = self.buffers.get_trajs(task, self.num_adapt_epochs)
 
                 rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
                 rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
