@@ -1,5 +1,5 @@
 """
-Proximal Policy Optimization algorithm implementation for training
+Trust Region Policy Optimization algorithm implementation for training
 """
 
 
