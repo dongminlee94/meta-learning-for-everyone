@@ -13,7 +13,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-from src.maml.algorithm.networks import GRU, GaussianGRU
+from src.rl2.algorithm.networks import GRU, GaussianGRU
+from src.maml.algorithm.optimizer import DifferentiableSGD
 
 
 class TRPO:  # pylint: disable=too-many-instance-attributes
@@ -21,10 +22,9 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        observ_dim,
+        trans_dim,
         action_dim,
-        policy_hidden_dim,
-        vf_hidden_dim,
+        hidden_dim,
         device,
         **config,
     ):
@@ -32,24 +32,34 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         self.device = device
         self.gamma = config["gamma"]
         self.lamda = config["lamda"]
+        self.mini_batch_size = config["mini_batch_size"]
         
         self.policy = GaussianGRU(
-            input_dim=observ_dim,
+            input_dim=trans_dim,
             output_dim=action_dim,
-            hidden_dim=policy_hidden_dim,
+            hidden_dim=hidden_dim,
         ).to(device)
         self.old_policy = deepcopy(self.policy)
         self.vf = GRU(
-            input_dim=observ_dim,
+            input_dim=trans_dim,
             output_dim=1,
-            hidden_dim=vf_hidden_dim,
+            hidden_dim=hidden_dim,
         ).to(device)
-        self.vf_optimizer = optim.Adam(
-            list(self.vf.parameters()),
+        
+        self.optimizer = optim.Adam(
+            self.vf.parameters(),
             lr=config["vf_learning_rate"],
         )
-        self.vf_learning_iters = config["vf_learning_iters"]
-        self.initial_vf_params = deepcopy(self.vf.state_dict())
+        
+        self.pi_optimizer = DifferentiableSGD(
+            self.policy,
+            lr=config["learning_rate"],
+        )
+        
+        self.net_dict = {
+            "policy": self.policy,
+            "vf": self.vf,
+        }
         
         self.backtrack_iters = config["backtrack_iters"]
         self.backtrack_coeff = config["backtrack_coeff"]
@@ -101,10 +111,11 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
 
         def hvp(vector):
             """Product of Hessian and vector"""
-            kl_grad_prod = torch.dot(kl_grad, vector)
-            kl_hessian_prod = torch.autograd.grad(kl_grad_prod, parameters, retain_graph=True)
-            kl_hessian_prod = cls.flat_grad(kl_hessian_prod, is_hessian=True)
-            kl_hessian_prod = kl_hessian_prod + hvp_reg_coeff * vector
+            with torch.backends.cudnn.flags(enabled=False):
+                kl_grad_prod = torch.dot(kl_grad, vector)
+                kl_hessian_prod = torch.autograd.grad(kl_grad_prod, parameters, retain_graph=True)
+                kl_hessian_prod = cls.flat_grad(kl_hessian_prod, is_hessian=True)
+                kl_hessian_prod = kl_hessian_prod + hvp_reg_coeff * vector
 
             return kl_hessian_prod
 
@@ -151,41 +162,50 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
 
         return step_param
 
-    def infer_baselines(self, batch: Dict[str, torch.Tensor]):
-        """Train value function and infer values as baselines"""
-        obs_batch = batch["obs"]
-        rewards_batch = batch["rewards"]
-        dones_batch = batch["dones"]
-        returns_batch = torch.zeros_like(rewards_batch)
-        running_return = 0
 
-        for t in reversed(range(len(rewards_batch))):
-            # Compute return
-            running_return = rewards_batch[t] + self.gamma * (1 - dones_batch[t]) * running_return
-            returns_batch[t] = running_return
+    def kl_divergence(self, obs_batch, pi_hidden_batch):
+        """Compute KL divergence between old policy and new policy"""
 
-        # Reset the value fuction to its initial state
-        self.vf.load_state_dict(self.initial_vf_params)
-
-        # Update value function
-        for _ in range(self.vf_learning_iters):
-            self.vf_optimizer.zero_grad()
-            value_batch = self.vf(obs_batch.to(self.device))
-            value_loss = F.mse_loss(value_batch.view(-1, 1), returns_batch.to(self.device))
-            value_loss.backward()
-            self.vf_optimizer.step()
-
-        # Infer baseline with the updated value function
         with torch.no_grad():
-            baselines = self.vf(obs_batch)
+            old_dist, _, _ = self.old_policy.get_normal_dist(obs_batch, pi_hidden_batch)
 
-        return baselines.cpu().numpy()
+        new_dist, _, _ = self.policy.get_normal_dist(obs_batch, pi_hidden_batch)
+        kl_constraint = torch.distributions.kl.kl_divergence(old_dist, new_dist)
 
-    def compute_gae(self, batch: Dict[str, torch.Tensor]):
+        return kl_constraint.mean()
+
+
+    def compute_policy_entropy(self, obs_batch, pi_hidden_batch):
+        """Compute policy entropy"""
+
+        with torch.no_grad():
+            dist, _, _ = self.policy.get_normal_dist(obs_batch, pi_hidden_batch)
+            policy_entropy = dist.entropy().sum(dim=-1)
+
+        return policy_entropy.mean()
+
+
+    def get_action(self, obs, hidden):
+        """Sample action from the policy"""
+        action, log_prob, hidden = self.policy(torch.Tensor(obs).to(self.device), torch.Tensor(hidden).to(self.device))
+
+        return (
+            action.detach().cpu().numpy(),
+            log_prob.detach().cpu().numpy(),
+            hidden.detach().cpu().numpy(),
+        )
+
+
+    def get_value(self, trans, hidden):
+        """Get an value from the value network"""
+        value, hidden = self.vf(
+            torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
+        )
+        return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
+
+
+    def compute_gae(self, rewards_batch, dones_batch, values_batch):
         """Compute return and GAE"""
-        rewards_batch = batch["rewards"]
-        dones_batch = batch["dones"]
-        values_batch = batch["baselines"]
         advants_batch = torch.zeros_like(rewards_batch)
         prev_value = 0
         running_advant = 0
@@ -206,50 +226,13 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
 
         return advants_batch
 
-    def kl_divergence(self, obs_batch):
-        """Compute KL divergence between old policy and new policy"""
-
-        with torch.no_grad():
-            old_dist, _ = self.old_policy.get_normal_dist(obs_batch)
-
-        new_dist, _ = self.policy.get_normal_dist(obs_batch)
-        kl_constraint = torch.distributions.kl.kl_divergence(old_dist, new_dist)
-
-        return kl_constraint.mean()
-
-
-    def compute_policy_entropy(self, obs_batch):
-        """Compute policy entropy"""
-
-        with torch.no_grad():
-            dist, _ = self.policy.get_normal_dist(obs_batch)
-            policy_entropy = dist.entropy().sum(dim=-1)
-
-        return policy_entropy.mean()
-
-
-    def get_action(self, obs: np.ndarray) -> np.ndarray:
-        """Sample action from the policy"""
-        action, _ = self.policy(torch.Tensor(obs).to(self.device))
-
-        return action.detach().cpu().numpy()
-
 
     # pylint: disable=too-many-locals
-    def policy_loss(self, trans_batch, pi_hidden_batch, action_batch, advant_batch, is_meta_loss=False):
+    def policy_loss(self, trans_batch, pi_hidden_batch, action_batch, advant_batch):
         """Compute policy losses according to TRPO algorithm"""
-
-        if is_meta_loss:
-            # Surrogate loss
-            old_log_prob_batch = self.old_policy.get_log_prob(trans_batch, pi_hidden_batch, action_batch).view(-1, 1)
-            new_log_prob_batch = self.policy.get_log_prob(trans_batch, pi_hidden_batch, action_batch).view(-1, 1)
-            ratio = torch.exp(new_log_prob_batch - old_log_prob_batch.detach())
-            surrogate_loss = ratio * advant_batch
-            loss = -surrogate_loss.mean()
-        else:
-            # A2C
-            log_prob_batch = self.policy.get_log_prob(trans_batch, pi_hidden_batch, action_batch).view(-1, 1)
-            loss = -torch.mean(log_prob_batch * advant_batch)
+        # A2C
+        log_prob_batch = self.policy.get_log_prob(trans_batch, pi_hidden_batch, action_batch).view(-1, 1)
+        loss = -torch.mean(log_prob_batch * advant_batch)
         return loss
     
     def train_model(self, batch_size, batch):  # pylint: disable=too-many-locals
@@ -259,10 +242,17 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         v_hiddens = batch["v_hiddens"]
         actions = batch["actions"]
         returns = batch["returns"]
-        advants = batch["advants"]
         log_probs = batch["log_probs"]
+        advants = batch["advants"]
+        
+        value_batch, _ = self.vf(trans, v_hiddens)
+        value_loss = F.mse_loss(value_batch.view(-1, 1), returns)
+        
+        self.optimizer.zero_grad()
+        value_loss.backward()
+        self.optimizer.step()
 
-        num_mini_batch = int(batch_size / self.mini_batch_size)
+        num_mini_batch = int(batch_size / batch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
         pi_hidden_batches = torch.chunk(pi_hiddens, num_mini_batch)
@@ -277,29 +267,28 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         sum_value_loss = 0
         
         # calculate the initial loss and KL
+        with torch.backends.cudnn.flags(enabled=False):
         # Value function loss
-        value_batch, _ = self.vf(trans, v_hiddens)
-        value_loss = F.mse_loss(value_batch.view(-1, 1), returns)
-        # Policy loss
-        policy_loss = self.policy_loss(trans, pi_hiddens, actions, advant_batch) + self.compute_policy_entropy(trans)
-        # Total loss
-        loss_before = policy_loss + 0.5 * value_loss
-        
-        kl_before = self.kl_divergence(trans)
-        
-        gradient = torch.autograd.grad(loss_before, self.policy.parameters(), retain_graph=True)
-        gradient = self.flat_grad(gradient)
-        Hvp = self.hessian_vector_product(kl_before, self.policy.parameters())
-        search_dir = self.conjugate_gradient(Hvp, gradient)
-        descent_step = self.compute_descent_step(Hvp, search_dir, self.max_kl)
-        loss_before.detach_()
+            # Policy loss
+            policy_loss = self.policy_loss(trans, pi_hiddens, actions, advants)
+            # Total loss
+            loss_before = policy_loss
+            
+            kl_before = self.kl_divergence(trans, pi_hiddens)
+            
+            gradient = torch.autograd.grad(loss_before, self.policy.parameters(), retain_graph=True)
+            gradient = self.flat_grad(gradient)
+            Hvp = self.hessian_vector_product(kl_before, self.policy.parameters())
+            search_dir = self.conjugate_gradient(Hvp, gradient)
+            descent_step = self.compute_descent_step(Hvp, search_dir, self.max_kl)
+            loss_before.detach_()
         
         backup_params = deepcopy(dict(self.policy.named_parameters()))
 
         for i in range(self.backtrack_iters):
             ratio = self.backtrack_coeff ** i
 
-            for params, step in zip(self.agent.policy.parameters(), descent_step):
+            for params, step in zip(self.policy.parameters(), descent_step):
                 params.data.add_(step, alpha=-ratio)
             
             sum_total_loss_mini_batch = 0
@@ -323,17 +312,15 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
                 advant_batches,
                 log_prob_batches,
             ):
-                # Value function loss
-                value_batch, _ = self.vf(trans_batch, v_hidden_batch)
-                value_loss = F.mse_loss(value_batch.view(-1, 1), return_batch)
+                # with torch.backends.cudnn.flags(enabled=False):
 
                 # Policy loss
                 policy_loss = self.policy_loss(trans_batch, pi_hidden_batch, action_batch, advant_batch)
                 
                 # Total loss
-                total_loss = policy_loss + 0.5 * value_loss
+                total_loss = policy_loss
                 
-                kl = self.kl_divergence(trans_batch)
+                kl = self.kl_divergence(trans_batch, pi_hidden_batch)
                 
                 # Update the policy, when the KL constraint is satisfied
                 is_improved = total_loss < loss_before
@@ -342,7 +329,13 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
                     print(f"Update meta-policy through {i+1} backtracking line search step(s)")
                     break
                 
-                self.update_model(self.agent.policy, backup_params)
+                # Adapt the inner-policy by A2C
+                self.pi_optimizer.zero_grad(set_to_none=True)
+                total_loss.backward(create_graph=True)
+                with torch.set_grad_enabled(True):
+                    self.pi_optimizer.step()
+                
+                self.update_model(self.policy, backup_params)
 
                 sum_total_loss_mini_batch += total_loss
                 sum_policy_loss_mini_batch += policy_loss
@@ -358,6 +351,8 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         mean_total_loss = sum_total_loss / self.backtrack_iters
         mean_policy_loss = sum_policy_loss / self.backtrack_iters
         mean_value_loss = sum_value_loss / self.backtrack_iters
+        
+        print(mean_total_loss, value_loss)
         
         return dict(
             total_loss=mean_total_loss.item(),

@@ -8,7 +8,8 @@ import yaml
 
 from src.envs import ENVS
 from src.rl2.algorithm.meta_learner import MetaLearner
-from src.rl2.algorithm.ppo import PPO
+# from src.rl2.algorithm.ppo import PPO
+from src.rl2.algorithm.trpo import TRPO
 
 if __name__ == "__main__":
     # Experiment configuration setup
@@ -45,12 +46,19 @@ if __name__ == "__main__":
         else torch.device("cpu")
     )
 
-    agent = PPO(
+    # agent = PPO(
+    #     trans_dim=trans_dim,
+    #     action_dim=action_dim,
+    #     hidden_dim=hidden_dim,
+    #     device=device,
+    #     **env_target_config["ppo_params"],
+    # )
+    agent = TRPO(
         trans_dim=trans_dim,
         action_dim=action_dim,
         hidden_dim=hidden_dim,
         device=device,
-        **env_target_config["ppo_params"],
+        **env_target_config["trpo_params"],
     )
 
     meta_learner = MetaLearner(
