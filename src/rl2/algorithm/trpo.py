@@ -252,6 +252,7 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         value_loss.backward()
         self.optimizer.step()
 
+        # num_mini_batch = int(batch_size / self.mini_batch_size) #임시로 batch size로 나누지 않고 policy update 진행
         num_mini_batch = int(batch_size / batch_size)
 
         trans_batches = torch.chunk(trans, num_mini_batch)
@@ -312,30 +313,24 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
                 advant_batches,
                 log_prob_batches,
             ):
-                # with torch.backends.cudnn.flags(enabled=False):
+                with torch.backends.cudnn.flags(enabled=False):
 
-                # Policy loss
-                policy_loss = self.policy_loss(trans_batch, pi_hidden_batch, action_batch, advant_batch)
+                    # Policy loss
+                    policy_loss = self.policy_loss(trans_batch, pi_hidden_batch, action_batch, advant_batch)
+                    
+                    # Total loss
+                    total_loss = policy_loss
+                    
+                    kl = self.kl_divergence(trans_batch, pi_hidden_batch)
+                    
+                    # Update the policy, when the KL constraint is satisfied
+                    is_improved = total_loss < loss_before
+                    is_constrained = kl <= self.max_kl
+                    if is_improved and is_constrained:
+                        print(f"Update meta-policy through {i+1} backtracking line search step(s)")
+                        break
                 
-                # Total loss
-                total_loss = policy_loss
-                
-                kl = self.kl_divergence(trans_batch, pi_hidden_batch)
-                
-                # Update the policy, when the KL constraint is satisfied
-                is_improved = total_loss < loss_before
-                is_constrained = kl <= self.max_kl
-                if is_improved and is_constrained:
-                    print(f"Update meta-policy through {i+1} backtracking line search step(s)")
-                    break
-                
-                # Adapt the inner-policy by A2C
-                self.pi_optimizer.zero_grad(set_to_none=True)
-                total_loss.backward(create_graph=True)
-                with torch.set_grad_enabled(True):
-                    self.pi_optimizer.step()
-                
-                self.update_model(self.policy, backup_params)
+                    self.update_model(self.policy, backup_params)
 
                 sum_total_loss_mini_batch += total_loss
                 sum_policy_loss_mini_batch += policy_loss
@@ -351,8 +346,6 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         mean_total_loss = sum_total_loss / self.backtrack_iters
         mean_policy_loss = sum_policy_loss / self.backtrack_iters
         mean_value_loss = sum_value_loss / self.backtrack_iters
-        
-        print(mean_total_loss, value_loss)
         
         return dict(
             total_loss=mean_total_loss.item(),

@@ -150,6 +150,8 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["time_per_iter"] = time.time() - start_time
 
         self.visualize_within_tensorboard(test_results, iteration)
+        
+        print(test_results["return"])
 
         # Check if each element of self.dq satisfies early stopping condition
         if self.env_name == "cheetah-dir":
