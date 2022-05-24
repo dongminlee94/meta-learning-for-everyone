@@ -6,12 +6,15 @@ import datetime
 import os
 import time
 from collections import deque
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from src.rl2.algorithm.buffer import Buffer
+from src.rl2.algorithm.ppo import PPO
 from src.rl2.algorithm.sampler import Sampler
 
 
@@ -20,22 +23,22 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments, too-many-locals
         self,
-        env,
-        env_name,
-        agent,
-        trans_dim,
-        action_dim,
-        hidden_dim,
-        train_tasks,
-        test_tasks,
-        save_exp_name,
-        save_file_name,
-        load_exp_name,
-        load_file_name,
-        load_ckpt_num,
-        device,
+        env: HalfCheetahEnv,
+        env_name: str,
+        agent: PPO,
+        trans_dim: int,
+        action_dim: int,
+        hidden_dim: int,
+        train_tasks: List[int],
+        test_tasks: List[int],
+        save_exp_name: str,
+        save_file_name: str,
+        load_exp_name: str,
+        load_file_name: str,
+        load_ckpt_num: str,
+        device: torch.device,
         **config,
-    ):
+    ) -> None:
 
         self.env = env
         self.env_name = env_name
@@ -43,11 +46,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
 
-        self.num_iterations = config["num_iterations"]
-        self.num_samples = config["num_samples"]
+        self.num_iterations: int = config["num_iterations"]
+        self.num_samples: int = config["num_samples"]
 
-        self.batch_size = len(train_tasks) * config["num_samples"]
-        self.max_step = config["max_step"]
+        self.batch_size: int = len(train_tasks) * config["num_samples"]
+        self.max_step: int = config["max_step"]
 
         self.sampler = Sampler(
             env=env,
@@ -81,12 +84,12 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.buffer = ckpt["buffer"]
 
         # Set up early stopping condition
-        self.dq = deque(maxlen=config["num_stop_conditions"])
-        self.num_stop_conditions = config["num_stop_conditions"]
-        self.stop_goal = config["stop_goal"]
+        self.dq: deque = deque(maxlen=config["num_stop_conditions"])
+        self.num_stop_conditions: int = config["num_stop_conditions"]
+        self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
-    def meta_train(self):
+    def meta_train(self) -> None:
         """RL^2 meta-training"""
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
@@ -99,11 +102,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 self.agent.policy.is_deterministic = False
 
                 print(f"[{index + 1}/{len(self.train_tasks)}] collecting samples")
-                trajs = self.sampler.obtain_trajs(max_samples=self.num_samples)
+                trajs: List[Dict[str, np.ndarray]] = self.sampler.obtain_samples(
+                    max_samples=self.num_samples
+                )
                 self.buffer.add_trajs(trajs)
 
             # Get all samples for the train tasks
-            batch = self.buffer.get_samples()
+            batch = self.buffer.sample_batch()
 
             # Train the policy and the value function
             print(f"Start the meta-gradient update of iteration {iteration}")
@@ -121,7 +126,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
                 )
                 break
 
-    def visualize_within_tensorboard(self, test_results, iteration):
+    def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
         """Tensorboard visualization"""
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "vel":
@@ -138,18 +143,21 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("time/total_time", test_results["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", test_results["time_per_iter"], iteration)
 
-    def meta_test(self, iteration, total_start_time, start_time, log_values):
+    def meta_test(
+        self, iteration: int, total_start_time: float, start_time: float, log_values: Dict[str, float]
+    ) -> None:
         """RL^2 meta-testing"""
         test_results = {}
-        test_return = 0
+        test_return: float = 0
         test_run_cost = np.zeros(self.max_step)
 
         for index in self.test_tasks:
             self.env.reset_task(index)
             self.agent.policy.is_deterministic = True
 
-            trajs = self.sampler.obtain_trajs(max_samples=self.max_step)
-            test_return += sum(trajs[0]["rewards"])[0]
+            trajs: List[Dict[str, np.ndarray]] = self.sampler.obtain_samples(max_samples=self.max_step)
+            test_return += np.sum(trajs[0]["rewards"]).item()
+
             if self.env_name == "vel":
                 for i in range(self.max_step):
                     test_run_cost[i] += trajs[0]["infos"][i]
@@ -158,7 +166,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         test_results["return"] = test_return / len(self.test_tasks)
         if self.env_name == "vel":
             test_results["run_cost"] = test_run_cost / len(self.test_tasks)
-            test_results["sum_run_cost"] = sum(abs(test_results["run_cost"]))
+            test_results["sum_run_cost"] = np.sum(abs(test_results["run_cost"]))
         test_results["total_loss"] = log_values["total_loss"]
         test_results["policy_loss"] = log_values["policy_loss"]
         test_results["value_loss"] = log_values["value_loss"]

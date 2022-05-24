@@ -2,6 +2,9 @@
 Proximal Policy Optimization algorithm code for training when meta-train
 """
 
+from typing import Dict, Tuple
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -14,12 +17,12 @@ class PPO:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        trans_dim,
-        action_dim,
-        hidden_dim,
-        device,
+        trans_dim: int,
+        action_dim: int,
+        hidden_dim: int,
+        device: torch.device,
         **config,
-    ):
+    ) -> None:
 
         self.device = device
         self.num_epochs = config["num_epochs"]
@@ -48,25 +51,28 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             "vf": self.vf,
         }
 
-    def get_action(self, trans, hidden):
+    def get_action(
+        self, trans: np.ndarray, hidden: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get an action from the policy network"""
-        action, log_prob, hidden = self.policy(
+        action, log_prob, hidden_out = self.policy(
             torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
         )
         return (
             action.detach().cpu().numpy(),
             log_prob.detach().cpu().numpy(),
-            hidden.detach().cpu().numpy(),
+            hidden_out.detach().cpu().numpy(),
         )
 
-    def get_value(self, trans, hidden):
+    def get_value(self, trans: np.ndarray, hidden: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Get an value from the value network"""
-        value, hidden = self.vf(
+        value, hidden_out = self.vf(
             torch.Tensor(trans).to(self.device), torch.Tensor(hidden).to(self.device)
         )
-        return value.detach().cpu().numpy(), hidden.detach().cpu().numpy()
+        return value.detach().cpu().numpy(), hidden_out.detach().cpu().numpy()
 
-    def train_model(self, batch_size, batch):  # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals
+    def train_model(self, batch_size: int, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
         """Train models according to training method of PPO algorithm"""
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
@@ -86,9 +92,9 @@ class PPO:  # pylint: disable=too-many-instance-attributes
         advant_batches = torch.chunk(advants, num_mini_batch)
         log_prob_batches = torch.chunk(log_probs, num_mini_batch)
 
-        sum_total_loss = 0
-        sum_policy_loss = 0
-        sum_value_loss = 0
+        sum_total_loss: float = 0
+        sum_policy_loss: float = 0
+        sum_value_loss: float = 0
 
         for _ in range(self.num_epochs):
             sum_total_loss_mini_batch = 0

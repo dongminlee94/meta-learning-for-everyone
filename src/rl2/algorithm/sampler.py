@@ -2,7 +2,12 @@
 Sample collection code through interaction between agent and environment
 """
 
+from typing import Dict, List
+
 import numpy as np
+from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
+
+from src.rl2.algorithm.ppo import PPO
 
 
 class Sampler:
@@ -10,12 +15,12 @@ class Sampler:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        env,
-        agent,
-        action_dim,
-        hidden_dim,
-        max_step,
-    ):
+        env: HalfCheetahEnv,
+        agent: PPO,
+        action_dim: int,
+        hidden_dim: int,
+        max_step: int,
+    ) -> None:
 
         self.env = env
         self.agent = agent
@@ -24,7 +29,7 @@ class Sampler:
         self.max_step = max_step
         self.cur_samples = 0
 
-    def obtain_trajs(self, max_samples):
+    def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
         """Obtain samples up to the number of maximum samples"""
         trajs = []
         while not self.cur_samples == max_samples:
@@ -34,7 +39,7 @@ class Sampler:
         return trajs
 
     # pylint: disable=too-many-locals
-    def rollout(self, max_samples):
+    def rollout(self, max_samples: int) -> Dict[str, np.ndarray]:
         """Rollout up to maximum trajectory length"""
         trans = []
         pi_hiddens = []
