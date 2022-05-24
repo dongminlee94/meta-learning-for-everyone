@@ -2,6 +2,8 @@
 RL^2 trainer based on half-cheetah environment
 """
 
+import os
+
 import numpy as np
 import torch
 import yaml
@@ -12,19 +14,17 @@ from src.rl2.algorithm.ppo import PPO
 
 if __name__ == "__main__":
     # Experiment configuration setup
-    with open("./configs/experiment_config.yaml", "r") as file:
+    with open(os.path.join("configs", "experiment_config.yaml"), "r") as file:
         experiment_config = yaml.load(file, Loader=yaml.FullLoader)
 
     # Target reward configuration setup
-    if experiment_config["env_name"] == "cheetah-dir":
-        with open("./configs/dir_target_config.yaml", "r") as file:
-            env_target_config = yaml.load(file, Loader=yaml.FullLoader)
-    elif experiment_config["env_name"] == "cheetah-vel":
-        with open("./configs/vel_target_config.yaml", "r") as file:
-            env_target_config = yaml.load(file, Loader=yaml.FullLoader)
+    with open(
+        os.path.join("configs", experiment_config["env_name"] + "_target_config.yaml"), "r"
+    ) as file:
+        env_target_config = yaml.load(file, Loader=yaml.FullLoader)
 
     # Create a multi-task environment and sample tasks
-    env = ENVS[experiment_config["env_name"]](
+    env = ENVS["cheetah-" + experiment_config["env_name"]](
         num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"]
     )
     tasks = env.get_all_task_idx()
@@ -62,8 +62,11 @@ if __name__ == "__main__":
         hidden_dim=hidden_dim,
         train_tasks=list(tasks[: env_target_config["train_tasks"]]),
         test_tasks=list(tasks[-env_target_config["test_tasks"] :]),
-        exp_name=experiment_config["exp_name"],
-        file_name=experiment_config["file_name"],
+        save_exp_name=experiment_config["save_exp_name"],
+        save_file_name=experiment_config["save_file_name"],
+        load_exp_name=experiment_config["load_exp_name"],
+        load_file_name=experiment_config["load_file_name"],
+        load_ckpt_num=experiment_config["load_ckpt_num"],
         device=device,
         **env_target_config["rl2_params"],
     )

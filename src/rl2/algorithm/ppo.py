@@ -152,24 +152,3 @@ class PPO:  # pylint: disable=too-many-instance-attributes
             policy_loss=mean_policy_loss.item(),
             value_loss=mean_value_loss.item(),
         )
-
-    def save(self, path, net_dict=None):
-        """Save data related to models in path"""
-        if net_dict is None:
-            net_dict = self.net_dict
-
-        state_dict = {name: net.state_dict() for name, net in net_dict.items()}
-        state_dict["alpha"] = self.log_alpha
-        torch.save(state_dict, path)
-
-    def load(self, path, net_dict=None):
-        """Load data stored as check point in models"""
-        if net_dict is None:
-            net_dict = self.net_dict
-
-        checkpoint = torch.load(path)
-        for name, net in net_dict.items():
-            if name == "alpha":
-                self.log_alpha.load(net)
-            else:
-                net.load_state_dict(checkpoint[name])

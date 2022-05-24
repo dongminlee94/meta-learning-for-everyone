@@ -8,6 +8,7 @@ import time
 from collections import deque
 
 import numpy as np
+import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from src.rl2.algorithm.buffer import Buffer
@@ -17,7 +18,7 @@ from src.rl2.algorithm.sampler import Sampler
 class MetaLearner:  # pylint: disable=too-many-instance-attributes
     """RL^2 meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
         self,
         env,
         env_name,
@@ -27,8 +28,11 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         hidden_dim,
         train_tasks,
         test_tasks,
-        exp_name,
-        file_name,
+        save_exp_name,
+        save_file_name,
+        load_exp_name,
+        load_file_name,
+        load_ckpt_num,
         device,
         **config,
     ):
@@ -41,6 +45,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         self.num_iterations = config["num_iterations"]
         self.num_samples = config["num_samples"]
+
         self.batch_size = len(train_tasks) * config["num_samples"]
         self.max_step = config["max_step"]
 
@@ -60,9 +65,20 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             device=device,
         )
 
-        if not file_name:
-            file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        self.writer = SummaryWriter(log_dir=os.path.join("results", exp_name, file_name))
+        if not save_file_name:
+            save_file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.result_path = os.path.join("results", save_exp_name, save_file_name)
+        self.writer = SummaryWriter(log_dir=self.result_path)
+
+        if load_exp_name and load_file_name:
+            ckpt_path = os.path.join(
+                "results", load_exp_name, load_file_name, "checkpoint_" + str(load_ckpt_num) + ".pt"
+            )
+            ckpt = torch.load(ckpt_path)
+
+            self.agent.policy.load_state_dict(ckpt["policy"])
+            self.agent.vf.load_state_dict(ckpt["vf"])
+            self.buffer = ckpt["buffer"]
 
         # Set up early stopping condition
         self.dq = deque(maxlen=config["num_stop_conditions"])
@@ -108,7 +124,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
     def visualize_within_tensorboard(self, test_results, iteration):
         """Tensorboard visualization"""
         self.writer.add_scalar("test/return", test_results["return"], iteration)
-        if self.env_name == "cheetah-vel":
+        if self.env_name == "vel":
             self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
             for step in range(len(test_results["run_cost"])):
                 self.writer.add_scalar(
@@ -134,13 +150,13 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
             trajs = self.sampler.obtain_trajs(max_samples=self.max_step)
             test_return += sum(trajs[0]["rewards"])[0]
-            if self.env_name == "cheetah-vel":
+            if self.env_name == "vel":
                 for i in range(self.max_step):
                     test_run_cost[i] += trajs[0]["infos"][i]
 
         # Collect meta-test results
         test_results["return"] = test_return / len(self.test_tasks)
-        if self.env_name == "cheetah-vel":
+        if self.env_name == "vel":
             test_results["run_cost"] = test_run_cost / len(self.test_tasks)
             test_results["sum_run_cost"] = sum(abs(test_results["run_cost"]))
         test_results["total_loss"] = log_values["total_loss"]
@@ -152,15 +168,23 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.visualize_within_tensorboard(test_results, iteration)
 
         # Check if each element of self.dq satisfies early stopping condition
-        if self.env_name == "cheetah-dir":
+        if self.env_name == "dir":
             self.dq.append(test_results["return"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
-        elif self.env_name == "cheetah-vel":
+        elif self.env_name == "vel":
             self.dq.append(test_results["sum_run_cost"])
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
 
         # Save the trained models
         if self.is_early_stopping:
-            pass
+            ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
+            torch.save(
+                {
+                    "policy": self.agent.policy.state_dict(),
+                    "vf": self.agent.vf.state_dict(),
+                    "buffer": self.buffer,
+                },
+                ckpt_path,
+            )
