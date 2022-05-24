@@ -1,16 +1,25 @@
 # RL^2 Experiment configs
 
-# Select either cheetah-dir or cheetah-vel
-env_name: "cheetah-dir"
+# Select either dir or vel (str)
+env_name: "dir"
 
-# Set an experiment name
-exp_name: "exp_1"
+# Set an experiment name to save (str)
+save_exp_name: "exp_1"
 
-# Set a file name
-file_name: null
+# Set a file name to save (str or null)
+save_file_name: null
 
-# Set a GPU index
+# Set an experiment name to load (str or null)
+load_exp_name: null
+
+# Set a file name to load (str or null)
+load_file_name: null
+
+# Set a checkpoint number (int)
+load_ckpt_num: 0
+
+# Set a GPU index (int)
 gpu_index: 0
 
-# Set a random seed
+# Set a random seed (int)
 seed: 0

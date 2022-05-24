@@ -4,9 +4,6 @@
 # Select either dir or vel (str)
 env_name: "dir"
 
-# Set meta test interval (int)
-test_interval: 1
-
 # Set an experiment name to save (str)
 save_exp_name: "exp_1"
 

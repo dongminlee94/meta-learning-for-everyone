@@ -15,7 +15,7 @@ hidden_dim: 256
 # ----------
 rl2_params:
     # Number of training iterations
-    num_iterations: 10000
+    num_iterations: 1000
     # Number of samples to train
     num_samples: 800
     # Maximum step for the environment
