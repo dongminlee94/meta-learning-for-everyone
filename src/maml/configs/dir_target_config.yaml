@@ -18,7 +18,7 @@ value_function_hidden_dim: 32
 # ----------
 maml_params:
     # Number of training iterations
-    num_iterations: 500
+    num_iterations: 1000
     # Number of task samples for training
     num_sample_tasks: 40
     # Number of samples per task to train

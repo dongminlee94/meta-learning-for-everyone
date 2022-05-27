@@ -2,6 +2,8 @@
 Simple buffer implementation
 """
 
+from typing import Dict, List
+
 import numpy as np
 import torch
 
@@ -11,14 +13,14 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        trans_dim,
-        action_dim,
-        hidden_dim,
-        max_size,
-        device,
-        gamma=0.99,
-        lamda=0.97,
-    ):
+        trans_dim: int,
+        action_dim: int,
+        hidden_dim: int,
+        max_size: int,
+        device: torch.device,
+        gamma: float = 0.99,
+        lamda: float = 0.97,
+    ) -> None:
 
         self._trans = np.zeros((max_size, trans_dim))
         self._pi_hiddens = np.zeros((max_size, hidden_dim))
@@ -37,7 +39,17 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._top = 0
 
     # pylint: disable=too-many-arguments
-    def add(self, tran, pi_hidden, v_hidden, action, reward, done, value, log_prob):
+    def add(
+        self,
+        tran: np.ndarray,
+        pi_hidden: np.ndarray,
+        v_hidden: np.ndarray,
+        action: np.ndarray,
+        reward: np.ndarray,
+        done: np.ndarray,
+        value: np.ndarray,
+        log_prob: np.ndarray,
+    ) -> None:
         """Add transition, hiddens, value, and log_prob to the buffer"""
         assert self._top < self._max_size
         self._trans[self._top] = tran
@@ -50,7 +62,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._log_probs[self._top] = log_prob
         self._top += 1
 
-    def add_trajs(self, trajs):
+    def add_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
         """Add trajectories to the buffer"""
         for traj in trajs:
             for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
@@ -74,7 +86,7 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
                     log_prob=log_prob,
                 )
 
-    def compute_gae(self):
+    def compute_gae(self) -> None:
         """Compute return and GAE"""
         prev_value = 0
         running_return = 0
@@ -98,8 +110,8 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         # Normalize advantage
         self._advants = (self._advants - self._advants.mean()) / self._advants.std()
 
-    def get_samples(self):
-        """Get samples in the buffer"""
+    def sample_batch(self) -> Dict[str, torch.Tensor]:
+        """Sample batch in the buffer"""
         assert self._top == self._max_size
         self._top = 0
 

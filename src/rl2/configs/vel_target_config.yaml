@@ -3,7 +3,7 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 300
+train_tasks: 200
 
 # Number of tasks for meta-test
 test_tasks: 15
