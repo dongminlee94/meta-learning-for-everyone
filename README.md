@@ -1,21 +1,12 @@
-<div align="center">
-  <br>
-  <img src="./img/meta-rl.png" width="500">
-</div>
-
-[Image source](https://cs330.stanford.edu/slides/cs330_lifelonglearning_karol.pdf)
-
-<br>
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8.8](https://img.shields.io/badge/python-3.8.8-blue.svg)](https://www.python.org/downloads/release/python-388/)
-[![PyTorch 1.8.0](https://img.shields.io/badge/pytorch-1.8.0-red.svg)](https://pytorch.org/blog/pytorch-1.8-released/)
+[![PyTorch 1.8.1](https://img.shields.io/badge/pytorch-1.8.0-red.svg)](https://pytorch.org/blog/pytorch-1.8-released/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-white)](https://pycqa.github.io/isort/)
 [![Linting: flake8 & mypy & pylint](https://img.shields.io/badge/linting-flake8%20%26%20mypy%20%26%20pylint-deepblue)](https://pypi.org/project/pytest-pylint/)
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 
-# Meta-Reinforcement Learning Algorithms with PyTorch
+# 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
 
 This repository contains PyTorch implementations of meta-reinforcement learning algorithms.
 
@@ -25,34 +16,12 @@ This repository is implemented and verified on **python 3.8.8**
 
 ## Installation
 
-To run on **pytorch 1.8.0**, enter the [pytorch version link](https://pytorch.org/get-started/previous-versions/#wheel) and run the installation command to desired specifications.
+To run on **pytorch 1.8.1**, enter the [pytorch version link](https://pytorch.org/get-started/previous-versions/#wheel) and run the installation command to desired specifications.
 
 Next, clone this repository and run the following command.
 
 ```shell
 $ make setup
-```
-
-## Python Path
-
-To set python path, move to `meta-rl/`.
-
-```shell
-$ cd meta-rl
-```
-
-If setting python path on `bashrc`:
-
-```shell
-$ echo "export META_HOME=$(pwd)" >> ~/.bashrc
-$ echo 'export PYTHONPATH=$META_HOME:$PYTHONPATH' >> ~/.bashrc
-```
-
-If setting python path on `zshrc`:
-
-```shell
-$ echo "export META_HOME=$(pwd)" >> ~/.zshrc
-$ echo 'export PYTHONPATH=$META_HOME:$PYTHONPATH' >> ~/.zshrc
 ```
 
 ## Usages

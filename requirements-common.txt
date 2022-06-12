@@ -1,0 +1,6 @@
+gym>=0.24.1
+higher>=0.2.1
+mujoco-py>=2.1.2.14
+tensorflow-tensorboard==1.5.1
+torchmeta>=1.8.0
+tqdm>=4.62.3

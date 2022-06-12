@@ -1,0 +1,43 @@
+name: "Automation] Pull Request"
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened, closed]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anencore94/labeler@v1.1.0
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  assign-reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: reviewers
+        uses: hkusu/review-assign-action@v1
+        with:
+          assignees: ${{ github.actor }}
+          reviewers: dongminlee94, Clyde21c
+          max-num-of-reviewers: 2
+          draft-keyword: WIP  # A keyword in the pull request title to treat as draft pull requests
+
+  size-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: size-label
+        uses: pascalgn/size-label-action@v0.4.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IGNORED: "**/component.yaml\n**/__init__.py"
+        with:
+          sizes: >
+            {
+              "0": "XS",
+              "8": "S",
+              "40": "M",
+              "110": "L",
+              "400": "XL",
+              "1000": "XXL",
+              "3000": "XXXL"
+            }

@@ -1,13 +1,31 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
     hooks:
-    - id: format
-      name: format
-      language: system
-      entry: make format
-      types: [python]
-    - id: lint
-      name: lint
-      language: system
-      entry: make lint
-      types: [python]
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-added-large-files
+        args: ["--maxkb=30000"]
+      - id: requirements-txt-fixer
+
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        language: system
+        entry: make format
+
+  - repo: local
+    hooks:
+      - id: lint
+        name: lint
+        language: system
+        entry: make lint
+
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v2.0.1
+    hooks:
+      - id: add-trailing-comma
