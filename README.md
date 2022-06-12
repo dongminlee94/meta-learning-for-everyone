@@ -8,70 +8,31 @@
 
 # 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
 
-This repository contains PyTorch implementations of meta-reinforcement learning algorithms.
+"모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
 
-## Prerequisites
+## 필요 조건
 
-This repository is implemented and verified on **python 3.8.8**
+이 레포지토리에서는 **python 3.8.8** 버전을 사용합니다.
 
-## Installation
+## 설치 방법
 
-To run on **pytorch 1.8.1**, enter the [pytorch version link](https://pytorch.org/get-started/previous-versions/#wheel) and run the installation command to desired specifications.
+이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하세요.
 
-Next, clone this repository and run the following command.
+### 사용자
 
-```shell
-$ make setup
+```shel
+$ make init
 ```
 
-## Usages
-
-The repository's high-level structure is:
-
-    └── src
-        ├── envs
-        ├── rl2
-            ├── algorithm
-            ├── configs
-            └── results
-        ├── maml
-            ├── algorithm
-            ├── configs
-            └── results
-        └── pearl
-            ├── algorithm
-            ├── configs
-            └── results
-
-### RL^2
-
-TBU
-
-### MAML
-
-TBU
-
-### PEARL
-
-TBU
-
-### Development
-
-We have setup automatic formatters and linters for this repository.
-
-To run the formatters:
+### 개발자
 
 ```shell
-$ make format
+$ make init-dev
 ```
 
-To run the linters:
+## 사용법
 
-```shell
-$ make lint
-```
-
-New code should pass the formatters and the linters before being submitted as a PR.
+TBD
 
 ## Contributors ✨
 
