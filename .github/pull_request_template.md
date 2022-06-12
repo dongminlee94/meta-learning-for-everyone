@@ -2,18 +2,14 @@
 
 [//]: # (Please explain the changes you made.)
 
+## Test
+
+[//]: # (Please explain how to test the code.)
+
 ## Related Issues
 
 [//]: # (Please link the related issues, if applicable.)
 
-## Checklist
+## Anything Else? (Optional) Optional section (e.g., code usage, experimental results, TODO)
 
-- [ ] **Assignees** ran the [make format](https://github.com/dongminlee94/meta-rl#development).
-- [ ] **Assignees** ran the [make lint](https://github.com/dongminlee94/meta-rl#development) command and the code passed the linters.
-- [ ] **Assignees** updated the README, if necessary.
-- [ ] **Assignees** checked the runnability of the code.
-- [ ] **Reviewers** checked the runnability of the code.
-
-## Optional section (e.g., code usage, experimental results, TODO)
-
-[//]: # (If Assignees have any additional information, please add them.)
+[//]: # (If there are any other things (e.g., code usage, experimental results, TODO), please explain them.)
