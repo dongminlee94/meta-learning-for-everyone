@@ -37,7 +37,7 @@ init:
 	pip install -e .
 	pip install -r requirements-common.txt
 	pip install -r requirements-$(DEVICE).txt
-	conda install tensorboard
+	conda install -y tensorboard
 	bash ./hooks/install.sh
 
 init-dev:
