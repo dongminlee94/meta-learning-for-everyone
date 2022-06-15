@@ -38,6 +38,9 @@ init:
 	pip install -r requirements-common.txt
 	pip install -r requirements-$(DEVICE).txt
 	conda install -y tensorboard
+	jupyter contrib nbextension install --user
+	jupyter nbextensions_configurator enable --user
+	python3 -m ipykernel install --user
 	bash ./hooks/install.sh
 
 init-dev:
