@@ -34,10 +34,10 @@ endif
 
 init:
 	pip install -U pip
-	pip install -U setuptools
 	pip install -e .
 	pip install -r requirements-common.txt
 	pip install -r requirements-$(DEVICE).txt
+	conda install tensorboard
 	bash ./hooks/install.sh
 
 init-dev:
