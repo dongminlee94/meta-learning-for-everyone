@@ -28,6 +28,7 @@ endif
 init:
 	pip install -U pip
 	pip install -e .
+	pip install GPUtil==1.4.0
 	python ./scripts/download-torch.py
 	pip install -r requirements.txt
 	conda install -y tensorboard
