@@ -12,7 +12,8 @@ def main() -> None:
         else:
             cli = "pip install torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
     elif sys.platform == "darwin":
-        cli = "pip install torch==1.8.1"
+        cli = "pip install torch==1.8.1 -f https://download.pytorch.org/whl/torch_stable.html"
+    print(cli)
     os.system(cli)
 
 

@@ -28,9 +28,8 @@ endif
 init:
 	pip install -U pip
 	pip install -e .
-	pip install GPUtil==1.4.0
-	python ./scripts/download-torch.py
 	pip install -r requirements.txt
+	python3 ./scripts/download-torch.py
 	conda install -y tensorboard
 	jupyter contrib nbextension install --user
 	jupyter nbextensions_configurator enable --user
