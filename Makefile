@@ -1,4 +1,4 @@
-GPU := $(shell which nvcc)
+GPU := $(shell which nvidia-smi)
 ifdef GPU
     DEVICE="gpu"
 else
