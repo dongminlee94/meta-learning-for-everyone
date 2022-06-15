@@ -5,19 +5,25 @@ Reference:
     https://github.com/katerakelly/oyster/blob/master/rlkit/envs/half_cheetah.py
 """
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
+from gym import utils
 from gym.envs.mujoco import HalfCheetahEnv as HalfCheetahEnv_
+from gym.envs.mujoco import mujoco_env
 
 
 class HalfCheetahEnv(HalfCheetahEnv_):
+    def __init__(self):
+        mujoco_env.MujocoEnv.__init__(self, "half_cheetah.xml", 5)
+        utils.EzPickle.__init__(self)
+
     def _get_obs(self) -> np.ndarray:
         return (
             np.concatenate(
                 [
-                    self.sim.data.qpos.flat[1:],
-                    self.sim.data.qvel.flat,
+                    self.data.qpos.flat[1:],
+                    self.data.qvel.flat,
                     self.get_body_com("torso").flat,
                 ],
             )
