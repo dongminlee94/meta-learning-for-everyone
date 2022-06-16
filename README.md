@@ -19,6 +19,7 @@
 ### 1. Anaconda 설치
 
 먼저, 아래의 링크에서 Anaconda를 설치합니다.
+
 https://www.anaconda.com/
 
 ### 2. Anaconda 환경 만들기
@@ -47,15 +48,13 @@ $ make init-dev
 
 ### 4. 모델 학습 및 결과 확인
 
-Meta-SL은 각 알고리즘 폴더로 가서 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
 
 ```bash
-$ cd src/meta_sl
-
 $ jupyter notebook
 ```
 
-Meta-RL은 각 알고리즘 폴더로 가서 아래의 명령어들을 이용하여 실행해주세요.
+Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
 
 ```bash
 $ rl2_trainer.py
@@ -69,7 +68,7 @@ $ maml_trainer.py
 $ pearl_trainer.py
 ```
 
-텐서보드를 이용하여 학습 결과를 확인해주세요.
+Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
 
 ```bash
 $ tensorboard --logdir=./results
