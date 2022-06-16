@@ -37,7 +37,7 @@ class MultiTaskReplayBuffer:
         return self.task_buffers[task].sample(batch_size)
 
 
-class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
+class SimpleReplayBuffer:
     """Single task replay buffer code"""
 
     def __init__(
@@ -61,7 +61,7 @@ class SimpleReplayBuffer:  # pylint: disable=too-many-instance-attributes
         self._top = 0
         self._size = 0
 
-    def add(  # pylint: disable=too-many-arguments
+    def add(
         self,
         obs: np.ndarray,
         action: np.ndarray,

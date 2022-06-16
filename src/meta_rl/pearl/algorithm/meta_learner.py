@@ -19,10 +19,10 @@ from meta_rl.pearl.algorithm.sac import SAC
 from meta_rl.pearl.algorithm.sampler import Sampler
 
 
-class MetaLearner:  # pylint: disable=too-many-instance-attributes
+class MetaLearner:
     """PEARL meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
+    def __init__(
         self,
         env: HalfCheetahEnv,
         env_name: str,

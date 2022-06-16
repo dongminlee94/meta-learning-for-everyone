@@ -12,7 +12,7 @@ from torch.distributions import Normal
 class MLP(nn.Module):
     """Base MLP network class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
@@ -54,7 +54,7 @@ class MLP(nn.Module):
 class GaussianPolicy(MLP):
     """Gaussian policy network class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,

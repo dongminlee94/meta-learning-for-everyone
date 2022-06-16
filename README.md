@@ -1,6 +1,7 @@
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/dongminlee94/meta-learning-for-everyone.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dongminlee94/meta-learning-for-everyone/context:python)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8.8](https://img.shields.io/badge/python-3.8.8-blue.svg)](https://www.python.org/downloads/release/python-388/)
-[![PyTorch 1.8.1](https://img.shields.io/badge/pytorch-1.8.0-red.svg)](https://pytorch.org/blog/pytorch-1.8-released/)
+[![PyTorch 1.8.1](https://img.shields.io/badge/pytorch-1.8.1-red.svg)](https://pytorch.org/blog/pytorch-1.8-released/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-white)](https://pycqa.github.io/isort/)
 [![Linting: flake8 & mypy & pylint](https://img.shields.io/badge/linting-flake8%20%26%20mypy%20%26%20pylint-deepblue)](https://pypi.org/project/pytest-pylint/)
@@ -8,70 +9,71 @@
 
 # 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
 
-This repository contains PyTorch implementations of meta-reinforcement learning algorithms.
+"모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
 
-## Prerequisites
+## 필요 조건
 
-This repository is implemented and verified on **python 3.8.8**
+이 레포지토리에서는 **python 3.8.8** 버전을 사용합니다.
 
-## Installation
+## 설치 및 사용 방법
 
-To run on **pytorch 1.8.1**, enter the [pytorch version link](https://pytorch.org/get-started/previous-versions/#wheel) and run the installation command to desired specifications.
+### 1. Anaconda 설치
 
-Next, clone this repository and run the following command.
+먼저, 아래의 링크에서 Anaconda를 설치합니다.
 
-```shell
-$ make setup
+https://www.anaconda.com/
+
+### 2. Anaconda 환경 만들기
+
+다음으로, 아래의 명령어들을 통해 새로운 python 환경을 만들고, 그 환경을 활성화합니다.
+
+```bash
+(base) $ conda create -y -n meta python=3.8.8
+
+(base) $ conda activate meta
+
+(meta) $ conda env list
 ```
 
-## Usages
+### 3. 패키지 설치
 
-The repository's high-level structure is:
+이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
 
-    └── src
-        ├── envs
-        ├── rl2
-            ├── algorithm
-            ├── configs
-            └── results
-        ├── maml
-            ├── algorithm
-            ├── configs
-            └── results
-        └── pearl
-            ├── algorithm
-            ├── configs
-            └── results
+```bash
+# 사용자
+$ make init
 
-### RL^2
-
-TBU
-
-### MAML
-
-TBU
-
-### PEARL
-
-TBU
-
-### Development
-
-We have setup automatic formatters and linters for this repository.
-
-To run the formatters:
-
-```shell
-$ make format
+# 개발자
+$ make init-dev
 ```
 
-To run the linters:
+### 4. 모델 학습 및 결과 확인
 
-```shell
-$ make lint
+Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+
+```bash
+$ jupyter notebook
 ```
 
-New code should pass the formatters and the linters before being submitted as a PR.
+Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
+
+```bash
+$ rl2_trainer.py
+
+# or
+
+$ maml_trainer.py
+
+# or
+
+$ pearl_trainer.py
+```
+
+Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
+
+```bash
+$ tensorboard --logdir=./results
+```
 
 ## Contributors ✨
 

@@ -14,7 +14,7 @@ from meta_rl.maml.algorithm.trpo import TRPO
 class Sampler:
     """Data sampling class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         env: HalfCheetahEnv,
         agent: TRPO,
@@ -42,7 +42,7 @@ class Sampler:
 
         return trajs
 
-    def rollout(self) -> Dict[str, np.ndarray]:  # pylint: disable=too-many-locals
+    def rollout(self) -> Dict[str, np.ndarray]:
         """Rollout up to maximum trajectory length"""
         _cur_obs = []
         _actions = []
@@ -52,8 +52,6 @@ class Sampler:
 
         cur_step = 0
         obs = self.env.reset()
-        action = np.zeros(self.action_dim)
-        reward = np.zeros(1)
         done = np.zeros(1)
 
         while not (done or cur_step == self.max_step):
