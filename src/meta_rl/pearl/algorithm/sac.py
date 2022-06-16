@@ -12,10 +12,10 @@ import torch.optim as optim
 from meta_rl.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussianPolicy
 
 
-class SAC:  # pylint: disable=too-many-instance-attributes
+class SAC:
     """Soft Actor-Critic class with context"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         observ_dim: int,
         action_dim: int,
@@ -103,7 +103,6 @@ class SAC:  # pylint: disable=too-many-instance-attributes
         action, _ = self.policy(inputs)
         return action.view(-1).detach().cpu().numpy()
 
-    # pylint: disable=too-many-locals
     def train_model(
         self,
         meta_batch_size: int,

@@ -8,10 +8,10 @@ import numpy as np
 import torch
 
 
-class Buffer:  # pylint: disable=too-many-instance-attributes
+class Buffer:
     """Simple buffer class that includes computing return and gae"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         trans_dim: int,
         action_dim: int,
@@ -38,7 +38,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._max_size = max_size
         self._top = 0
 
-    # pylint: disable=too-many-arguments
     def add(
         self,
         tran: np.ndarray,

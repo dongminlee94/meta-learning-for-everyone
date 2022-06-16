@@ -14,7 +14,7 @@ from torch.distributions import Normal
 class GRU(nn.Module):
     """Base GRU network class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
@@ -45,7 +45,7 @@ class GRU(nn.Module):
 class GaussianGRU(GRU):
     """Gaussian GRU network class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
