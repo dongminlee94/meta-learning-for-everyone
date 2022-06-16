@@ -18,10 +18,10 @@ from meta_rl.rl2.algorithm.ppo import PPO
 from meta_rl.rl2.algorithm.sampler import Sampler
 
 
-class MetaLearner:  # pylint: disable=too-many-instance-attributes
+class MetaLearner:
     """RL^2 meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
+    def __init__(
         self,
         env: HalfCheetahEnv,
         env_name: str,

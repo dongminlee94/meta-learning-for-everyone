@@ -5,7 +5,7 @@ Differentiable Optimizer for higher-ogder optimization
 import torch.nn as nn
 
 
-class DifferentiableSGD:  # pylint: disable=too-many-instance-attributes, line-too-long
+class DifferentiableSGD:
     """
     Differenctialble SGD avoiding parameter's in-place update of torch.optim
     [source](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/optimizers/differentiable_sgd.py)
@@ -33,9 +33,9 @@ class DifferentiableSGD:  # pylint: disable=too-many-instance-attributes, line-t
 
                     new_param = param.add(param.grad, alpha=-self.lr)
 
-                    del model._parameters[name]  # pylint: disable=protected-access
+                    del model._parameters[name]
                     setattr(model, name, new_param)
-                    model._parameters[name] = new_param  # pylint: disable=protected-access
+                    model._parameters[name] = new_param
 
         update(self.model)
 

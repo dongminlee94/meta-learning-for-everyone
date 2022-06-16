@@ -16,10 +16,10 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from meta_rl.maml.algorithm.networks import MLP, GaussianPolicy
 
 
-class TRPO:  # pylint: disable=too-many-instance-attributes
+class TRPO:
     """Policy gradient based agent"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         observ_dim,
         action_dim,
@@ -66,7 +66,6 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         """
         named_modules = dict(module.named_modules())
 
-        # pylint: disable=protected-access
         def update(m, name, param):
             del m._parameters[name]
             setattr(m, name, param)
@@ -107,7 +106,7 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
         return hvp
 
     @classmethod
-    def conjugate_gradient(  # pylint: disable=too-many-arguments
+    def conjugate_gradient(
         cls,
         fnc_Ax: Callable,
         b: torch.Tensor,
@@ -233,7 +232,6 @@ class TRPO:  # pylint: disable=too-many-instance-attributes
 
         return action.detach().cpu().numpy()
 
-    # pylint: disable=too-many-locals
     def policy_loss(self, batch: Dict[str, torch.Tensor], is_meta_loss: bool = False):
         """Compute policy losses according to TRPO algorithm"""
         obs_batch = batch["obs"]

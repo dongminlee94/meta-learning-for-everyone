@@ -13,7 +13,7 @@ from meta_rl.maml.algorithm.trpo import TRPO
 class MultiTaskBuffer:
     """Multiple-task buffer class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         observ_dim: int,
         action_dim: int,
@@ -71,10 +71,10 @@ class MultiTaskBuffer:
             self.task_buffers[buffer_index].clear_task()
 
 
-class Buffer:  # pylint: disable=too-many-instance-attributes
+class Buffer:
     """Simple buffer class that includes computing return and gae"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         agent: TRPO,
         observ_dim: int,
@@ -95,7 +95,6 @@ class Buffer:  # pylint: disable=too-many-instance-attributes
         self._max_size = max_size
         self._top = 0
 
-    # pylint: disable=too-many-arguments
     def add(
         self,
         obs: np.ndarray,

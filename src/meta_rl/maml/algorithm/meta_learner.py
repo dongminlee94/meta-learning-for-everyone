@@ -22,10 +22,10 @@ from meta_rl.maml.algorithm.sampler import Sampler
 from meta_rl.maml.algorithm.trpo import TRPO
 
 
-class MetaLearner:  # pylint: disable=too-many-instance-attributes
+class MetaLearner:
     """MAML meta-learner class"""
 
-    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
+    def __init__(
         self,
         env: HalfCheetahEnv,
         env_name: str,
@@ -106,7 +106,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
-    # pylint: disable=simplifiable-if-expression
     def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
         """Collect data before & after gradient for each task batch"""
         backup_params = dict(self.agent.policy.named_parameters())
@@ -154,7 +153,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             self.agent.update_model(self.agent.policy, backup_params)
             self.agent.policy.is_deterministic = False
 
-    # pylint: disable=too-many-locals
     def meta_surrogate_loss(self, set_grad: bool) -> Tuple[torch.Tensor, ...]:
         """Compute meta-surrogate loss across batch tasks"""
         losses, kls, entropies = [], [], []
@@ -200,7 +198,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
 
         return torch.stack(losses).mean(), torch.stack(kls).mean(), torch.stack(entropies).mean()
 
-    def meta_update(self) -> Dict[str, float]:  # pylint: disable=too-many-locals
+    def meta_update(self) -> Dict[str, float]:
         """Update meta-policy using TRPO algorithm"""
         # Outer loop
         # Compute initial descent steps of line search
@@ -246,7 +244,7 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
             policy_entropy=policy_entropy.item(),
         )
 
-    def meta_train(self) -> None:  # pylint: disable=too-many-locals
+    def meta_train(self) -> None:
         """MAML meta-training"""
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
@@ -317,7 +315,6 @@ class MetaLearner:  # pylint: disable=too-many-instance-attributes
         self.writer.add_scalar("time/total_time", results_summary["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", results_summary["time_per_iter"], iteration)
 
-    # pylint: disable=too-many-locals, disable=too-many-statements
     def meta_test(
         self,
         iteration: int,

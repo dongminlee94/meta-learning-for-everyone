@@ -13,7 +13,7 @@ from meta_rl.rl2.algorithm.ppo import PPO
 class Sampler:
     """Data sampling class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         env: HalfCheetahEnv,
         agent: PPO,
@@ -38,7 +38,6 @@ class Sampler:
         self.cur_samples = 0
         return trajs
 
-    # pylint: disable=too-many-locals
     def rollout(self, max_samples: int) -> Dict[str, np.ndarray]:
         """Rollout up to maximum trajectory length"""
         trans = []

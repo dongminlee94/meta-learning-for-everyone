@@ -14,7 +14,7 @@ from torch.distributions import Normal
 class MLP(nn.Module):
     """Base MLP network class"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
@@ -69,7 +69,7 @@ class MLPEncoder(FlattenMLP):
     that contain various compututation for context variable z
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
@@ -163,7 +163,7 @@ LOG_SIG_MIN = -20
 class TanhGaussianPolicy(MLP):
     """Gaussian policy network class using MLP and tanh activation function"""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         input_dim: int,
         output_dim: int,
