@@ -1,10 +1,3 @@
-GPU := $(shell which nvcc)
-ifdef GPU
-    DEVICE="gpu"
-else
-    DEVICE="cpu"
-endif
-
 STAGED := $(shell git diff --cached --name-only --diff-filter=ACMR -- 'src/***.py' | sed 's| |\\ |g')
 
 all: format lint
@@ -34,10 +27,13 @@ endif
 
 init:
 	pip install -U pip
-	pip install -U setuptools
 	pip install -e .
-	pip install -r requirements-common.txt
-	pip install -r requirements-$(DEVICE).txt
+	pip install -r requirements.txt
+	python3 ./scripts/download-torch.py
+	conda install -y tensorboard
+	jupyter contrib nbextension install --user
+	jupyter nbextensions_configurator enable --user
+	python3 -m ipykernel install --user
 	bash ./hooks/install.sh
 
 init-dev:

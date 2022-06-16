@@ -42,9 +42,9 @@ class HalfCheetahDirEnv(HalfCheetahEnv):
         super().__init__()
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool, Dict[str, Any]]:
-        xposbefore = self.sim.data.qpos[0]
+        xposbefore = self.data.qpos[0]
         self.do_simulation(action, self.frame_skip)
-        xposafter = self.sim.data.qpos[0]
+        xposafter = self.data.qpos[0]
 
         progress = (xposafter - xposbefore) / self.dt
         run_cost = self._goal_dir * progress

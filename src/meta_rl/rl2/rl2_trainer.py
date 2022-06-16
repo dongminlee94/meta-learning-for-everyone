@@ -33,7 +33,7 @@ if __name__ == "__main__":
     tasks: List[int] = env.get_all_task_idx()
 
     # Set a random seed
-    env.seed(experiment_config["seed"])
+    env.reset(seed=experiment_config["seed"])
     np.random.seed(experiment_config["seed"])
     torch.manual_seed(experiment_config["seed"])
 
