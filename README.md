@@ -14,25 +14,62 @@
 
 이 레포지토리에서는 **python 3.8.8** 버전을 사용합니다.
 
-## 설치 방법
+## 설치 및 사용 방법
 
-이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하세요.
+먼저, 아래의 링크에서 Anaconda를 설치합니다.
+https://www.anaconda.com/
 
-### 사용자
+다음으로, 아래의 명령어들을 통해 새로운 python 환경을 만들고, 그 환경을 활성화합니다.
 
-```shel
-$ make init
+```bash
+(base) $ conda create -y -n meta python=3.8.8
+
+(base) $ conda activate meta
+
+(meta) $ conda env list
 ```
 
-### 개발자
+이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
 
-```shell
+```bash
+$ cd meta-learning-for-everyone
+
+# 사용자
+$ make init
+
+# 개발자
 $ make init-dev
 ```
 
-## 사용법
+이제 각 알고리즘들을 실행하기 위해 Meta-SL은 `src/meta_sl`으로 이동하고, Meta-RL은 `src/meta_rl`으로 이동해주세요.
 
-TBD
+```bash
+$ cd src/meta_sl
+
+# or
+
+$ cd src/meta_rl
+```
+
+Meta-SL은 각 알고리즘 폴더로 가서 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주세요.
+
+```bash
+$ jupyter notebook
+```
+
+Meta-RL은 각 알고리즘 폴더로 가서 아래의 명령어들을 이용하여 실행해주세요.
+
+```bash
+$ rl2_trainer.py
+
+# or
+
+$ maml_trainer.py
+
+# or
+
+$ pearl_trainer.py
+```
 
 ## Contributors ✨
 
