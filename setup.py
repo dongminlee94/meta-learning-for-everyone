@@ -31,7 +31,7 @@ setup(
     version="latest",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     author="Dongmin Lee, Seunghyun Lee",
     author_email="kid33629@gmail.com, shlee21@postech.ac.kr",
     description="'모두를 위한 메타러닝' 책에 대한 코드 저장소",
