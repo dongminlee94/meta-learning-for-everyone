@@ -64,14 +64,13 @@ Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorc
 Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
 
 ```bash
+# RL^2
 $ rl2_trainer.py
 
-# or
-
+# MAML
 $ maml_trainer.py
 
-# or
-
+# PEARL
 $ pearl_trainer.py
 ```
 
