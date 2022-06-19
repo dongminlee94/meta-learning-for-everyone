@@ -10,12 +10,9 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[requires]
-python_version = "3.8"
-
 [tool.black]
 line-length = 104
-target-version = ["py38"]
+target-version = ["py37", "py38"]
 exclude = ""
 
 [tool.isort]

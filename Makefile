@@ -34,8 +34,8 @@ init:
 	jupyter contrib nbextension install --user
 	jupyter nbextensions_configurator enable --user
 	python3 -m ipykernel install --user
-	bash ./hooks/install.sh
 
 init-dev:
 	make init
 	pip install -r requirements-dev.txt
+	bash ./hooks/install.sh

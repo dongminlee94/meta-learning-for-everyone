@@ -104,5 +104,8 @@ venv.bak/
 # tensorboard
 runs/
 
-# results
+# Repository
+runs/
 results/
+dataset/
+saved_model/

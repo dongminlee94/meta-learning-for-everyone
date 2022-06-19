@@ -5,7 +5,7 @@ Reference:
     https://github.com/katerakelly/oyster/blob/master/rlkit/envs/half_cheetah.py
 """
 
-from typing import List, Optional, Union
+from typing import List, Union
 
 import numpy as np
 from gym import utils
