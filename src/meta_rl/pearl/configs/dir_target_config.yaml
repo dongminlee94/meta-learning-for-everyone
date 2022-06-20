@@ -30,7 +30,7 @@ pearl_params:
     num_posterior_samples: 1000
     # Number of meta-gradient taken per iteration
     num_meta_grads: 1500
-    # Number of tasks to average the gradient across
+    # Number of task samples for training
     meta_batch_size: 4
     # Number of samples in the context batch
     batch_size: 256

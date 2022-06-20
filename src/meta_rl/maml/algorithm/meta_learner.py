@@ -52,7 +52,7 @@ class MetaLearner:
         self.test_interval = test_interval
 
         self.num_iterations = config["num_iterations"]
-        self.num_sample_tasks = config["num_sample_tasks"]
+        self.meta_batch_size = config["meta_batch_size"]
         self.num_samples = config["num_samples"]
         self.max_steps = config["max_steps"]
 
@@ -73,7 +73,7 @@ class MetaLearner:
             observ_dim=observ_dim,
             action_dim=action_dim,
             agent=agent,
-            num_tasks=max(self.num_sample_tasks, len(self.test_tasks)),
+            num_tasks=max(self.meta_batch_size, len(self.test_tasks)),
             num_episodes=(self.num_adapt_epochs + 1),  # [num of adapatation for train] + [validation]
             max_size=self.num_samples,
             device=device,
@@ -159,7 +159,7 @@ class MetaLearner:
         backup_params = dict(self.agent.policy.named_parameters())
 
         # Compute loss for each sampled task
-        for cur_task in range(self.num_sample_tasks):
+        for cur_task in range(self.meta_batch_size):
             # Inner loop
             # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs):
@@ -253,7 +253,7 @@ class MetaLearner:
             print(f"\n=============== Iteration {iteration} ===============")
             # Sample batch of tasks randomly from train task distribution and
             # optain adaptating data for each batch task
-            indices = np.random.randint(len(self.train_tasks), size=self.num_sample_tasks)
+            indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
             self.collect_train_data(indices)
 
             # Meta update
