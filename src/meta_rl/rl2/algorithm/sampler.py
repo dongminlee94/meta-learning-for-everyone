@@ -33,12 +33,14 @@ class Sampler:
 
     def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
         """Obtain samples up to the number of maximum samples"""
-        trajs = []
         self.pi_hidden = np.zeros((1, self.hidden_dim))
         self.v_hidden = np.zeros((1, self.hidden_dim))
+
+        trajs = []
         while not self.cur_samples == max_samples:
             traj = self.rollout(max_samples)
             trajs.append(traj)
+
         self.cur_samples = 0
         return trajs
 
