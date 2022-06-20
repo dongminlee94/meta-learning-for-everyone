@@ -47,9 +47,10 @@ class MetaLearner:
         self.test_tasks = test_tasks
 
         self.num_iterations: int = config["num_iterations"]
+        self.meta_batch_size: int = config["meta_batch_size"]
         self.num_samples: int = config["num_samples"]
 
-        self.batch_size: int = len(train_tasks) * config["num_samples"]
+        self.batch_size: int = self.meta_batch_size * config["num_samples"]
         self.max_step: int = config["max_step"]
 
         self.sampler = Sampler(
@@ -100,11 +101,12 @@ class MetaLearner:
 
             print(f"=============== Iteration {iteration} ===============")
             # Sample data randomly from train tasks.
-            for index in range(len(self.train_tasks)):
+            indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
+            for i, index in enumerate(indices):
                 self.env.reset_task(index)
                 self.agent.policy.is_deterministic = False
 
-                print(f"[{index + 1}/{len(self.train_tasks)}] collecting samples")
+                print(f"[{i + 1}/{self.meta_batch_size}] collecting samples")
                 trajs: List[Dict[str, np.ndarray]] = self.sampler.obtain_samples(
                     max_samples=self.num_samples,
                 )

@@ -3,13 +3,13 @@
 # General setup
 # -------------
 # Number of tasks for meta-train
-train_tasks: 200
+train_tasks: 300
 
 # Number of tasks for meta-test
 test_tasks: 15
 
 # Number of hidden units in neural networks
-hidden_dim: 256
+hidden_dim: 64
 
 # RL^2 setup
 # ----------
@@ -20,6 +20,8 @@ rl2_params:
     num_samples: 1200
     # Maximum step for the environment
     max_step: 200
+    # Number of task samples for training
+    meta_batch_size: 10
     # Number of early stopping conditions
     num_stop_conditions: 3
     # Goal value used to early stopping condition
@@ -31,9 +33,9 @@ ppo_params:
     # Discount factor
     gamma: 0.99
     # Number of epochs per iteration
-    num_epochs: 5
+    num_epochs: 10
     # Number of minibatch within each epoch
-    mini_batch_size: 128
+    mini_batch_size: 32
     # PPO clip parameter
     clip_param: 0.3
     # Learning rate of PPO losses
