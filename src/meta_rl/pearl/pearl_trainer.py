@@ -3,6 +3,7 @@ PEARL trainer based on half-cheetah environment
 """
 
 import os
+import warnings
 from typing import Any, Dict, List
 
 import numpy as np
@@ -13,6 +14,8 @@ from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from meta_rl.envs import ENVS
 from meta_rl.pearl.algorithm.meta_learner import MetaLearner
 from meta_rl.pearl.algorithm.sac import SAC
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 if __name__ == "__main__":
     # Experiment configuration setup

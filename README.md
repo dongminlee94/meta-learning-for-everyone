@@ -63,7 +63,7 @@ git bash를 재실행하고 다음 명령어를 차례로 실행시켜 주세요
 (base) $ conda activate meta
 
 # 사용자
-(meta) $ sh window-init.sh
+(meta) $ sh ./hooks/window-init.sh
 ```
 
 ### 4. 모델 학습 및 결과 확인
