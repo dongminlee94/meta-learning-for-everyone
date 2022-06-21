@@ -13,9 +13,6 @@ import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 from torch.utils.tensorboard import SummaryWriter
 
 from meta_rl.pearl.algorithm.buffers import MultiTaskReplayBuffer
