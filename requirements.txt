@@ -1,6 +1,7 @@
 autopep8==1.5.0
 GPUtil==1.4.0
 gym>=0.24.1
+imageio>=2.1.2
 jupyter==1.0.0
 jupyter-contrib-nbextensions==0.5.1
 jupyter-nbextensions-configurator==0.4.1

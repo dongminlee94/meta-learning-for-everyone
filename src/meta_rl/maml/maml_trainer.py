@@ -33,7 +33,7 @@ if __name__ == "__main__":
     tasks: List[int] = env.get_all_task_idx()
 
     # Set a random seed
-    env.seed(experiment_config["seed"])
+    env.reset(seed=experiment_config["seed"])
     np.random.seed(experiment_config["seed"])
     torch.manual_seed(experiment_config["seed"])
 
@@ -65,7 +65,6 @@ if __name__ == "__main__":
         action_dim=action_dim,
         train_tasks=tasks[: env_target_config["train_tasks"]],
         test_tasks=tasks[-env_target_config["test_tasks"] :],
-        test_interval=experiment_config["test_interval"],
         save_exp_name=experiment_config["save_exp_name"],
         save_file_name=experiment_config["save_file_name"],
         load_exp_name=experiment_config["load_exp_name"],
