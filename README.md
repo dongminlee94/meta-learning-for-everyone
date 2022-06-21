@@ -39,6 +39,8 @@ https://www.anaconda.com/
 
 이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
 
+[MAC 혹은 Linux 사용자]
+
 ```bash
 # 사용자
 $ make init
@@ -46,6 +48,21 @@ $ make init
 # 개발자
 $ make init-dev
 ```
+[Windows 사용자]
+
+git bash에서 다음 명령어를 실행시켜 주세요.
+```bash
+echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
+```
+git bash를 재실행하고 다음 명령어를 차례로 실행시켜 주세요.
+```bash
+conda activate meta
+
+# 사용자
+(meta) $ sh window-init.sh
+```
+
+
 
 ### 4. 모델 학습 및 결과 확인
 
