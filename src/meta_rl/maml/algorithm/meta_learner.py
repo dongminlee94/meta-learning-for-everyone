@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
-
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
