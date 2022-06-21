@@ -65,13 +65,13 @@ Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이
 
 ```bash
 # RL^2
-$ rl2_trainer.py
+$ python rl2_trainer.py
 
 # MAML
-$ maml_trainer.py
+$ python maml_trainer.py
 
 # PEARL
-$ pearl_trainer.py
+$ python pearl_trainer.py
 ```
 
 Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
