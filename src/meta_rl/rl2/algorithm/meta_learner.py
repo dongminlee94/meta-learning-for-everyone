@@ -5,8 +5,11 @@ Meta-train and meta-test codes with RL^2 algorithm
 import datetime
 import os
 import time
+import warnings
 from collections import deque
 from typing import Any, Dict, List
+
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import torch

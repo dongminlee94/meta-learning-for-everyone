@@ -6,9 +6,12 @@ Meta-train and meta-test codes with MAML algorithm
 import datetime
 import os
 import time
+import warnings
 from collections import deque
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
+
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import torch

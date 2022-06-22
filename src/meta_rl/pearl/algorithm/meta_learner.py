@@ -6,8 +6,11 @@ Meta-train and meta-test implementations with PEARL algorithm
 import datetime
 import os
 import time
+import warnings
 from collections import deque
 from typing import Any, Dict, List
+
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import torch
@@ -80,6 +83,7 @@ class MetaLearner:
         if not save_file_name:
             save_file_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.result_path = os.path.join("results", save_exp_name, save_file_name)
+
         self.writer = SummaryWriter(log_dir=self.result_path)
 
         if load_exp_name and load_file_name:
