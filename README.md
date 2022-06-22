@@ -57,13 +57,12 @@ git bash에서 다음 명령어를 실행시켜 conda 명령어가 동작하도�
 $ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
 ```
 
-git bash를 재실행하고 다음 명령어를 차례로 실행시켜 주세요.
+git bash를 재실행하고 다음 명령어를 차례대로 실행시켜 주세요.
 
 ```bash
-$ conda activate meta
+(base) $ conda activate meta
 
-# 사용자
-(meta) $ sh ./hooks/window-init.sh
+(meta) $ sh ./scripts/window-init.sh
 ```
 
 **Colab 사용자**
