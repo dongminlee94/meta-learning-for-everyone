@@ -60,7 +60,7 @@ $ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profil
 git bash를 재실행하고 다음 명령어를 차례대로 실행시켜 주세요.
 
 ```bash
-(base) $ conda activate meta
+$ conda activate meta
 
 (meta) $ sh ./scripts/window-init.sh
 ```
