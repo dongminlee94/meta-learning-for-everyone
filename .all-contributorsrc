@@ -21,12 +21,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/35162035?v=4",
       "profile": "https://github.com/Clyde21c/",
       "contributions": [
-        "code"
+        "code",
+        "doc"
       ]
     }
   ],
   "contributorsPerLine": 7,
-  "projectName": "meta-rl",
+  "projectName": "meta-learning-for-everyone",
   "projectOwner": "dongminlee94",
   "repoType": "github",
   "repoHost": "https://github.com",
