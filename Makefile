@@ -38,4 +38,4 @@ init:
 init-dev:
 	make init
 	pip install -r requirements-dev.txt
-	bash ./hooks/install.sh
+	bash ./scripts/install.sh

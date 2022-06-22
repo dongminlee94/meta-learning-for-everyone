@@ -6,9 +6,12 @@ Meta-train and meta-test codes with MAML algorithm
 import datetime
 import os
 import time
+import warnings
 from collections import deque
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
+
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import torch
@@ -34,7 +37,6 @@ class MetaLearner:
         action_dim: int,
         train_tasks: List[int],
         test_tasks: List[int],
-        test_interval: int,
         save_exp_name: str,
         save_file_name: str,
         load_exp_name: str,
@@ -49,7 +51,6 @@ class MetaLearner:
         self.agent = agent
         self.train_tasks = train_tasks
         self.test_tasks = test_tasks
-        self.test_interval = test_interval
 
         self.num_iterations = config["num_iterations"]
         self.meta_batch_size = config["meta_batch_size"]
@@ -278,39 +279,38 @@ class MetaLearner:
         self.writer.add_scalar("train/kl_after", results_summary["kl_after"], iteration)
         self.writer.add_scalar("train/policy_entropy", results_summary["policy_entropy"], iteration)
 
-        if iteration % self.test_interval == 0:
+        self.writer.add_scalar(
+            "test/return_before_grad",
+            results_summary["return_before_grad"],
+            iteration,
+        )
+        self.writer.add_scalar(
+            "test/return_after_grad",
+            results_summary["return_after_grad"],
+            iteration,
+        )
+        if self.env_name == "vel":
             self.writer.add_scalar(
-                "test/return_before_grad",
-                results_summary["return_before_grad"],
+                "test/sum_run_cost_before_grad",
+                results_summary["sum_run_cost_before_grad"],
                 iteration,
             )
             self.writer.add_scalar(
-                "test/return_after_grad",
-                results_summary["return_after_grad"],
+                "test/sum_run_cost_after_grad",
+                results_summary["sum_run_cost_after_grad"],
                 iteration,
             )
-            if self.env_name == "vel":
+            for step in range(len(results_summary["run_cost_before_grad"])):
                 self.writer.add_scalar(
-                    "test/sum_run_cost_before_grad",
-                    results_summary["sum_run_cost_before_grad"],
-                    iteration,
+                    "run_cost_before_grad/iteration_" + str(iteration),
+                    results_summary["run_cost_before_grad"][step],
+                    step,
                 )
                 self.writer.add_scalar(
-                    "test/sum_run_cost_after_grad",
-                    results_summary["sum_run_cost_after_grad"],
-                    iteration,
+                    "run_cost_after_grad/iteration_" + str(iteration),
+                    results_summary["run_cost_after_grad"][step],
+                    step,
                 )
-                for step in range(len(results_summary["run_cost_before_grad"])):
-                    self.writer.add_scalar(
-                        "run_cost_before_grad/iteration_" + str(iteration),
-                        results_summary["run_cost_before_grad"][step],
-                        step,
-                    )
-                    self.writer.add_scalar(
-                        "run_cost_after_grad/iteration_" + str(iteration),
-                        results_summary["run_cost_after_grad"][step],
-                        step,
-                    )
 
         self.writer.add_scalar("time/total_time", results_summary["total_time"], iteration)
         self.writer.add_scalar("time/time_per_iter", results_summary["time_per_iter"], iteration)
@@ -336,52 +336,51 @@ class MetaLearner:
         results_summary["total_time"] = time.time() - total_start_time
         results_summary["time_per_iter"] = time.time() - start_time
 
-        if iteration % self.test_interval == 0:
-            self.collect_train_data(np.array(self.test_tasks), is_eval=True)
+        self.collect_train_data(np.array(self.test_tasks), is_eval=True)
 
-            for task in range(len(self.test_tasks)):
-                batch_before_grad = self.buffers.get_trajs(task, 0)
-                batch_after_grad = self.buffers.get_trajs(task, self.num_adapt_epochs)
+        for task in range(len(self.test_tasks)):
+            batch_before_grad = self.buffers.get_trajs(task, 0)
+            batch_after_grad = self.buffers.get_trajs(task, self.num_adapt_epochs)
 
-                rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
-                rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
-                returns_before_grad.append(torch.sum(rewards_before_grad).item())
-                returns_after_grad.append(torch.sum(rewards_after_grad).item())
+            rewards_before_grad = batch_before_grad["rewards"][: self.max_steps]
+            rewards_after_grad = batch_after_grad["rewards"][: self.max_steps]
+            returns_before_grad.append(torch.sum(rewards_before_grad).item())
+            returns_after_grad.append(torch.sum(rewards_after_grad).item())
 
-                if self.env_name == "vel":
-                    run_costs_before_grad.append(
-                        batch_before_grad["infos"][: self.max_steps].cpu().numpy(),
-                    )
-                    run_costs_after_grad.append(
-                        batch_after_grad["infos"][: self.max_steps].cpu().numpy(),
-                    )
-
-            run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
-            run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
-
-            self.buffers.clear()
-
-            # Collect meta-test results
-            results_summary["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
-            results_summary["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
             if self.env_name == "vel":
-                results_summary["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
-                results_summary["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
-                results_summary["sum_run_cost_before_grad"] = sum(
-                    abs(run_cost_before_grad / len(self.test_tasks)),
+                run_costs_before_grad.append(
+                    batch_before_grad["infos"][: self.max_steps].cpu().numpy(),
                 )
-                results_summary["sum_run_cost_after_grad"] = sum(
-                    abs(run_cost_after_grad / len(self.test_tasks)),
+                run_costs_after_grad.append(
+                    batch_after_grad["infos"][: self.max_steps].cpu().numpy(),
                 )
 
-            # Check if each element of self.dq satisfies early stopping condition
-            self.dq.append(results_summary["return_after_grad"])
-            if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
-                self.is_early_stopping = True
+        run_cost_before_grad = np.sum(run_costs_before_grad, axis=0)
+        run_cost_after_grad = np.sum(run_costs_after_grad, axis=0)
 
-            # Save the trained models
-            if self.is_early_stopping:
-                ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
-                torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)
+        self.buffers.clear()
+
+        # Collect meta-test results
+        results_summary["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
+        results_summary["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
+        if self.env_name == "vel":
+            results_summary["run_cost_before_grad"] = run_cost_before_grad / len(self.test_tasks)
+            results_summary["run_cost_after_grad"] = run_cost_after_grad / len(self.test_tasks)
+            results_summary["sum_run_cost_before_grad"] = sum(
+                abs(run_cost_before_grad / len(self.test_tasks)),
+            )
+            results_summary["sum_run_cost_after_grad"] = sum(
+                abs(run_cost_after_grad / len(self.test_tasks)),
+            )
+
+        # Check if each element of self.dq satisfies early stopping condition
+        self.dq.append(results_summary["return_after_grad"])
+        if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
+            self.is_early_stopping = True
+
+        # Save the trained models
+        if self.is_early_stopping:
+            ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
+            torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)
 
         self.visualize_within_tensorboard(results_summary, iteration)

@@ -39,21 +39,33 @@ https://www.anaconda.com/
 
 이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
 
+**MacOS 및 Linux 사용자**
+
 ```bash
 # 사용자
-$ make init
+(meta) $ make init
 
 # 개발자
-$ make init-dev
+(meta) $ make init-dev
 ```
 
-### 4. 모델 학습 및 결과 확인
+**Windows 사용자**
 
-Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+git bash에서 다음 명령어를 실행시켜 conda 명령어가 동작하도록 합니다.
 
 ```bash
-$ jupyter notebook
+$ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
 ```
+
+git bash를 재실행하고 다음 명령어를 차례대로 실행시켜 주세요.
+
+```bash
+$ conda activate meta
+
+(meta) $ sh ./scripts/window-init.sh
+```
+
+**Colab 사용자**
 
 Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorch 관련 패키지들을 설치하고 이용해주세요.
 
@@ -61,23 +73,35 @@ Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorc
 !pip install torchmeta torchtext==0.10.1 torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
+### 4. 모델 학습 및 결과 확인
+
+**Meta-SL**
+
+Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+
+```bash
+(meta) $ jupyter notebook
+```
+
+**Meta-RL**
+
 Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
 
 ```bash
 # RL^2
-$ rl2_trainer.py
+(meta) $ python rl2_trainer.py
 
 # MAML
-$ maml_trainer.py
+(meta) $ python maml_trainer.py
 
 # PEARL
-$ pearl_trainer.py
+(meta) $ python pearl_trainer.py
 ```
 
 Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
 
 ```bash
-$ tensorboard --logdir=./results
+(meta) $ tensorboard --logdir=./results
 ```
 
 ## Contributors ✨
