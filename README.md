@@ -51,7 +51,7 @@ https://www.anaconda.com/
 
 **Windows 사용자**
 
-git bash에서 다음 명령어를 실행시켜 주세요.
+git bash에서 다음 명령어를 실행시켜 conda 명령어가 동작하도록 합니다.
 
 ```bash
 $ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
@@ -60,6 +60,8 @@ $ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profil
 git bash를 재실행하고 다음 명령어를 차례로 실행시켜 주세요.
 
 ```bash
+$ conda activate meta
+
 # 사용자
 (meta) $ sh ./hooks/window-init.sh
 ```
