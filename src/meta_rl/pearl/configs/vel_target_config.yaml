@@ -1,60 +1,60 @@
-# PEARL velocity target reward configs
+# PEARL 속도 목표 보상 환경 설정
 
-# General setup
-# -------------
-# Number of tasks for meta-train
+# 일반 환경 설정
+# ----------
+# 메타-트레이닝에 대한 태스크들의 수
 train_tasks: 100
 
-# Number of tasks for meta-test
+# 메타-태스팅에 대한 태스크들이 수
 test_tasks: 30
 
-# Dimension of the latent context vector
+# Latent context의 차원의 수
 latent_dim: 5
 
-# Dimension of hidden units in neural networks
+# 은닉 유닛의 차원의 수
 hidden_dim: 300
 
-# PEARL setup
-# -----------
+# PEARL 환경 설정
+# -------------
 pearl_params:
-    # Number of training iterations
+    # 트레이닝에 대한 반복 수
     num_iterations: 1000
-    # Number of sampled tasks to collect data for each iteration
+    # 매 반복에서 수집할 샘플된 태스크의 수
     num_sample_tasks: 5
-    # Number of samples collected per task before training
+    # 트레이닝 이전에 태스크마다 수집된 샘플 수
     num_init_samples: 2000
-    # Number of samples to collect per task with z ~ prior
+    # z ~ prior를 이용할 때 태스크마다 수집할 샘플 수
     num_prior_samples: 400
-    # Number of samples to collect per task with z ~ posterior
-    # that are only used to train the policy and NOT the encoder
+    # 정책 네트워크의 학습에만 사용되고 인코더에는 사용되지 않는
+    # z ~ posterior를 이용할 때 태스크마다 수집할 샘플 수
     num_posterior_samples: 600
-    # Number of meta-gradient taken per iteration
+    # 하나의 반복마다 취할 메타-그레디언트의 수
     num_meta_grads: 1500
-    # Number of task samples for training
+    # 메타-배치의 샘플 수
     meta_batch_size: 16
-    # Number of samples in the context batch
+    # Context 배치의 샘플 수
     batch_size: 100
-    # Maximum step for the environment
+    # 환경에 대한 최대 스텝 수
     max_step: 200
-    # How many samples to store
+    # 최대 버퍼 사이즈
     max_buffer_size: 1000000
-    # Number of early stopping conditions
+    # 조기 중단 조건의 수
     num_stop_conditions: 3
-    # Goal value used to early stopping condition
+    # 조기 중단 조건에서 사용되는 목표 값
     stop_goal: 20
 
-# SAC setup
-# ---------
+# SAC 환경 설정
+# -----------
 sac_params:
-    # Discount factor
+    # 할인률
     gamma: 0.99
-    # Weight on KL divergence term in encoder loss
+    # 인코더 손실 함수에서 사용되는 KL divergence에 대한 가중치 값
     kl_lambda: 0.1
-    # Number of samples in the RL batch
+    # 정책 네트워크와 가치 네트워크의 배치에서 사용되는 샘플 수
     batch_size: 256
-    # Q-function network's learning rate
+    # Q-함수 네트워크의 학습률
     qf_lr: 0.0003
-    # Encoder network's learning rate
+    # 인코더 네트워크의 학습률
     encoder_lr: 0.0003
-    # Policy network's learning rate
+    # 정책 네트워크의 학습률
     policy_lr: 0.0003

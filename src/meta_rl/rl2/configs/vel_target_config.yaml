@@ -1,42 +1,42 @@
-# Velocity target reward configs
+# RL^2 속도 목표 보상 환경 설정
 
-# General setup
-# -------------
-# Number of tasks for meta-train
+# 일반 환경 설정
+# ----------
+# 메타-트레이닝에 대한 태스크들의 수
 train_tasks: 300
 
-# Number of tasks for meta-test
+# 메타-태스팅에 대한 태스크들이 수
 test_tasks: 15
 
-# Number of hidden units in neural networks
+# 은닉 유닛의 차원의 수
 hidden_dim: 64
 
-# RL^2 setup
-# ----------
+# RL^2 환경 설정
+# ------------
 rl2_params:
-    # Number of training iterations
+    # 트레이닝에 대한 반복 수
     num_iterations: 1000
-    # Number of samples to train
+    # 트레이닝에서 수집할 샘플 수
     num_samples: 1200
-    # Maximum step for the environment
+    # 환경에 대한 최대 스텝 수
     max_step: 200
-    # Number of task samples for training
+    # 트레이닝에 대한 태스크 샘플 수
     meta_batch_size: 10
-    # Number of early stopping conditions
+    # 조기 중단 조건의 수
     num_stop_conditions: 3
-    # Goal value used to early stopping condition
+    # 조기 중단 조건에서 사용되는 목표 값
     stop_goal: 25
 
-# PPO setup
-# ---------
+# PPO 환경 설정
+# -----------
 ppo_params:
-    # Discount factor
+    # 할인률
     gamma: 0.99
-    # Number of epochs per iteration
+    # 반복 당 취할 에폭 수
     num_epochs: 10
-    # Number of minibatch within each epoch
+    # 각 에폭에서 취할 미니배치의 수
     mini_batch_size: 32
-    # PPO clip parameter
+    # Clipping에 쓰일 파라미터
     clip_param: 0.3
-    # Learning rate of PPO losses
+    # 학습률
     learning_rate: 0.0001

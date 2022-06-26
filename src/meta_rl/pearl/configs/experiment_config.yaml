@@ -1,25 +1,25 @@
-# PEARL Experiment configs
+# PEARL 실험 환경 설정
 
-# Select either dir or vel (str)
+# "dir" 또는 "vel" 중에 하나 선택 (str)
 env_name: "dir"
 
-# Set an experiment name to save (str)
+# 저장할 실험 이름 (str)
 save_exp_name: "exp_1"
 
-# Set a file name to save (str or null)
+# 저장할 파일 이름 (str or null)
 save_file_name: null
 
-# Set an experiment name to load (str or null)
+# 불러올 실험 이름 (str or null)
 load_exp_name: null
 
-# Set a file name to load (str or null)
+# 불러올 파일 이름 (str or null)
 load_file_name: null
 
-# Set a checkpoint number (int)
+# 불러올 체크포인트 숫자 (int)
 load_ckpt_num: 0
 
-# Set a GPU index (int)
+# GPU 인덱스 값 (int)
 gpu_index: 0
 
-# Set a random seed (int)
+# 랜덤 시드 값 (int)
 seed: 0
