@@ -136,7 +136,7 @@ class MetaLearner:
                 self.agent.encoder.infer_posterior(context_batch)
 
     def sample_context(self, indices: np.ndarray) -> torch.Tensor:
-        # 인코더 버퍼에서 주어진 index 태스크에 대한 context 샘플
+        # 인코더 버퍼에서 주어진 인덱스에 해당하는 태스크의 context 샘플
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -146,7 +146,7 @@ class MetaLearner:
         return torch.Tensor(context_batch).to(self.device)
 
     def sample_transition(self, indices: np.ndarray) -> List[torch.Tensor]:
-        # RL 버퍼에서 주어인 index 태스크에 대한 경로 샘플
+        # RL 버퍼에서 주어진 인덱스에 해당하는 태스크의 경로 샘플
         cur_obs, actions, rewards, next_obs, dones = [], [], [], [], []
         for index in indices:
             batch = self.rl_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -164,12 +164,12 @@ class MetaLearner:
         return [cur_obs, actions, rewards, next_obs, dones]
 
     def meta_train(self) -> None:
-        # 메타 러닝
+        # 메타-트레이닝
         total_start_time: float = time.time()
         for iteration in range(self.num_iterations):
             start_time: float = time.time()
 
-            # 첫 iteration에 한해 모든 메타 트레이닝 테스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
+            # 첫번째 반복단계에 한해 모든 메타-트레이닝 테스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
             if iteration == 0:
                 for index in self.train_tasks:
                     self.env.reset_task(index)
@@ -208,7 +208,7 @@ class MetaLearner:
                         add_to_enc_buffer=False,
                     )
 
-            # 샘플된 메타 배치 태스크들의 경로 데이터로 네트워크 업데이트
+            # 샘플된 메타-배치 태스크들의 경로 데이터로 네트워크 업데이트
             print(f"Start meta-gradient updates of iteration {iteration}")
             for i in range(self.num_meta_grads):
                 indices: np.ndarray = np.random.choice(self.train_tasks, self.meta_batch_size)
@@ -233,7 +233,7 @@ class MetaLearner:
                 # 인코더의 태스크변수 z의 Backpropagation 차단
                 self.agent.encoder.task_z.detach()
 
-            # 메타 테스트 태스크에서 학습성능 평가
+            # 메타-테스트 태스크에서 학습성능 평가
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -250,7 +250,7 @@ class MetaLearner:
         max_samples: int,
         update_posterior: bool,
     ) -> List[List[Dict[str, np.ndarray]]]:
-        # 메타 테스트 태스크에 대한 rollout 데이터 수집
+        # 메타-테스트 태스크에 대한 rollout 데이터 수집
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = True
 
@@ -270,7 +270,7 @@ class MetaLearner:
         return cur_trajs
 
     def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
-        # 메타 트레이닝 및 메타 테스트 결과를 텐서보드에 기록
+        # 메타-트레이닝 및 메타-테스팅 결과를 텐서보드에 기록
         self.writer.add_scalar(
             "test/return_before_infer",
             test_results["return_before_infer"],
@@ -317,7 +317,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        # 메타 테스트
+        # 메타-테스트
         test_results = {}
         return_before_infer = 0
         return_after_infer = 0

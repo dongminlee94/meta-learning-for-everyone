@@ -90,13 +90,13 @@ class MetaLearner:
         self.is_early_stopping = False
 
     def meta_train(self) -> None:
-        # 메타 러닝
+        # 메타-트레이닝
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
             print(f"=============== Iteration {iteration} ===============")
-            # 메타 배치 태스크에 대한 경로를 수집
+            # 메타-배치 태스크에 대한 경로를 수집
             indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
             for i, index in enumerate(indices):
                 self.env.reset_task(index)
@@ -114,7 +114,7 @@ class MetaLearner:
             print(f"Start the meta-gradient update of iteration {iteration}")
             log_values = self.agent.train_model(self.batch_size, batch)
 
-            # 메타 테스트 태스크에서 학습성능 평가
+            # 메타-테스트 태스크에서 학습성능 평가
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -127,7 +127,7 @@ class MetaLearner:
                 break
 
     def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
-        # 메타 트레이닝 및 메타 테스트 결과를 텐서보드에 기록
+        # 메타-트레이닝 및 메타-테스팅 결과를 텐서보드에 기록
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "vel":
             self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
@@ -150,7 +150,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        # 메타 테스트
+        # 메타-테스트
         test_results = {}
         test_return: float = 0
         test_run_cost = np.zeros(self.max_step)
