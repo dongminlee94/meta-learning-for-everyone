@@ -61,7 +61,7 @@ class SAC:
             hidden_dim=hidden_dim,
         ).to(device)
 
-        # 타켓 행동 가치 함수 (Q) 초기화
+        # 타켓 행동 가치 함수 네트워크 초기화
         self.hard_target_update(self.qf1, self.target_qf1)
         self.hard_target_update(self.qf2, self.target_qf2)
 
@@ -104,7 +104,6 @@ class SAC:
         context_batch: torch.Tensor,
         transition_batch: List[torch.Tensor],
     ) -> Dict[str, float]:
-        # SAC 알고리즘에 따른 네트워크 학습
         cur_obs, actions, rewards, next_obs, dones = transition_batch
 
         cur_obs = cur_obs.view(meta_batch_size * batch_size, -1)

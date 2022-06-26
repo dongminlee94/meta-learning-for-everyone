@@ -66,7 +66,6 @@ class Sampler:
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)
 
-            # 트레이닝에 필요한 샘플들을 flatten한 후 각 리스트에 추가
             trans.append(tran.reshape(-1))
             pi_hiddens.append(self.pi_hidden.reshape(-1))
             v_hiddens.append(self.v_hidden.reshape(-1))
