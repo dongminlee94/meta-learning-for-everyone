@@ -1,21 +1,15 @@
-"""
-Registration code for Half-cheetah environments
-"""
-
 import importlib
 import os
 
 ENVS = {}
 
 
-def register_env(name):
-    """Register an environment"""
-
-    def register_env_fn(filename):
+def register_env(name: str) -> function:
+    def register_env_fn(filename: str) -> str:
         if name in ENVS:
-            raise ValueError("Cannot register duplicate env {}".format(name))
+            raise ValueError(f"Cannot register duplicate env {name}")
         if not callable(filename):
-            raise TypeError("env {} must be callable".format(name))
+            raise TypeError(f"Env {name} must be callable")
         ENVS[name] = filename
         return filename
 

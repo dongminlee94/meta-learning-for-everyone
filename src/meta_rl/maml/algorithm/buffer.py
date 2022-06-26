@@ -1,7 +1,3 @@
-"""
-Simple buffer code
-"""
-
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -11,8 +7,6 @@ from meta_rl.maml.algorithm.trpo import TRPO
 
 
 class MultiTaskBuffer:
-    """Multiple-task buffer class"""
-
     def __init__(
         self,
         observ_dim: int,
@@ -37,11 +31,11 @@ class MultiTaskBuffer:
             )
 
     def assign_index(self, task_index: int, adapt_index: int) -> int:
-        """Assign buffer index according to current task and adapation"""
+        # 태스크 인덱스와 adapation 인덱스에 따라 버퍼 인덱스 할당
         return self.num_tasks * adapt_index + task_index
 
     def add_trajs(self, cur_task: int, cur_adapt: int, trajs: List[Dict[str, np.ndarray]]) -> None:
-        """Add trajectories to the assigned task buffer"""
+        # 할당된 태스크 버퍼에 이동한 경로들 추가
         self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_trajs(trajs)
 
     def add_params(
@@ -50,11 +44,11 @@ class MultiTaskBuffer:
         cur_adapt: int,
         params: Dict[str, torch.nn.parameter.Parameter],
     ) -> None:
-        """Add adapted parameters to the assigned task buffer"""
+        # 할당된 태스크 버퍼에 태스크 파라미터 추가
         self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_params(params)
 
     def get_trajs(self, cur_task: int, cur_adapt: int) -> Dict[str, torch.Tensor]:
-        """Get batch of the sassigned task buffer"""
+        # 할당된 태스크 버퍼의 배치 얻기
         return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_trajs()
 
     def get_params(
@@ -62,18 +56,16 @@ class MultiTaskBuffer:
         cur_task: int,
         cur_adapt: int,
     ) -> Optional[Dict[str, torch.nn.parameter.Parameter]]:
-        """Get policy parameters at the sassigned task"""
+        # 할당된 태스크에서 정책 네트워크의 파라미터 얻기
         return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_params()
 
     def clear(self) -> None:
-        """Clear variables of all task buffers"""
+        # 모든 태스크 버퍼들의 변수들 초기화
         for buffer_index in range(self.num_buffers):
             self.task_buffers[buffer_index].clear_task()
 
 
 class Buffer:
-    """Simple buffer class that includes computing return and gae"""
-
     def __init__(
         self,
         agent: TRPO,
@@ -89,7 +81,7 @@ class Buffer:
         self._baselines = np.zeros((max_size, 1))
         self._dones = np.zeros((max_size, 1), dtype="uint8")
         self._infos = np.zeros((max_size, 1))
-        self._params = None  # type: Optional[Dict[str, torch.nn.parameter.Parameter]]
+        self._params = None
         self.device = device
 
         self._max_size = max_size
@@ -103,7 +95,6 @@ class Buffer:
         done: np.ndarray,
         info: np.ndarray,
     ) -> None:
-        """Add transition and log_prob to the buffer"""
         assert self._top < self._max_size
         self._cur_obs[self._top] = obs
         self._actions[self._top] = action
@@ -113,7 +104,6 @@ class Buffer:
         self._top += 1
 
     def add_task_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
-        """Add trajectories to the buffer"""
         for traj in trajs:
             for (obs, action, reward, done, info) in zip(
                 traj["cur_obs"],
@@ -128,11 +118,9 @@ class Buffer:
         self._baselines = self.agent.infer_baselines(batch)
 
     def add_task_params(self, params: Dict[str, torch.nn.parameter.Parameter]) -> None:
-        """Add parameters to the buffer"""
         self._params = params
 
     def get_task_trajs(self) -> Dict[str, torch.Tensor]:
-        """Get batch of trajectories in buffer"""
         assert self._top == self._max_size and len(self._baselines) == self._max_size
 
         batch = dict(
@@ -146,12 +134,9 @@ class Buffer:
         return {key: torch.Tensor(value).to(self.device) for key, value in batch.items()}
 
     def get_task_params(self) -> Optional[Dict[str, torch.nn.parameter.Parameter]]:
-        """Get parameters in buffer"""
         assert self._top is not None
-
         return self._params
 
     def clear_task(self) -> None:
-        """Clear variables of replay buffer"""
         self._top = 0
         self._params = None

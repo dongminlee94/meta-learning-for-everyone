@@ -1,7 +1,3 @@
-"""
-Various network architecture implementations used in PEARL algorithm
-"""
-
 from typing import Tuple
 
 import numpy as np
@@ -12,8 +8,6 @@ from torch.distributions import Normal
 
 
 class MLP(nn.Module):
-    """Base MLP network class"""
-
     def __init__(
         self,
         input_dim: int,
@@ -28,7 +22,7 @@ class MLP(nn.Module):
         self.output_dim = output_dim
         self.hidden_activation = hidden_activation
 
-        # Set fully connected layers
+        # Fully connected 레이어 설정
         self.fc_layers = nn.ModuleList()
         self.hidden_layers = [hidden_dim] * 3
         in_layer = input_dim
@@ -39,13 +33,12 @@ class MLP(nn.Module):
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
-        # Set the output layer
+        # 출력 레이어 설정
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Get output when input is given"""
         for fc_layer in self.fc_layers:
             x = self.hidden_activation(fc_layer(x))
         x = self.last_fc_layer(x)
@@ -53,22 +46,12 @@ class MLP(nn.Module):
 
 
 class FlattenMLP(MLP):
-    """
-    Flatten MLP network class
-    If there are multiple inputs, concatenate along dim -1
-    """
-
     def forward(self, *x: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         x = torch.cat(x, dim=-1)
         return super().forward(x)
 
 
 class MLPEncoder(FlattenMLP):
-    """
-    Context encoder network class
-    that contain various compututation for context variable z
-    """
-
     def __init__(
         self,
         input_dim: int,
@@ -89,23 +72,18 @@ class MLPEncoder(FlattenMLP):
         self.clear_z()
 
     def clear_z(self, num_tasks: int = 1) -> None:
-        """
-        Reset q(z|c) to the prior r(z)
-        Sample a new z from the prior r(z)
-        Reset the context collected so far
-        """
-        # Reset q(z|c) to the prior r(z)
+        # q(z|c)를 prior r(z)로 초기화
         self.z_mean = torch.zeros(num_tasks, self.latent_dim).to(self.device)
         self.z_var = torch.ones(num_tasks, self.latent_dim).to(self.device)
 
-        # Sample a new z from the prior r(z)
+        # Prior r(z)에서 새로운 z를 생성
         self.sample_z()
 
-        # Reset the context collected so far
+        # 지금까지 모은 context 초기화
         self.context = None
 
     def sample_z(self) -> None:
-        """Sample z ~ r(z) or z ~ q(z|c)"""
+        # z ~ r(z) 또는 z ~ q(z|c) 생성
         dists = []
         for mean, var in zip(torch.unbind(self.z_mean), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mean, torch.sqrt(var))
@@ -119,18 +97,17 @@ class MLPEncoder(FlattenMLP):
         mean: torch.Tensor,
         var: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute mean, stddev of product of gaussians (POG)"""
+        # Product of gaussians (POG)의 평균과 표준편차 계산
         var = torch.clamp(var, min=1e-7)
         pog_var = 1.0 / torch.sum(torch.reciprocal(var), dim=0)
         pog_mean = pog_var * torch.sum(mean / var, dim=0)
         return pog_mean, pog_var
 
     def infer_posterior(self, context: torch.Tensor) -> None:
-        """Compute q(z|c) as a function of input context and sample new z from it"""
         params = self.forward(context)
         params = params.view(context.size(0), -1, self.output_dim).to(self.device)
 
-        # With probabilistic z, predict mean and variance of q(z | c)
+        # q(z|c)의 평균과 분산 계산
         z_mean = torch.unbind(params[..., : self.latent_dim])
         z_var = torch.unbind(F.softplus(params[..., self.latent_dim :]))
         z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mean, z_var)]
@@ -140,7 +117,7 @@ class MLPEncoder(FlattenMLP):
         self.sample_z()
 
     def compute_kl_div(self) -> torch.Tensor:
-        """Compute KL( q(z|c) || r(z) )"""
+        # KL( q(z|c) || r(z) ) 계산
         prior = torch.distributions.Normal(
             torch.zeros(self.latent_dim).to(self.device),
             torch.ones(self.latent_dim).to(self.device),
@@ -161,8 +138,6 @@ LOG_SIG_MIN = -20
 
 
 class TanhGaussianPolicy(MLP):
-    """Gaussian policy network class using MLP and tanh activation function"""
-
     def __init__(
         self,
         input_dim: int,
@@ -197,23 +172,9 @@ class TanhGaussianPolicy(MLP):
             log_prob = None
         else:
             normal = Normal(mean, std)
-            # If reparameterize, use reparameterization trick (mean + std * N(0,1))
             action = normal.rsample()
 
-            # Compute log prob from Gaussian,
-            # and then apply correction for Tanh squashing.
-            # NOTE: The correction formula is a little bit magic.
-            # To get an understanding of where it comes from,
-            # check out the original SAC paper
-            # (https://arxiv.org/abs/1801.01290) and look in appendix C.
-            # This is a more numerically-stable equivalent to Eq 21.
-            # Derivation:
-            #               log(1 - tanh(x)^2))
-            #               = log(sech(x)^2))
-            #               = 2 * log(sech(x)))
-            #               = 2 * log(2e^-x / (e^-2x + 1)))
-            #               = 2 * (log(2) - x - log(e^-2x + 1)))
-            #               = 2 * (log(2) - x - softplus(-2x)))
+            # 가우시안 분포에 대한 로그 확률값 계산
             log_prob = normal.log_prob(action)
             log_prob -= 2 * (np.log(2) - action - F.softplus(-2 * action))
             log_prob = log_prob.sum(-1, keepdim=True)

@@ -1,7 +1,3 @@
-"""
-Simple buffer implementation
-"""
-
 from typing import Dict, List
 
 import numpy as np
@@ -9,8 +5,6 @@ import torch
 
 
 class Buffer:
-    """Simple buffer class that includes computing return and gae"""
-
     def __init__(
         self,
         trans_dim: int,
@@ -49,7 +43,7 @@ class Buffer:
         value: np.ndarray,
         log_prob: np.ndarray,
     ) -> None:
-        """Add transition, hiddens, value, and log_prob to the buffer"""
+        # 버퍼에 변수들 추가
         assert self._top < self._max_size
         self._trans[self._top] = tran
         self._pi_hiddens[self._top] = pi_hidden
@@ -62,7 +56,7 @@ class Buffer:
         self._top += 1
 
     def add_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
-        """Add trajectories to the buffer"""
+        # 버퍼에 경로들 추가
         for traj in trajs:
             for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
                 traj["trans"],
@@ -86,17 +80,17 @@ class Buffer:
                 )
 
     def compute_gae(self) -> None:
-        """Compute return and GAE"""
+        # 리턴 값과 GAE 값 계산
         prev_value = 0
         running_return = 0
         running_advant = 0
 
         for t in reversed(range(len(self._rewards))):
-            # Compute return
+            # 리턴 값 계산
             running_return = self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
             self._returns[t] = running_return
 
-            # Compute GAE
+            # GAE 값 계산
             running_tderror = (
                 self._rewards[t] + self.gamma * (1 - self._dones[t]) * prev_value - self._values[t]
             )
@@ -106,11 +100,11 @@ class Buffer:
             self._advants[t] = running_advant
             prev_value = self._values[t]
 
-        # Normalize advantage
+        # GAE 값 정규화
         self._advants = (self._advants - self._advants.mean()) / self._advants.std()
 
     def sample_batch(self) -> Dict[str, torch.Tensor]:
-        """Sample batch in the buffer"""
+        # 버퍼에서 배치 생성
         assert self._top == self._max_size
         self._top = 0
 
