@@ -17,13 +17,12 @@ class GRU(nn.Module):
         init_w: float = 3e-3,
     ) -> None:
         super().__init__()
-        # 히든 활성화 설정
         self.hidden_activation = hidden_activation
 
-        # GRU 레이어 설정
+        # GRU 레이어 생성
         self.gru = nn.GRU(input_size=input_dim, hidden_size=hidden_dim)
 
-        # 출력 레이어 설정
+        # 출력 레이어 생성
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)

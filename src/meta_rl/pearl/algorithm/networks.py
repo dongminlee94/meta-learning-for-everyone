@@ -22,7 +22,7 @@ class MLP(nn.Module):
         self.output_dim = output_dim
         self.hidden_activation = hidden_activation
 
-        # Fully connected 레이어 설정
+        # Fully connected 레이어 생성
         self.fc_layers = nn.ModuleList()
         self.hidden_layers = [hidden_dim] * 3
         in_layer = input_dim
@@ -33,7 +33,7 @@ class MLP(nn.Module):
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
-        # 출력 레이어 설정
+        # 출력 레이어 생성
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
