@@ -27,6 +27,8 @@ class Sampler:
 
     def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
         # 최대 샘플량의 수까지 샘플들 얻기
+
+        # Hidden state 유지를 위한 변수들 생성
         self.pi_hidden = np.zeros((1, self.hidden_dim))
         self.v_hidden = np.zeros((1, self.hidden_dim))
 
