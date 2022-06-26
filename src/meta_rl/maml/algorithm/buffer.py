@@ -31,7 +31,7 @@ class MultiTaskBuffer:
             )
 
     def assign_index(self, task_index: int, adapt_index: int) -> int:
-        # 태스크 인덱스와 adapation 인덱스에 따라 버퍼 인덱스 할당
+        # 태스크 인덱스와 적응 인덱스에 따라 버퍼 인덱스 할당
         return self.num_tasks * adapt_index + task_index
 
     def add_trajs(self, cur_task: int, cur_adapt: int, trajs: List[Dict[str, np.ndarray]]) -> None:

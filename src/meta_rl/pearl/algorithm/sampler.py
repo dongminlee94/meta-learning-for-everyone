@@ -58,7 +58,7 @@ class Sampler:
             action = self.agent.get_action(obs)
             next_obs, reward, done, info = self.env.step(action)
 
-            # 에이전트의 현재 context 업데이트
+            # 에이전트의 현재 context 갱신
             if accum_context:
                 self.update_context(obs=obs, action=action, reward=np.array([reward]))
 

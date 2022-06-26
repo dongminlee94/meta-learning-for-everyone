@@ -16,7 +16,7 @@ def register_env(name: str) -> function:
     return register_env_fn
 
 
-# automatically import any envs in the envs/ directory
+# envs 경로에서 치타 환경 자동으로 가져오기
 for file in os.listdir(os.path.dirname(__file__)):
     if file.endswith(".py") and not file.startswith("_"):
         module = file[: file.find(".py")]
