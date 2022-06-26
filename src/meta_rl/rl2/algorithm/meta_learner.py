@@ -83,7 +83,7 @@ class MetaLearner:
             self.agent.vf.load_state_dict(ckpt["vf"])
             self.buffer = ckpt["buffer"]
 
-        # 조기 학습종료 조건 설정
+        # 조기 학습 종료 조건 설정
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
@@ -114,7 +114,7 @@ class MetaLearner:
             print(f"Start the meta-gradient update of iteration {iteration}")
             log_values = self.agent.train_model(self.batch_size, batch)
 
-            # 메타-테스트 태스크에서 학습성능 평가
+            # 메타-테스트 태스크에서 학습 성능 평가
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -178,7 +178,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # 학습결과가 조기종료 조건을 만족하는지를 체크
+        # 학습 결과가 조기 종료 조건을 만족하는지를 체크
         if self.env_name == "dir":
             self.dq.append(test_results["return"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
@@ -188,7 +188,7 @@ class MetaLearner:
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
 
-        # 학습모델 저장
+        # 학습 모델 저장
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save(

@@ -9,7 +9,6 @@ from meta_rl.rl2.algorithm.networks import GRU, GaussianGRU
 
 
 class PPO:
-    # Proximal Policy Optimization
     def __init__(
         self,
         trans_dim: int,
@@ -50,7 +49,7 @@ class PPO:
         trans: np.ndarray,
         hidden: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 action 추론
+        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 행동 얻기
         action, log_prob, hidden_out = self.policy(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -151,7 +150,6 @@ class PPO:
         mean_total_loss = sum_total_loss / self.num_epochs
         mean_policy_loss = sum_policy_loss / self.num_epochs
         mean_value_loss = sum_value_loss / self.num_epochs
-
         return dict(
             total_loss=mean_total_loss.item(),
             policy_loss=mean_policy_loss.item(),

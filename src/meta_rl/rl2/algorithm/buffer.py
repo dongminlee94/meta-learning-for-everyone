@@ -100,7 +100,7 @@ class Buffer:
             self._advants[t] = running_advant
             prev_value = self._values[t]
 
-        # GAE 값 정규화
+        # 어드밴티지 정규화
         self._advants = (self._advants - self._advants.mean()) / self._advants.std()
 
     def sample_batch(self) -> Dict[str, torch.Tensor]:

@@ -93,7 +93,7 @@ class MetaLearner:
 
             self.agent.policy.load_state_dict(ckpt["policy"])
 
-        # 조기 학습종료 조건 설정
+        # 조기 학습 종료 조건 설정
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
@@ -110,10 +110,10 @@ class MetaLearner:
             self.env.reset_task(task_index)
 
             # 내부 루프 (inner loop)
-            # 각각의 태스크에 대해 몇 경사하강법 기반 최적화
+            # 각각의 태스크에 대한 경사하강법 기반 최적화
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
-                # 메타-테스트의 평가 경로는 deterministic한 정책으로 rollout
+                # 메타-테스트에 대해서는 deterministic한 정책으로 경로 생성
                 self.agent.policy.is_deterministic = (
                     True if cur_adapt == self.num_adapt_epochs and is_eval else False
                 )
@@ -161,7 +161,7 @@ class MetaLearner:
                 # 최적화를 위한 경로 수집
                 train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
-                # A2C알고리즘을 사용한 내부 정책 최적화
+                # A2C 알고리즘을 사용한 내부 정책 최적화
                 inner_loss = self.agent.policy_loss(train_batch)
                 self.inner_optimizer.zero_grad(set_to_none=True)
                 inner_loss.backward(create_graph=require_grad)
@@ -169,7 +169,7 @@ class MetaLearner:
                 with torch.set_grad_enabled(require_grad):
                     self.inner_optimizer.step()
 
-            # 배치 태스크에 대한 line search이전 정책으로 초기화
+            # 배치 태스크에 대한 line search 이전 정책으로 초기화
             valid_params = self.buffers.get_params(cur_task, self.num_adapt_epochs)
             self.agent.update_model(self.agent.old_policy, valid_params)
 
@@ -178,25 +178,26 @@ class MetaLearner:
             loss = self.agent.policy_loss(valid_batch, is_meta_loss=True)
             losses.append(loss)
 
-            # 배치 태스크에 대한 평가경로의 평균 KL divergence 계산
+            # 배치 태스크에 대한 평가 경로의 평균 KL divergence 계산
             kl = self.agent.kl_divergence(valid_batch)
             kls.append(kl)
 
-            # 배치 태스크에 대한 평가경로의 평균 정책 엔트로피 계산
+            # 배치 태스크에 대한 평가 경로의 평균 정책 엔트로피 계산
             entropy = self.agent.compute_policy_entropy(valid_batch)
             entropies.append(entropy)
 
             self.agent.update_model(self.agent.policy, backup_params)
-
         return torch.stack(losses).mean(), torch.stack(kls).mean(), torch.stack(entropies).mean()
 
     def meta_update(self) -> Dict[str, float]:
         # 외부 루프 (outer loop)
         # Line search를 시작하기 위한 첫 경사하강 스텝 계산
         loss_before, kl_before, _ = self.meta_surrogate_loss(set_grad=True)
+
         gradient = torch.autograd.grad(loss_before, self.agent.policy.parameters(), retain_graph=True)
         gradient = self.agent.flat_grad(gradient)
         Hvp = self.agent.hessian_vector_product(kl_before, self.agent.policy.parameters())
+
         search_dir = self.agent.conjugate_gradient(Hvp, gradient)
         descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
         loss_before.detach_()
@@ -227,7 +228,6 @@ class MetaLearner:
                 print("Keep current meta-policy skipping meta-update")
 
         self.buffers.clear()
-
         return dict(
             loss_after=loss_after.item(),
             kl_after=kl_after.item(),
@@ -359,12 +359,12 @@ class MetaLearner:
                 abs(run_cost_after_grad / len(self.test_tasks)),
             )
 
-        # 학습결과가 조기종료 조건을 만족하는지를 체크
+        # 학습 결과가 조기 종료 조건을 만족하는지 체크
         self.dq.append(results_summary["return_after_grad"])
         if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
             self.is_early_stopping = True
 
-        # 학습모델 저장
+        # 학습 모델 저장
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)

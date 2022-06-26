@@ -12,7 +12,6 @@ from meta_rl.maml.algorithm.networks import MLP, GaussianPolicy
 
 
 class TRPO:
-    # Trust Region Policy Optimization (TRPO) 및 Policy Gradient
     def __init__(
         self,
         observ_dim,
@@ -41,10 +40,9 @@ class TRPO:
         self.vf_learning_iters = config["vf_learning_iters"]
         self.initial_vf_params = deepcopy(self.vf.state_dict())
 
-    # meta_learner에서 사용할 TRPO 메서드
     @classmethod
     def flat_grad(cls, gradients: Tuple[torch.Tensor, ...], is_hessian: bool = False) -> torch.Tensor:
-        # Gradient 벡터화
+        # 그래디언트 벡터화
         if is_hessian:
             grads = [g.contiguous() for g in gradients]
             return parameters_to_vector(grads)
@@ -91,7 +89,6 @@ class TRPO:
             kl_hessian_prod = torch.autograd.grad(kl_grad_prod, parameters, retain_graph=True)
             kl_hessian_prod = cls.flat_grad(kl_hessian_prod, is_hessian=True)
             kl_hessian_prod = kl_hessian_prod + hvp_reg_coeff * vector
-
             return kl_hessian_prod
 
         return hvp
@@ -122,7 +119,6 @@ class TRPO:
 
             if rdotr_new.item() < residual_tol:
                 break
-
         return x
 
     def compute_descent_step(
@@ -134,10 +130,11 @@ class TRPO:
         # Line search를 시작하기 위한 첫 경사하강 스텝 계산
         sHs = torch.dot(search_dir, Hvp(search_dir))
         lagrange_multiplier = torch.sqrt(sHs / (2 * max_kl))
+
         step = search_dir / lagrange_multiplier
         step_param = [torch.zeros_like(params.data) for params in self.policy.parameters()]
-        vector_to_parameters(step, step_param)
 
+        vector_to_parameters(step, step_param)
         return step_param
 
     def infer_baselines(self, batch: Dict[str, torch.Tensor]):
@@ -167,11 +164,10 @@ class TRPO:
         # 상태 가치 함수로부터 baseline 추론
         with torch.no_grad():
             baselines = self.vf(obs_batch)
-
         return baselines.cpu().numpy()
 
     def compute_gae(self, batch: Dict[str, torch.Tensor]):
-        # 보상합 및 GAE (generalized advantage estimation) 계산
+        # 리턴 값 및 GAE 계산
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
         values_batch = batch["baselines"]
@@ -192,7 +188,6 @@ class TRPO:
 
         # 어드밴티지 정규화
         advants_batch = (advants_batch - advants_batch.mean()) / (advants_batch.std() + 1e-8)
-
         return advants_batch
 
     def kl_divergence(self, batch: Dict[str, torch.Tensor]):

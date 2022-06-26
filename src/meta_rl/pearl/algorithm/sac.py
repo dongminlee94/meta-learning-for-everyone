@@ -9,7 +9,6 @@ from meta_rl.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussia
 
 
 class SAC:
-    # Soft Actor Critic
     def __init__(
         self,
         observ_dim: int,
@@ -90,7 +89,7 @@ class SAC:
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # 주어진 관측 상태에 따른 현재 정책의 action 추론
+        # 주어진 관측 상태에 따른 현재 정책의 행동 얻기
         task_z = self.encoder.task_z
         obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
@@ -161,7 +160,7 @@ class SAC:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        # Temperature 파라메터 alpha 업데이트
+        # Temperature 파라메터 알파 업데이트
         alpha_loss = -(self.log_alpha * (log_policy + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()

@@ -98,7 +98,7 @@ class MetaLearner:
             self.rl_replay_buffer = ckpt["rl_replay_buffer"]
             self.encoder_replay_buffer = ckpt["encoder_replay_buffer"]
 
-        # 조기 학습종료 조건 설정
+        # 조기 학습 종료 조건 설정
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
@@ -111,7 +111,7 @@ class MetaLearner:
         update_posterior: bool,
         add_to_enc_buffer: bool,
     ) -> None:
-        # 주어진 index 테스크에 대한 rollout 데이터 수집
+        # 주어진 인덱스 태스크에 대한 경로 데이터 수집
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = False
 
@@ -169,7 +169,7 @@ class MetaLearner:
         for iteration in range(self.num_iterations):
             start_time: float = time.time()
 
-            # 첫번째 반복단계에 한해 모든 메타-트레이닝 테스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
+            # 첫번째 반복단계에 한해 모든 메타-트레이닝 태스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
             if iteration == 0:
                 for index in self.train_tasks:
                     self.env.reset_task(index)
@@ -213,16 +213,16 @@ class MetaLearner:
             for i in range(self.num_meta_grads):
                 indices: np.ndarray = np.random.choice(self.train_tasks, self.meta_batch_size)
 
-                # 인코더의 context와 hidden state 초기화
+                # 인코더의 context와 은닉 상태 초기화
                 self.agent.encoder.clear_z(num_tasks=len(indices))
 
-                # context 배치 샘플
+                # Context 배치 샘플
                 context_batch: torch.Tensor = self.sample_context(indices)
 
                 # 경로 배치 샘플
                 transition_batch: List[torch.Tensor] = self.sample_transition(indices)
 
-                # 정책, Q-네트워크, 인코더를 SAC 알고리즘에서 학습
+                # 정책, Q-함수, 인코더 네트워크를 SAC 알고리즘에서 학습
                 log_values: Dict[str, float] = self.agent.train_model(
                     meta_batch_size=self.meta_batch_size,
                     batch_size=self.batch_size,
@@ -250,7 +250,7 @@ class MetaLearner:
         max_samples: int,
         update_posterior: bool,
     ) -> List[List[Dict[str, np.ndarray]]]:
-        # 메타-테스트 태스크에 대한 rollout 데이터 수집
+        # 메타-테스트 태스크에 대한 경로 데이터 수집
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = True
 
@@ -265,7 +265,7 @@ class MetaLearner:
             cur_trajs.append(trajs)
             cur_samples += num_samples
 
-            # context에 따른 posterior 업데이트
+            # Context에 따른 posterior 업데이트
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return cur_trajs
 
@@ -362,7 +362,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # 학습결과가 조기종료 조건을 만족하는지를 체크
+        # 학습 결과가 조기 종료 조건을 만족하는지 체크
         if self.env_name == "dir":
             self.dq.append(test_results["return_after_infer"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
@@ -372,7 +372,7 @@ class MetaLearner:
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
 
-        # 학습모델 저장
+        # 학습 모델 저장
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save(
