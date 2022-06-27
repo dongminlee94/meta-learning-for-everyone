@@ -80,13 +80,13 @@ class Buffer:
                 )
 
     def compute_gae(self) -> None:
-        # 리턴 값과 GAE 값 계산
+        # 보상합과 GAE 값 계산
         prev_value = 0
         running_return = 0
         running_advant = 0
 
         for t in reversed(range(len(self._rewards))):
-            # 리턴 값 계산
+            # 보상합 계산
             running_return = self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
             self._returns[t] = running_return
 

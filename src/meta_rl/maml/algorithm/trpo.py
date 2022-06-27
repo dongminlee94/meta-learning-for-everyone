@@ -148,7 +148,7 @@ class TRPO:
         running_return = 0
 
         for t in reversed(range(len(rewards_batch))):
-            # 보상 합 계산
+            # 보상합 계산
             running_return = rewards_batch[t] + self.gamma * (1 - dones_batch[t]) * running_return
             returns_batch[t] = running_return
 
@@ -169,7 +169,7 @@ class TRPO:
         return baselines.cpu().numpy()
 
     def compute_gae(self, batch: Dict[str, torch.Tensor]):
-        # 보상 합 및 GAE 계산
+        # 보상합 및 GAE 계산
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
         values_batch = batch["baselines"]
