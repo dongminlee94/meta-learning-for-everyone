@@ -49,7 +49,7 @@ class PPO:
         trans: np.ndarray,
         hidden: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 행동 얻기
+        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 action 얻기
         action, log_prob, hidden_out = self.policy(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -61,7 +61,7 @@ class PPO:
         )
 
     def get_value(self, trans: np.ndarray, hidden: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        # 상태 가치 함수 (V) 추론
+        # 상태 가치 함수 추론
         value, hidden_out = self.vf(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),

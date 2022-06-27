@@ -93,14 +93,14 @@ class MetaLearner:
 
             self.agent.policy.load_state_dict(ckpt["policy"])
 
-        # 조기 학습 종료 조건 설정
+        # 조기 학습 중단 조건 설정
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
     def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
-        # 최적화를 동반한 경로 데이터 수집
+        # 경사하강 기반 태스크 적응을 동반한 경로 데이터 수집
         backup_params = dict(self.agent.policy.named_parameters())
 
         mode = "test" if is_eval else "train"
@@ -110,7 +110,7 @@ class MetaLearner:
             self.env.reset_task(task_index)
 
             # 내부 루프 (inner loop)
-            # 각각의 태스크에 대한 경사하강법 기반 최적화
+            # 각각의 태스크에 대한 경사하강 기반의 태스크 적응
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
                 # 메타-테스트에 대해서는 deterministic한 정책으로 경로 생성
@@ -118,14 +118,14 @@ class MetaLearner:
                     True if cur_adapt == self.num_adapt_epochs and is_eval else False
                 )
 
-                # 학습 경로 수집과 정책 최적화 반복 후 평가 경로 수집
+                # 학습 경로의 수집과 정책의 적응을 반복한 후 평가 경로를 수집
                 trajs = self.sampler.obtain_samples(max_samples=self.num_samples)
                 self.buffers.add_trajs(cur_task, cur_adapt, trajs)
 
                 if cur_adapt < self.num_adapt_epochs:
                     train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
-                    # 내부 정책 최적화
+                    # 정책의 태스크 적응
                     inner_loss = self.agent.policy_loss(train_batch)
                     self.inner_optimizer.zero_grad(set_to_none=True)
                     require_grad = cur_adapt < self.num_adapt_epochs - 1
@@ -134,14 +134,14 @@ class MetaLearner:
                     with torch.set_grad_enabled(require_grad):
                         self.inner_optimizer.step()
 
-            # 최적화 이후의 정책 파라메터 저장
+            # 태스크 적응 이후의 정책 파라메터 저장
             self.buffers.add_params(
                 cur_task,
                 self.num_adapt_epochs,
                 dict(self.agent.policy.named_parameters()),
             )
 
-            # 최적화 이전의 정책으로 복원
+            # 태스크 적응 이전의 정책으로 복원
             self.agent.update_model(self.agent.policy, backup_params)
             self.agent.policy.is_deterministic = False
 
@@ -153,15 +153,15 @@ class MetaLearner:
         # 메타-배치 태스크에 대한 손실 계산
         for cur_task in range(self.meta_batch_size):
             # 내부 루프 (inner loop)
-            # 각각의 태스크에 대해 몇 경사하강법 기반 최적화
+            # 각각의 태스크에 대한 경사하강 기반의 태스크 적응
             for cur_adapt in range(self.num_adapt_epochs):
 
                 require_grad = cur_adapt < self.num_adapt_epochs - 1 or set_grad
 
-                # 최적화를 위한 경로 수집
+                # 버퍼에 저장된 태스크 학습 경로 얻기
                 train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
-                # A2C 알고리즘을 사용한 내부 정책 최적화
+                # 액터-크리틱 알고리즘을 사용한 정책의 태스크 적응
                 inner_loss = self.agent.policy_loss(train_batch)
                 self.inner_optimizer.zero_grad(set_to_none=True)
                 inner_loss.backward(create_graph=require_grad)
@@ -169,11 +169,11 @@ class MetaLearner:
                 with torch.set_grad_enabled(require_grad):
                     self.inner_optimizer.step()
 
-            # 배치 태스크에 대한 line search 이전 정책으로 초기화
+            # Surrogate 손실 계산을 위해 line search 초기 정책으로 초기화
             valid_params = self.buffers.get_params(cur_task, self.num_adapt_epochs)
             self.agent.update_model(self.agent.old_policy, valid_params)
 
-            # 배치 태스크에 대한 메타러닝 손실로서 평가경로의 surrogage 손실 계산
+            # 메타-배치 태스크에 대한 메타러닝 손실로서 평가경로의 surrogage 손실 계산
             valid_batch = self.buffers.get_trajs(cur_task, self.num_adapt_epochs)
             loss = self.agent.policy_loss(valid_batch, is_meta_loss=True)
             losses.append(loss)
@@ -359,7 +359,7 @@ class MetaLearner:
                 abs(run_cost_after_grad / len(self.test_tasks)),
             )
 
-        # 학습 결과가 조기 종료 조건을 만족하는지 체크
+        # 학습 결과가 조기 중단 조건을 만족하는지 체크
         self.dq.append(results_summary["return_after_grad"])
         if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
             self.is_early_stopping = True

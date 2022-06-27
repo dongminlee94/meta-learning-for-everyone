@@ -89,7 +89,7 @@ class SAC:
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # 주어진 관측 상태에 따른 현재 정책의 행동 얻기
+        # 주어진 관측 상태에 따른 현재 정책의 action 얻기
         task_z = self.encoder.task_z
         obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
@@ -118,7 +118,7 @@ class SAC:
         task_z = [z.repeat(batch_size, 1) for z in task_z]
         task_z = torch.cat(task_z, dim=0)
 
-        # 인코더 KL 손실함수 계산
+        # 인코더의 KL 손실 계산
         kl_div = self.encoder.compute_kl_div()
         encoder_loss = self.kl_lambda * kl_div
         self.encoder_optimizer.zero_grad()

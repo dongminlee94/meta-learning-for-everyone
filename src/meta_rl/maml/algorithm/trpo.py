@@ -30,6 +30,8 @@ class TRPO:
             output_dim=action_dim,
             hidden_dim=policy_hidden_dim,
         ).to(device)
+
+        # 이전 정책 및 상태 가치 함수 초기화
         self.old_policy = deepcopy(self.policy)
         self.vf = MLP(input_dim=observ_dim, output_dim=1, hidden_dim=vf_hidden_dim).to(device)
 
@@ -138,7 +140,7 @@ class TRPO:
         return step_param
 
     def infer_baselines(self, batch: Dict[str, torch.Tensor]):
-        # 상태 가치 함수 (V) 학습 및 baseline 추론
+        # 상태 가치 함수 학습 및 baseline 추론
         obs_batch = batch["obs"]
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
@@ -146,7 +148,7 @@ class TRPO:
         running_return = 0
 
         for t in reversed(range(len(rewards_batch))):
-            # 보상합 계산
+            # 보상 합 계산
             running_return = rewards_batch[t] + self.gamma * (1 - dones_batch[t]) * running_return
             returns_batch[t] = running_return
 
@@ -167,7 +169,7 @@ class TRPO:
         return baselines.cpu().numpy()
 
     def compute_gae(self, batch: Dict[str, torch.Tensor]):
-        # 리턴 값 및 GAE 계산
+        # 보상 합 및 GAE 계산
         rewards_batch = batch["rewards"]
         dones_batch = batch["dones"]
         values_batch = batch["baselines"]
@@ -213,7 +215,7 @@ class TRPO:
         return policy_entropy.mean()
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # 주어진 관측 상태에 따른 현재 정책의 action 추론
+        # 주어진 관측 상태에 따른 현재 정책의 action 얻기
         action, _ = self.policy(torch.Tensor(obs).to(self.device))
 
         return action.detach().cpu().numpy()
@@ -232,7 +234,7 @@ class TRPO:
             surrogate_loss = ratio * advant_batch
             loss = -surrogate_loss.mean()
         else:
-            # 액터 크리틱 손실
+            # 액터-크리틱 손실
             log_prob_batch = self.policy.get_log_prob(obs_batch, action_batch).view(-1, 1)
             loss = -torch.mean(log_prob_batch * advant_batch)
         return loss

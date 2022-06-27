@@ -98,7 +98,7 @@ class MetaLearner:
             self.rl_replay_buffer = ckpt["rl_replay_buffer"]
             self.encoder_replay_buffer = ckpt["encoder_replay_buffer"]
 
-        # 조기 학습 종료 조건 설정
+        # 조기 학습 중단 조건 설정
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
@@ -362,7 +362,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # 학습 결과가 조기 종료 조건을 만족하는지 체크
+        # 학습 결과가 조기 중단 조건을 만족하는지 체크
         if self.env_name == "dir":
             self.dq.append(test_results["return_after_infer"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
