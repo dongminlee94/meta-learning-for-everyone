@@ -53,7 +53,7 @@ class TRPO:
 
     @classmethod
     def update_model(cls, module: nn.Module, new_params: Dict[str, torch.nn.parameter.Parameter]):
-        # 현재 모델의 파라메터를 새로운 파라메터로 대체
+        # 현재 모델의 파라미터를 새로운 파라미터로 대체
         # [출처] (https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/_functions.py)
         named_modules = dict(module.named_modules())
 

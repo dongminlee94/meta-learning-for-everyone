@@ -2,14 +2,14 @@ import torch.nn as nn
 
 
 class DifferentiableSGD:
-    # torch.optim의 in-place 파라메터 업데이트를 우회하기위한 Differentiable SGD 옵티마이저
+    # torch.optim의 in-place 파라미터 업데이트를 우회하기위한 Differentiable SGD 옵티마이저
     # [출처](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/optimizers/differentiable_sgd.py)
     def __init__(self, model, lr=1e-3) -> None:
         self.model: nn.Module = model
         self.lr: float = lr
 
     def step(self) -> None:
-        # 파라메터 업데이트
+        # 파라미터 업데이트
         module_set = set()
 
         def update(model: nn.Module) -> None:
@@ -33,10 +33,9 @@ class DifferentiableSGD:
         update(self.model)
 
     def zero_grad(self, set_to_none: bool = False) -> None:
-        # 파라메터의 그래디언트를 0이나 None으로 초기화
+        # 파라미터의 그래디언트를 0 또는 None으로 초기화
         for param in self.model.parameters():
             if param.grad is not None:
-
                 if set_to_none:
                     param.grad = None
                 else:

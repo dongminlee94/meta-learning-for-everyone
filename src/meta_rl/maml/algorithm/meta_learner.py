@@ -134,7 +134,7 @@ class MetaLearner:
                     with torch.set_grad_enabled(require_grad):
                         self.inner_optimizer.step()
 
-            # 태스크 적응 이후의 정책 파라메터 저장
+            # 태스크 적응 이후의 정책 파라미터 저장
             self.buffers.add_params(
                 cur_task,
                 self.num_adapt_epochs,
@@ -202,7 +202,7 @@ class MetaLearner:
         descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
         loss_before.detach_()
 
-        # Line search 역추적을 통한 파라메터 업데이트
+        # Line search 역추적을 통한 파라미터 업데이트
         backup_params = deepcopy(dict(self.agent.policy.named_parameters()))
         for i in range(self.backtrack_iters):
             ratio = self.backtrack_coeff**i

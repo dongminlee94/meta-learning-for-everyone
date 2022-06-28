@@ -79,17 +79,17 @@ class SAC:
 
     @classmethod
     def hard_target_update(cls, main: FlattenMLP, target: FlattenMLP) -> None:
-        # 타겟 네트워크의 파라메터를 메인 네트워크의 파라메터와 동일하게 업데이트
+        # 타겟 네트워크의 파라미터를 메인 네트워크의 파라미터와 동일하게 업데이트
         target.load_state_dict(main.state_dict())
 
     @classmethod
     def soft_target_update(cls, main: FlattenMLP, target: FlattenMLP, tau: float = 0.005):
-        # 타겟 네트워크의 파라메터를 메인 네트워크의 파라메터로 소프트 업데이트
+        # 타겟 네트워크의 파라미터를 메인 네트워크의 파라미터로 소프트 업데이트
         for main_param, target_param in zip(main.parameters(), target.parameters()):
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # 주어진 관측 상태에 따른 현재 정책의 action 얻기
+        # 주어진 관측 상태에 따른 현재 정책의 행동 얻기
         task_z = self.encoder.task_z
         obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
@@ -118,7 +118,7 @@ class SAC:
         task_z = [z.repeat(batch_size, 1) for z in task_z]
         task_z = torch.cat(task_z, dim=0)
 
-        # 인코더의 KL 손실 계산
+        # 인코더의 KL-Divergence 손실 계산
         kl_div = self.encoder.compute_kl_div()
         encoder_loss = self.kl_lambda * kl_div
         self.encoder_optimizer.zero_grad()
@@ -160,7 +160,7 @@ class SAC:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        # Temperature 파라메터 알파 업데이트
+        # Temperature 파라미터 알파 업데이트
         alpha_loss = -(self.log_alpha * (log_policy + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
