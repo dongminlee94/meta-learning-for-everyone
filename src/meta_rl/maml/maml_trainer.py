@@ -1,7 +1,3 @@
-"""
-MAML trainer based on half-cheetah environment
-"""
-
 import os
 from typing import Any, Dict, List
 
@@ -15,24 +11,24 @@ from meta_rl.maml.algorithm.meta_learner import MetaLearner
 from meta_rl.maml.algorithm.trpo import TRPO
 
 if __name__ == "__main__":
-    # Experiment configuration setup
+    # 실험 환경 설정에 대한 하이퍼파라미터들 불러오기
     with open(os.path.join("configs", "experiment_config.yaml"), "r") as file:
         experiment_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
-    # Target reward configuration setup
+    # 목표 보상 설정에 대한 하이퍼파라미터들 불러오기
     with open(
         os.path.join("configs", experiment_config["env_name"] + "_target_config.yaml"),
         "r",
     ) as file:
         env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
-    # Create a multi-task environment and sample tasks
+    # 멀티-태스크 환경과 샘플 태스크들 생성
     env: HalfCheetahEnv = ENVS["cheetah-" + experiment_config["env_name"]](
         num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"],
     )
     tasks: List[int] = env.get_all_task_idx()
 
-    # Set a random seed
+    # 랜덤 시드 값 설정
     env.reset(seed=experiment_config["seed"])
     np.random.seed(experiment_config["seed"])
     torch.manual_seed(experiment_config["seed"])
@@ -74,5 +70,5 @@ if __name__ == "__main__":
         **env_target_config["maml_params"],
     )
 
-    # Run MAML training
+    # MAML 학습 시작
     maml.meta_train()

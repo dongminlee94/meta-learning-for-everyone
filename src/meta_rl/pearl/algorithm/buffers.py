@@ -1,16 +1,9 @@
-"""
-Multi-task replay buffer implementation
-"""
-
-
 from typing import Dict, List
 
 import numpy as np
 
 
 class MultiTaskReplayBuffer:
-    """Multi-task replay buffer class"""
-
     def __init__(
         self,
         observ_dim: int,
@@ -28,18 +21,16 @@ class MultiTaskReplayBuffer:
             )
 
     def add_trajs(self, task: int, trajs: List[Dict[str, np.ndarray]]) -> None:
-        """Add trajectories of the task to multi-task replay buffer"""
+        # 멀티-태스트 리플레이 버퍼에 태스트에 대한 경로 추가
         for traj in trajs:
             self.task_buffers[task].add_traj(traj)
 
     def sample_batch(self, task: int, batch_size: int) -> Dict[str, np.ndarray]:
-        """Sample batch of the task in multi-task replay buffer"""
+        # 멀티-태스크 리플레이 버퍼에서 태스크의 배치 생성
         return self.task_buffers[task].sample(batch_size)
 
 
 class SimpleReplayBuffer:
-    """Single task replay buffer code"""
-
     def __init__(
         self,
         observ_dim: int,
@@ -57,7 +48,6 @@ class SimpleReplayBuffer:
         self._size = 0
 
     def clear(self) -> None:
-        """Clear variables of replay buffer"""
         self._top = 0
         self._size = 0
 
@@ -69,7 +59,6 @@ class SimpleReplayBuffer:
         next_obs: np.ndarray,
         done: np.ndarray,
     ) -> None:
-        """Add transition to replay buffer"""
         self._cur_obs[self._top] = obs
         self._actions[self._top] = action
         self._rewards[self._top] = reward
@@ -81,7 +70,6 @@ class SimpleReplayBuffer:
             self._size += 1
 
     def add_traj(self, traj: Dict[str, np.ndarray]) -> None:
-        """Add trajectory to replay buffer"""
         for (obs, action, reward, next_obs, done) in zip(
             traj["cur_obs"],
             traj["actions"],
@@ -92,7 +80,6 @@ class SimpleReplayBuffer:
             self.add(obs, action, reward, next_obs, done)
 
     def sample(self, batch_size: int) -> Dict[str, np.ndarray]:
-        """Sample batch in replay buffer"""
         indices: np.ndarray = np.random.randint(0, self._size, batch_size)
         return dict(
             cur_obs=self._cur_obs[indices],

@@ -1,7 +1,3 @@
-"""
-Proximal Policy Optimization algorithm code for training when meta-train
-"""
-
 from typing import Dict, Tuple
 
 import numpy as np
@@ -13,8 +9,6 @@ from meta_rl.rl2.algorithm.networks import GRU, GaussianGRU
 
 
 class PPO:
-    """Proximal Policy Optimization class"""
-
     def __init__(
         self,
         trans_dim: int,
@@ -23,13 +17,12 @@ class PPO:
         device: torch.device,
         **config,
     ) -> None:
-
         self.device = device
         self.num_epochs = config["num_epochs"]
         self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
-        # Instantiate networks
+        # 네트워크 초기화
         self.policy = GaussianGRU(
             input_dim=trans_dim,
             output_dim=action_dim,
@@ -56,7 +49,7 @@ class PPO:
         trans: np.ndarray,
         hidden: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Get an action from the policy network"""
+        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 action 얻기
         action, log_prob, hidden_out = self.policy(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -68,7 +61,7 @@ class PPO:
         )
 
     def get_value(self, trans: np.ndarray, hidden: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Get an value from the value network"""
+        # 상태 가치 함수 추론
         value, hidden_out = self.vf(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -76,7 +69,7 @@ class PPO:
         return value.detach().cpu().numpy(), hidden_out.detach().cpu().numpy()
 
     def train_model(self, batch_size: int, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
-        """Train models according to training method of PPO algorithm"""
+        # PPO 알고리즘에 따른 네트워크 학습
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
         v_hiddens = batch["v_hiddens"]
@@ -121,11 +114,11 @@ class PPO:
                 advant_batches,
                 log_prob_batches,
             ):
-                # Value function loss
+                # 상태 가치 함수 손실 계산
                 value_batch, _ = self.vf(trans_batch, v_hidden_batch)
                 value_loss = F.mse_loss(value_batch.view(-1, 1), return_batch)
 
-                # Policy loss
+                # 정책 손실 계산
                 new_log_prob_batch = self.policy.get_log_prob(
                     trans_batch,
                     pi_hidden_batch,
@@ -140,7 +133,7 @@ class PPO:
 
                 policy_loss = -torch.min(policy_loss, clipped_loss).mean()
 
-                # Total loss
+                # 손실 합 계산
                 total_loss = policy_loss + 0.5 * value_loss
                 self.optimizer.zero_grad()
                 total_loss.backward()
@@ -157,7 +150,6 @@ class PPO:
         mean_total_loss = sum_total_loss / self.num_epochs
         mean_policy_loss = sum_policy_loss / self.num_epochs
         mean_value_loss = sum_value_loss / self.num_epochs
-
         return dict(
             total_loss=mean_total_loss.item(),
             policy_loss=mean_policy_loss.item(),
