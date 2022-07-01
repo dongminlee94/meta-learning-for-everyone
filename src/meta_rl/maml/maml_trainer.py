@@ -53,7 +53,7 @@ if __name__ == "__main__":
         **env_target_config["pg_params"],
     )
 
-    maml = MetaLearner(
+    meta_learner = MetaLearner(
         env=env,
         env_name=experiment_config["env_name"],
         agent=agent,
@@ -71,4 +71,4 @@ if __name__ == "__main__":
     )
 
     # MAML 학습 시작
-    maml.meta_train()
+    meta_learner.meta_train()
