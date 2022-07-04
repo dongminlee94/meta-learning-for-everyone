@@ -6,7 +6,7 @@
 [![Imports: isort](https://img.shields.io/badge/imports-isort-white)](https://pycqa.github.io/isort/)
 [![Linting: flake8 & mypy & pylint](https://img.shields.io/badge/linting-flake8%20%26%20mypy%20%26%20pylint-deepblue)](https://pypi.org/project/pytest-pylint/)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
@@ -116,6 +116,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/dongminlee94/"><img src="https://avatars.githubusercontent.com/u/29733842?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Dongmin Lee</b></sub></a><br /><a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=dongminlee94" title="Code">💻</a> <a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=dongminlee94" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/Clyde21c/"><img src="https://avatars.githubusercontent.com/u/35162035?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Seunghyun Lee</b></sub></a><br /><a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=Clyde21c" title="Code">💻</a> <a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=Clyde21c" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/LunaJang"><img src="https://avatars.githubusercontent.com/u/25239851?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Luna Jang</b></sub></a><br /><a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=LunaJang" title="Code">💻</a></td>
+    <td align="center"><a href="https://www.endtoend.ai"><img src="https://avatars.githubusercontent.com/u/6107926?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Seungjae Ryan Lee</b></sub></a><br /><a href="https://github.com/dongminlee94/meta-learning-for-everyone/commits?author=seungjaeryanlee" title="Code">💻</a></td>
   </tr>
 </table>
 
