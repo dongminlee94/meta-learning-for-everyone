@@ -9,25 +9,25 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
+# Meta Learning for Everyone: Developing Few-shot Learning Models and Fast Reinforcement Learning Agents Using PyTorch
 
-"모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
+Code repository for "Meta Learning for Everyone"
 
-## 필요 조건
+## Requirements
 
-이 레포지토리에서는 **python 3.8.8** 버전을 사용합니다.
+This repository utilizes **python 3.8.8**
 
-## 설치 및 사용 방법
+## How to install and use this repository
 
-### 1. Anaconda 설치
+### 1. Install Anaconda
 
-먼저, 아래의 링크에서 Anaconda를 설치합니다.
+First, install Anaconda from the link as followed
 
 https://www.anaconda.com/
 
-### 2. Anaconda 환경 만들기
+### 2. Create Anaconda envrionment
 
-다음으로, 아래의 명령어들을 통해 새로운 python 환경을 만들고, 그 환경을 활성화합니다.
+Second, follow the commands below to create a new python environment and activate the created Conda environment,
 
 ```bash
 (base) $ conda create -y -n meta python=3.8.8
@@ -37,29 +37,29 @@ https://www.anaconda.com/
 (meta) $ conda env list
 ```
 
-### 3. 패키지 설치
+### 3. Install packages
 
-이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
+Next, after cloning this repository, run the following command to install required packages.
 
-**MacOS 및 Linux 사용자**
+**MacOS & Linux user**
 
 ```bash
-# 사용자
+# User
 (meta) $ make init
 
-# 개발자
+# Developer
 (meta) $ make init-dev
 ```
 
-**Windows 사용자**
+**Windows user**
 
-git bash에서 다음 명령어를 실행시켜 conda 명령어가 동작하도록 합니다.
+In git bash, execute the command below to make Conda commands work.
 
 ```bash
-$ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
+$ echo ". /c/Users/{user name}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
 ```
 
-git bash를 재실행하고 다음 명령어를 차례대로 실행시켜 주세요.
+Reopen git bash and run followed commands in order.
 
 ```bash
 $ conda activate meta
@@ -67,17 +67,17 @@ $ conda activate meta
 (meta) $ sh ./scripts/window-init.sh
 ```
 
-### 4. 모델 학습 및 결과 확인
+### 4. Train models & check results
 
 **Meta-SL**
 
-Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+For Meta-SL, move to each algorithm folder and use `jupyter notebook` to run the algorithm and check the results
 
 ```bash
 (meta) $ jupyter notebook
 ```
 
-Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorch 관련 패키지들을 설치하고 이용해주세요.
+If you are trying to use Colab, please install PyTorch-related packages by executing the command bellow.
 
 ```python
 !pip install torchmeta torchtext==0.10.1 torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
@@ -85,7 +85,7 @@ Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorc
 
 **Meta-RL**
 
-Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
+For Meta-RL, move to each algorithm folder and run the commands as followed.
 
 ```bash
 # RL^2
@@ -98,7 +98,7 @@ Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이
 (meta) $ python pearl_trainer.py
 ```
 
-Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
+In the case of Meta-RL, please run the Tensorboard command below to check the results of the meta-trains and meta-tests you executed.
 
 ```bash
 (meta) $ tensorboard --logdir=./results
