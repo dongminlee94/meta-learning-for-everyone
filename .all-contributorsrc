@@ -24,6 +24,24 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "LunaJang",
+      "name": "Luna Jang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25239851?v=4",
+      "profile": "https://github.com/LunaJang",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "seungjaeryanlee",
+      "name": "Seungjae Ryan Lee",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6107926?v=4",
+      "profile": "https://www.endtoend.ai",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -1,22 +1,15 @@
-"""
-Differentiable Optimizer for higher-ogder optimization
-"""
-
 import torch.nn as nn
 
 
 class DifferentiableSGD:
-    """
-    Differenctialble SGD avoiding parameter's in-place update of torch.optim
-    [source](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/optimizers/differentiable_sgd.py)
-    """
-
+    # Differenctialble SGD avoiding parameter's in-place update of torch.optim
+    # [source](https://github.com/rlworkgroup/garage/blob/master/src/garage/torch/optimizers/differentiable_sgd.py)
     def __init__(self, model, lr=1e-3) -> None:
         self.model: nn.Module = model
         self.lr: float = lr
 
     def step(self) -> None:
-        """Update papareter"""
+        # Update papareter
         module_set = set()
 
         def update(model: nn.Module) -> None:
@@ -40,11 +33,9 @@ class DifferentiableSGD:
         update(self.model)
 
     def zero_grad(self, set_to_none: bool = False) -> None:
-        """Set grdients of parameters to zero or None"""
-
+        # Set grdients of parameters to zero or None
         for param in self.model.parameters():
             if param.grad is not None:
-
                 if set_to_none:
                     param.grad = None
                 else:

@@ -1,8 +1,3 @@
-"""
-Sample collection implementation through interaction between agent and environment
-"""
-
-
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -13,8 +8,6 @@ from meta_rl.pearl.algorithm.sac import SAC
 
 
 class Sampler:
-    """Data sampling class"""
-
     def __init__(
         self,
         env: HalfCheetahEnv,
@@ -34,7 +27,7 @@ class Sampler:
         update_posterior: bool,
         accum_context: bool = True,
     ) -> Tuple[List[Dict[str, np.ndarray]], int]:
-        """Obtain samples up to the number of maximum samples"""
+        # Obtain samples up to the number of maximum samples
         trajs = []
         cur_samples = 0
 
@@ -49,7 +42,7 @@ class Sampler:
         return trajs, cur_samples
 
     def rollout(self, accum_context: bool = True) -> Dict[str, np.ndarray]:
-        """Rollout up to maximum trajectory length"""
+        # Rollout up to maximum trajectory length
         _cur_obs = []
         _actions = []
         _rewards = []
@@ -67,7 +60,7 @@ class Sampler:
 
             # Update the agent's current context
             if accum_context:
-                self.update_context(obs, action, reward)
+                self.update_context(obs=obs, action=action, reward=np.array([reward]))
 
             _cur_obs.append(obs)
             _actions.append(action)
@@ -87,11 +80,15 @@ class Sampler:
             infos=np.array(_infos),
         )
 
-    def update_context(self, obs: np.ndarray, action: np.ndarray, reward: float) -> None:
-        """Append single transition to the current context"""
-        obs = torch.from_numpy(obs[None, None, ...]).float().to(self.device)
-        action = torch.from_numpy(action[None, None, ...]).float().to(self.device)
-        reward = torch.from_numpy(np.array([reward])[None, None, ...]).float().to(self.device)
+    def update_context(self, obs: np.ndarray, action: np.ndarray, reward: np.ndarray) -> None:
+        # Append single transition to the current context
+        obs = obs.reshape((1, 1, *obs.shape))
+        action = action.reshape((1, 1, *action.shape))
+        reward = reward.reshape((1, 1, *reward.shape))
+
+        obs = torch.from_numpy(obs).float().to(self.device)
+        action = torch.from_numpy(action).float().to(self.device)
+        reward = torch.from_numpy(reward).float().to(self.device)
         transition = torch.cat([obs, action, reward], dim=-1).to(self.device)
 
         if self.agent.encoder.context is None:

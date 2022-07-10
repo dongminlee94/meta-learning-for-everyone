@@ -1,7 +1,3 @@
-"""
-RL^2 trainer based on half-cheetah environment
-"""
-
 import os
 from typing import Any, Dict, List
 

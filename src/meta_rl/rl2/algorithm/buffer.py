@@ -1,7 +1,3 @@
-"""
-Simple buffer implementation
-"""
-
 from typing import Dict, List
 
 import numpy as np
@@ -9,8 +5,6 @@ import torch
 
 
 class Buffer:
-    """Simple buffer class that includes computing return and gae"""
-
     def __init__(
         self,
         trans_dim: int,
@@ -49,7 +43,7 @@ class Buffer:
         value: np.ndarray,
         log_prob: np.ndarray,
     ) -> None:
-        """Add transition, hiddens, value, and log_prob to the buffer"""
+        # Add transition, hiddens, value, and log_prob to the buffer
         assert self._top < self._max_size
         self._trans[self._top] = tran
         self._pi_hiddens[self._top] = pi_hidden
@@ -62,7 +56,7 @@ class Buffer:
         self._top += 1
 
     def add_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
-        """Add trajectories to the buffer"""
+        # Add trajectories to the buffer
         for traj in trajs:
             for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
                 traj["trans"],
@@ -86,7 +80,7 @@ class Buffer:
                 )
 
     def compute_gae(self) -> None:
-        """Compute return and GAE"""
+        # Compute return and GAE
         prev_value = 0
         running_return = 0
         running_advant = 0
@@ -110,7 +104,7 @@ class Buffer:
         self._advants = (self._advants - self._advants.mean()) / self._advants.std()
 
     def sample_batch(self) -> Dict[str, torch.Tensor]:
-        """Sample batch in the buffer"""
+        # Sample batch in the buffer
         assert self._top == self._max_size
         self._top = 0
 

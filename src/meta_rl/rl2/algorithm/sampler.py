@@ -1,7 +1,3 @@
-"""
-Sample collection code through interaction between agent and environment
-"""
-
 from typing import Dict, List
 
 import numpy as np
@@ -11,8 +7,6 @@ from meta_rl.rl2.algorithm.ppo import PPO
 
 
 class Sampler:
-    """Data sampling class"""
-
     def __init__(
         self,
         env: HalfCheetahEnv,
@@ -32,10 +26,11 @@ class Sampler:
         self.v_hidden = None
 
     def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
-        """Obtain samples up to the number of maximum samples"""
+        # Set variables to ratain hidden states
         self.pi_hidden = np.zeros((1, self.hidden_dim))
         self.v_hidden = np.zeros((1, self.hidden_dim))
 
+        # Obtain samples up to the number of maximum samples
         trajs = []
         while not self.cur_samples == max_samples:
             traj = self.rollout(max_samples)
@@ -45,7 +40,7 @@ class Sampler:
         return trajs
 
     def rollout(self, max_samples: int) -> Dict[str, np.ndarray]:
-        """Rollout up to maximum trajectory length"""
+        # Rollout up to maximum trajectory length
         trans = []
         pi_hiddens = []
         v_hiddens = []
@@ -71,7 +66,6 @@ class Sampler:
             reward = np.array(reward).reshape(-1)
             done = np.array(int(done)).reshape(-1)
 
-            # Flatten out the samples needed to train and add them to each list
             trans.append(tran.reshape(-1))
             pi_hiddens.append(self.pi_hidden.reshape(-1))
             v_hiddens.append(self.v_hidden.reshape(-1))

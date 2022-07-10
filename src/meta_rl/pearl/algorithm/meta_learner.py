@@ -1,8 +1,3 @@
-"""
-Meta-train and meta-test implementations with PEARL algorithm
-"""
-
-
 import datetime
 import os
 import time
@@ -23,8 +18,6 @@ from meta_rl.pearl.algorithm.sampler import Sampler
 
 
 class MetaLearner:
-    """PEARL meta-learner class"""
-
     def __init__(
         self,
         env: HalfCheetahEnv,
@@ -42,7 +35,6 @@ class MetaLearner:
         device: torch.device,
         **config,
     ) -> None:
-
         self.env = env
         self.env_name = env_name
         self.agent = agent
@@ -119,7 +111,7 @@ class MetaLearner:
         update_posterior: bool,
         add_to_enc_buffer: bool,
     ) -> None:
-        """Data collecting for meta-train"""
+        # Data collection for a task corresponding to a given index
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = False
 
@@ -132,16 +124,19 @@ class MetaLearner:
             )
             cur_samples += num_samples
 
+            # Add collected trajectory to the RL replay buffer
             self.rl_replay_buffer.add_trajs(task_index, trajs)
             if add_to_enc_buffer:
+                # Add collected trajectory to the encoder replay buffer
                 self.encoder_replay_buffer.add_trajs(task_index, trajs)
 
             if update_posterior:
+                # Update posterior according to the samppled context
                 context_batch = self.sample_context(np.array([task_index]))
                 self.agent.encoder.infer_posterior(context_batch)
 
     def sample_context(self, indices: np.ndarray) -> torch.Tensor:
-        """Sample batch of context from a list of tasks from the replay buffer"""
+        # Sample batch of context from a list of tasks from the replay buffer
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -151,9 +146,7 @@ class MetaLearner:
         return torch.Tensor(context_batch).to(self.device)
 
     def sample_transition(self, indices: np.ndarray) -> List[torch.Tensor]:
-        """
-        Sample batch of transitions from a list of tasks for training the actor-critic
-        """
+        # Sample batch of transitions for task corresponding to given indices
         cur_obs, actions, rewards, next_obs, dones = [], [], [], [], []
         for index in indices:
             batch = self.rl_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -171,11 +164,12 @@ class MetaLearner:
         return [cur_obs, actions, rewards, next_obs, dones]
 
     def meta_train(self) -> None:
-        """PEARL meta-training"""
+        # PEARL meta-train
         total_start_time: float = time.time()
         for iteration in range(self.num_iterations):
             start_time: float = time.time()
 
+            # Collect trajectories for every meta-train tasks at the first iteration
             if iteration == 0:
                 for index in self.train_tasks:
                     self.env.reset_task(index)
@@ -187,13 +181,13 @@ class MetaLearner:
                     )
 
             print(f"\n=============== Iteration {iteration} ===============")
-            # Sample data randomly from train tasks.
+            # Collect new trajectories for ramdomly sampled meta-train tasks
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.encoder_replay_buffer.task_buffers[index].clear()
 
-                # Collect some trajectories with z ~ prior r(z)
+                #  Collect trajectories with sampled z ~ prior r(z)
                 if self.num_prior_samples > 0:
                     print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples with prior")
                     self.collect_train_data(
@@ -214,7 +208,7 @@ class MetaLearner:
                         add_to_enc_buffer=False,
                     )
 
-            # Sample train tasks and compute gradient updates on parameters.
+            # Sample train tasks and compute gradient updates on parameters
             print(f"Start meta-gradient updates of iteration {iteration}")
             for i in range(self.num_meta_grads):
                 indices: np.ndarray = np.random.choice(self.train_tasks, self.meta_batch_size)
@@ -236,7 +230,7 @@ class MetaLearner:
                     transition_batch=transition_batch,
                 )
 
-                # Stop backprop
+                # Stop backpropagation of the latent task variable z
                 self.agent.encoder.task_z.detach()
 
             # Evaluate on test tasks
@@ -256,7 +250,7 @@ class MetaLearner:
         max_samples: int,
         update_posterior: bool,
     ) -> List[List[Dict[str, np.ndarray]]]:
-        """Data collecting for meta-test"""
+        # Collect trajectory for meta-test tasks
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = True
 
@@ -270,11 +264,13 @@ class MetaLearner:
             )
             cur_trajs.append(trajs)
             cur_samples += num_samples
+
+            # Updated posteriror according to the condext
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return cur_trajs
 
     def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
-        """Tensorboard visualization"""
+        # Tensorboard visualization of meta-trained and meta-tested results
         self.writer.add_scalar(
             "test/return_before_infer",
             test_results["return_before_infer"],
@@ -321,7 +317,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        """PEARL meta-testing"""
+        # PEARL meta-test
         test_results = {}
         return_before_infer = 0
         return_after_infer = 0
@@ -342,7 +338,6 @@ class MetaLearner:
                     run_cost_before_infer[i] += trajs[0][0]["infos"][i]
                     run_cost_after_infer[i] += trajs[1][0]["infos"][i]
 
-        # Collect meta-test results
         test_results["return_before_infer"] = return_before_infer / len(self.test_tasks)
         test_results["return_after_infer"] = return_after_infer / len(self.test_tasks)
         if self.env_name == "vel":
@@ -367,7 +362,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # Check if each element of self.dq satisfies early stopping condition
+        # Check whether each element of self.dq satisfies early stopping condition
         if self.env_name == "dir":
             self.dq.append(test_results["return_after_infer"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):

@@ -1,7 +1,3 @@
-"""
-Soft Actor-Critic algorithm implementation for training when meta-train
-"""
-
 from typing import Dict, List
 
 import numpy as np
@@ -13,8 +9,6 @@ from meta_rl.pearl.algorithm.networks import FlattenMLP, MLPEncoder, TanhGaussia
 
 
 class SAC:
-    """Soft Actor-Critic class with context"""
-
     def __init__(
         self,
         observ_dim: int,
@@ -26,7 +20,6 @@ class SAC:
         device: torch.device,
         **config,
     ) -> None:
-
         self.device = device
         self.gamma: float = config["gamma"]
         self.kl_lambda: float = config["kl_lambda"]
@@ -86,17 +79,17 @@ class SAC:
 
     @classmethod
     def hard_target_update(cls, main: FlattenMLP, target: FlattenMLP) -> None:
-        """Update target network to be the same as main network"""
+        # Update target network to be the same as main network
         target.load_state_dict(main.state_dict())
 
     @classmethod
     def soft_target_update(cls, main: FlattenMLP, target: FlattenMLP, tau: float = 0.005):
-        """Update target network by polyak averaging."""
+        # Soft update target network by polyak averaging
         for main_param, target_param in zip(main.parameters(), target.parameters()):
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        """Sample action from the policy"""
+        # Sample action from the policy
         task_z = self.encoder.task_z
         obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
@@ -110,11 +103,8 @@ class SAC:
         context_batch: torch.Tensor,
         transition_batch: List[torch.Tensor],
     ) -> Dict[str, float]:
-        """Train models according to training method of SAC algorithm"""
-        # Data is (meta-batch, batch, feature)
         cur_obs, actions, rewards, next_obs, dones = transition_batch
 
-        # Flattens out the transition batch dimension
         cur_obs = cur_obs.view(meta_batch_size * batch_size, -1)
         actions = actions.view(meta_batch_size * batch_size, -1)
         rewards = rewards.view(meta_batch_size * batch_size, -1)
@@ -125,7 +115,6 @@ class SAC:
         self.encoder.infer_posterior(context_batch)
         task_z = self.encoder.task_z
 
-        # Flattens out the context batch dimension
         task_z = [z.repeat(batch_size, 1) for z in task_z]
         task_z = torch.cat(task_z, dim=0)
 
@@ -135,7 +124,7 @@ class SAC:
         self.encoder_optimizer.zero_grad()
         encoder_loss.backward(retain_graph=True)
 
-        # Target for Q regression
+        # Compute target for Q regression
         with torch.no_grad():
             next_inputs = torch.cat([next_obs, task_z], dim=-1)
             next_policy, next_log_policy = self.policy(next_inputs)
@@ -159,7 +148,7 @@ class SAC:
         self.qf_optimizer.step()
         self.encoder_optimizer.step()
 
-        # Policy loss
+        # Compute policy loss
         inputs = torch.cat([cur_obs, task_z.detach()], dim=-1)
         policy, log_policy = self.policy(inputs)
         min_q = torch.min(
@@ -171,14 +160,14 @@ class SAC:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        # Temperature parameter alpha update
+        # Update temperature parameter alpha
         alpha_loss = -(self.log_alpha * (log_policy + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
         self.alpha = self.log_alpha.exp()
 
-        # Polyak averaging for target parameter
+        # Soft update of target parameters toward main parameters
         self.soft_target_update(self.qf1, self.target_qf1)
         self.soft_target_update(self.qf2, self.target_qf2)
         return dict(

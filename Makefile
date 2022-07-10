@@ -11,16 +11,13 @@ format:
 
 lint:
 	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs
-	# nbqa pytest src/ --pylint --flake8
 
 lint-all:
 	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-	# nbqa pytest src/ --pylint --flake8 --cache-clear
 
 lint-staged:
 ifdef STAGED
 	pytest $(STAGED) --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-	# nbqa pytest $(STAGED) --pylint --flake8 --cache-clear
 else
 	@echo "No Staged Python File in the src folder"
 endif

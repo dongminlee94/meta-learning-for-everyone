@@ -1,7 +1,3 @@
-"""
-MAML trainer based on half-cheetah environment
-"""
-
 import os
 from typing import Any, Dict, List
 
@@ -57,7 +53,7 @@ if __name__ == "__main__":
         **env_target_config["pg_params"],
     )
 
-    maml = MetaLearner(
+    meta_learner = MetaLearner(
         env=env,
         env_name=experiment_config["env_name"],
         agent=agent,
@@ -75,4 +71,4 @@ if __name__ == "__main__":
     )
 
     # Run MAML training
-    maml.meta_train()
+    meta_learner.meta_train()

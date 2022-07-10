@@ -1,7 +1,3 @@
-"""
-Sample collection code through interaction between agent and environment
-"""
-
 from typing import Dict, List
 
 import numpy as np
@@ -12,8 +8,6 @@ from meta_rl.maml.algorithm.trpo import TRPO
 
 
 class Sampler:
-    """Data sampling class"""
-
     def __init__(
         self,
         env: HalfCheetahEnv,
@@ -31,7 +25,7 @@ class Sampler:
         self.cur_samples = 0
 
     def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
-        """Obtain samples up to the number of maximum samples"""
+        # Obtain samples up to the number of maximum samples
         trajs = []
         cur_samples = 0
 
@@ -43,7 +37,7 @@ class Sampler:
         return trajs
 
     def rollout(self) -> Dict[str, np.ndarray]:
-        """Rollout up to maximum trajectory length"""
+        # Rollout up to maximum trajectory length
         _cur_obs = []
         _actions = []
         _rewards = []
@@ -55,7 +49,6 @@ class Sampler:
         done = np.zeros(1)
 
         while not (done or cur_step == self.max_step):
-            # Get action
             action = self.agent.get_action(obs)
 
             next_obs, reward, done, info = self.env.step(action)

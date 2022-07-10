@@ -1,8 +1,3 @@
-"""
-Meta-train and meta-test codes with MAML algorithm
-"""
-
-
 import datetime
 import os
 import time
@@ -26,8 +21,6 @@ from meta_rl.maml.algorithm.trpo import TRPO
 
 
 class MetaLearner:
-    """MAML meta-learner class"""
-
     def __init__(
         self,
         env: HalfCheetahEnv,
@@ -45,7 +38,6 @@ class MetaLearner:
         device: torch.device,
         **config,
     ) -> None:
-
         self.env = env
         self.env_name = env_name
         self.agent = agent
@@ -108,7 +100,7 @@ class MetaLearner:
         self.is_early_stopping = False
 
     def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
-        """Collect data before & after gradient for each task batch"""
+        # Collect data through gradient based task adaptation
         backup_params = dict(self.agent.policy.named_parameters())
 
         mode = "test" if is_eval else "train"
@@ -121,7 +113,7 @@ class MetaLearner:
             # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
-                # Collect deterministic performance for evaluation
+                # Collect deterministic performance for meta-test
                 self.agent.policy.is_deterministic = (
                     True if cur_adapt == self.num_adapt_epochs and is_eval else False
                 )
@@ -130,8 +122,6 @@ class MetaLearner:
                 trajs = self.sampler.obtain_samples(max_samples=self.num_samples)
                 self.buffers.add_trajs(cur_task, cur_adapt, trajs)
 
-                # Update policy except validation episode
-                # Get adaptation trajectory for the current task and adaptation step
                 if cur_adapt < self.num_adapt_epochs:
                     train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
@@ -144,22 +134,23 @@ class MetaLearner:
                     with torch.set_grad_enabled(require_grad):
                         self.inner_optimizer.step()
 
-            # Save validation policy
+            # Save validation policy adapted to each task
             self.buffers.add_params(
                 cur_task,
                 self.num_adapt_epochs,
                 dict(self.agent.policy.named_parameters()),
             )
+
             # Restore to pre-updated policy
             self.agent.update_model(self.agent.policy, backup_params)
             self.agent.policy.is_deterministic = False
 
     def meta_surrogate_loss(self, set_grad: bool) -> Tuple[torch.Tensor, ...]:
-        """Compute meta-surrogate loss across batch tasks"""
+        # Compute meta-surrogate loss across batch tasks
         losses, kls, entropies = [], [], []
         backup_params = dict(self.agent.policy.named_parameters())
 
-        # Compute loss for each sampled task
+        # Compute loss for meta-batch task
         for cur_task in range(self.meta_batch_size):
             # Inner loop
             # Adapt policy to each task through few grandient steps
@@ -178,12 +169,12 @@ class MetaLearner:
                 with torch.set_grad_enabled(require_grad):
                     self.inner_optimizer.step()
 
-            # Get validation trajectory and policy
-            valid_batch = self.buffers.get_trajs(cur_task, self.num_adapt_epochs)
+            # Restore to initial policy of line search to calculate surrogate loss
             valid_params = self.buffers.get_params(cur_task, self.num_adapt_epochs)
             self.agent.update_model(self.agent.old_policy, valid_params)
 
             # Compute surrogate loss across batch tasks
+            valid_batch = self.buffers.get_trajs(cur_task, self.num_adapt_epochs)
             loss = self.agent.policy_loss(valid_batch, is_meta_loss=True)
             losses.append(loss)
 
@@ -196,24 +187,23 @@ class MetaLearner:
             entropies.append(entropy)
 
             self.agent.update_model(self.agent.policy, backup_params)
-
         return torch.stack(losses).mean(), torch.stack(kls).mean(), torch.stack(entropies).mean()
 
     def meta_update(self) -> Dict[str, float]:
-        """Update meta-policy using TRPO algorithm"""
         # Outer loop
         # Compute initial descent steps of line search
         loss_before, kl_before, _ = self.meta_surrogate_loss(set_grad=True)
+
         gradient = torch.autograd.grad(loss_before, self.agent.policy.parameters(), retain_graph=True)
         gradient = self.agent.flat_grad(gradient)
         Hvp = self.agent.hessian_vector_product(kl_before, self.agent.policy.parameters())
+
         search_dir = self.agent.conjugate_gradient(Hvp, gradient)
         descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
         loss_before.detach_()
 
-        # Backtracking line search
+        # # Backtracking line search
         backup_params = deepcopy(dict(self.agent.policy.named_parameters()))
-
         for i in range(self.backtrack_iters):
             ratio = self.backtrack_coeff**i
 
@@ -238,7 +228,6 @@ class MetaLearner:
                 print("Keep current meta-policy skipping meta-update")
 
         self.buffers.clear()
-
         return dict(
             loss_after=loss_after.item(),
             kl_after=kl_after.item(),
@@ -246,21 +235,20 @@ class MetaLearner:
         )
 
     def meta_train(self) -> None:
-        """MAML meta-training"""
+        # MAML meta-train
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
             print(f"\n=============== Iteration {iteration} ===============")
-            # Sample batch of tasks randomly from train task distribution and
-            # optain adaptating data for each batch task
+            # Collect trajectory for meta-batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
             self.collect_train_data(indices)
 
-            # Meta update
+            # Gradient based meta-update
             log_values = self.meta_update()
 
-            # # Evaluate on test tasks
+            # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -273,8 +261,7 @@ class MetaLearner:
                 break
 
     def visualize_within_tensorboard(self, results_summary: Dict[str, Any], iteration: int) -> None:
-        """Tensorboard visualization"""
-
+        # Tensorboard visualization of meta-trained and meta-tested results
         self.writer.add_scalar("train/loss_after", results_summary["loss_after"], iteration)
         self.writer.add_scalar("train/kl_after", results_summary["kl_after"], iteration)
         self.writer.add_scalar("train/policy_entropy", results_summary["policy_entropy"], iteration)
@@ -322,7 +309,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        """MAML meta-testing"""
+        # MAML meta-test
         results_summary = {}
         returns_before_grad = []
         returns_after_grad = []
@@ -360,7 +347,6 @@ class MetaLearner:
 
         self.buffers.clear()
 
-        # Collect meta-test results
         results_summary["return_before_grad"] = sum(returns_before_grad) / len(self.test_tasks)
         results_summary["return_after_grad"] = sum(returns_after_grad) / len(self.test_tasks)
         if self.env_name == "vel":
@@ -373,7 +359,7 @@ class MetaLearner:
                 abs(run_cost_after_grad / len(self.test_tasks)),
             )
 
-        # Check if each element of self.dq satisfies early stopping condition
+        # Check whether each element of self.dq satisfies early stopping condition
         self.dq.append(results_summary["return_after_grad"])
         if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
             self.is_early_stopping = True

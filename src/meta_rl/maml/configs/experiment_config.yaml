@@ -1,5 +1,4 @@
-
-# Experiment configs
+# MAML experiment configs
 
 # Select either dir or vel (str)
 env_name: "dir"
