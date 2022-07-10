@@ -9,25 +9,25 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-# Meta Learning for Everyone: Developing Few-shot Learning Models and Fast Reinforcement Learning Agents Using PyTorch
+# Meta Learning for Everyone: Developing Few-shot Learning Models and Fast Reinforcement Learning Agents using PyTorch
 
-Code repository for "Meta Learning for Everyone"
+This repository is a repository for the book "Meta-Learning for Everyone".
 
 ## Requirements
 
-This repository utilizes **python 3.8.8**
+This repository is implemented and verified on **python 3.8.8**.
 
-## How to install and use this repository
+## Installation and Usage
 
 ### 1. Install Anaconda
 
-First, install Anaconda from the link as followed
+First, install Anaconda from the link below.
 
 https://www.anaconda.com/
 
 ### 2. Create Anaconda envrionment
 
-Second, follow the commands below to create a new python environment and activate the created Conda environment,
+Second, follow the commands below to create a new python environment and activate the created environment.
 
 ```bash
 (base) $ conda create -y -n meta python=3.8.8
@@ -39,7 +39,7 @@ Second, follow the commands below to create a new python environment and activat
 
 ### 3. Install packages
 
-Next, after cloning this repository, run the following command to install required packages.
+Next, after cloning this repository, run the following command to install the required packages.
 
 **MacOS & Linux user**
 
@@ -67,11 +67,11 @@ $ conda activate meta
 (meta) $ sh ./scripts/window-init.sh
 ```
 
-### 4. Train models & check results
+### 4. Train models & Check results
 
 **Meta-SL**
 
-For Meta-SL, move to each algorithm folder and use `jupyter notebook` to run the algorithm and check the results
+For Meta-SL, move to each algorithm folder, run the algorithms using `jupyter notebook`, and check the results.
 
 ```bash
 (meta) $ jupyter notebook
@@ -85,7 +85,7 @@ If you are trying to use Colab, please install PyTorch-related packages by execu
 
 **Meta-RL**
 
-For Meta-RL, move to each algorithm folder and run the commands as followed.
+For Meta-RL, move to each algorithm folder and run the commands below.
 
 ```bash
 # RL^2
@@ -98,7 +98,7 @@ For Meta-RL, move to each algorithm folder and run the commands as followed.
 (meta) $ python pearl_trainer.py
 ```
 
-In the case of Meta-RL, please run the Tensorboard command below to check the results of the meta-trains and meta-tests you executed.
+In the case of Meta-RL, please run the Tensorboard command below to check the results of the meta-training and meta-testing you executed.
 
 ```bash
 (meta) $ tensorboard --logdir=./results
