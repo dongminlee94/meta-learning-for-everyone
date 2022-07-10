@@ -167,7 +167,7 @@ class SAC:
         self.alpha_optimizer.step()
         self.alpha = self.log_alpha.exp()
 
-        # 타겟 함수에 대한 메인 함수 소프트 업데이트
+        # 메인 함수에 대한 타겟 함수의 소프트 업데이트
         self.soft_target_update(self.qf1, self.target_qf1)
         self.soft_target_update(self.qf2, self.target_qf2)
         return dict(
