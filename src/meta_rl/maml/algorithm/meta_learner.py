@@ -93,14 +93,14 @@ class MetaLearner:
 
             self.agent.policy.load_state_dict(ckpt["policy"])
 
-        # 조기 학습 중단 조건 설정
+        # Set up early stopping condition
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
     def collect_train_data(self, indices: np.ndarray, is_eval: bool = False) -> None:
-        # 경사하강 기반 태스크 적응을 동반한 경로 데이터 수집
+        # Collect data through gradient based task adaptation
         backup_params = dict(self.agent.policy.named_parameters())
 
         mode = "test" if is_eval else "train"
@@ -109,23 +109,23 @@ class MetaLearner:
 
             self.env.reset_task(task_index)
 
-            # 내부 루프 (inner loop)
-            # 각각의 태스크에 대한 경사하강 기반의 태스크 적응
+            # Inner loop
+            # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs + 1):
 
-                # 메타-테스트에 대해서는 deterministic한 정책으로 경로 생성
+                # Collect deterministic performance for meta-test
                 self.agent.policy.is_deterministic = (
                     True if cur_adapt == self.num_adapt_epochs and is_eval else False
                 )
 
-                # 학습 경로의 수집과 정책의 적응을 반복한 후 평가 경로를 수집
+                # Sample trajectory while adaptating steps and trajectory after adaptation
                 trajs = self.sampler.obtain_samples(max_samples=self.num_samples)
                 self.buffers.add_trajs(cur_task, cur_adapt, trajs)
 
                 if cur_adapt < self.num_adapt_epochs:
                     train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
-                    # 정책의 태스크 적응
+                    # Adapt the inner-policy
                     inner_loss = self.agent.policy_loss(train_batch)
                     self.inner_optimizer.zero_grad(set_to_none=True)
                     require_grad = cur_adapt < self.num_adapt_epochs - 1
@@ -134,34 +134,34 @@ class MetaLearner:
                     with torch.set_grad_enabled(require_grad):
                         self.inner_optimizer.step()
 
-            # 태스크 적응 이후의 정책 파라미터 저장
+            # Save validation policy adapted to each task
             self.buffers.add_params(
                 cur_task,
                 self.num_adapt_epochs,
                 dict(self.agent.policy.named_parameters()),
             )
 
-            # 태스크 적응 이전의 정책으로 복원
+            # Restore to pre-updated policy
             self.agent.update_model(self.agent.policy, backup_params)
             self.agent.policy.is_deterministic = False
 
     def meta_surrogate_loss(self, set_grad: bool) -> Tuple[torch.Tensor, ...]:
-        # 수집된 메타-배치 태스크의 데이터를 바탕으로 메타러닝 손실 계산
+        # Compute meta-surrogate loss across batch tasks
         losses, kls, entropies = [], [], []
         backup_params = dict(self.agent.policy.named_parameters())
 
-        # 메타-배치 태스크에 대한 손실 계산
+        # Compute loss for meta-batch task
         for cur_task in range(self.meta_batch_size):
-            # 내부 루프 (inner loop)
-            # 각각의 태스크에 대한 경사하강 기반의 태스크 적응
+            # Inner loop
+            # Adapt policy to each task through few grandient steps
             for cur_adapt in range(self.num_adapt_epochs):
 
                 require_grad = cur_adapt < self.num_adapt_epochs - 1 or set_grad
 
-                # 버퍼에 저장된 태스크 학습 경로 얻기
+                # Get adaptation trajectory
                 train_batch = self.buffers.get_trajs(cur_task, cur_adapt)
 
-                # 액터-크리틱 알고리즘을 사용한 정책의 태스크 적응
+                # Adapt the inner-policy by A2C
                 inner_loss = self.agent.policy_loss(train_batch)
                 self.inner_optimizer.zero_grad(set_to_none=True)
                 inner_loss.backward(create_graph=require_grad)
@@ -169,20 +169,20 @@ class MetaLearner:
                 with torch.set_grad_enabled(require_grad):
                     self.inner_optimizer.step()
 
-            # Surrogate 손실 계산을 위해 line search 초기 정책으로 초기화
+            # Restore to initial policy of line search to calculate surrogate loss
             valid_params = self.buffers.get_params(cur_task, self.num_adapt_epochs)
             self.agent.update_model(self.agent.old_policy, valid_params)
 
-            # 메타-배치 태스크에 대한 메타러닝 손실로서 평가경로의 surrogage 손실 계산
+            # Compute surrogate loss across batch tasks
             valid_batch = self.buffers.get_trajs(cur_task, self.num_adapt_epochs)
             loss = self.agent.policy_loss(valid_batch, is_meta_loss=True)
             losses.append(loss)
 
-            # 배치 태스크에 대한 평가 경로의 평균 KL divergence 계산
+            # Compute average of KL divergence across batch tasks
             kl = self.agent.kl_divergence(valid_batch)
             kls.append(kl)
 
-            # 배치 태스크에 대한 평가 경로의 평균 정책 엔트로피 계산
+            # Compute average of policy entropy across batch tasks
             entropy = self.agent.compute_policy_entropy(valid_batch)
             entropies.append(entropy)
 
@@ -190,8 +190,8 @@ class MetaLearner:
         return torch.stack(losses).mean(), torch.stack(kls).mean(), torch.stack(entropies).mean()
 
     def meta_update(self) -> Dict[str, float]:
-        # 외부 루프 (outer loop)
-        # Line search를 시작하기 위한 첫 경사하강 스텝 계산
+        # Outer loop
+        # Compute initial descent steps of line search
         loss_before, kl_before, _ = self.meta_surrogate_loss(set_grad=True)
 
         gradient = torch.autograd.grad(loss_before, self.agent.policy.parameters(), retain_graph=True)
@@ -202,7 +202,7 @@ class MetaLearner:
         descent_step = self.agent.compute_descent_step(Hvp, search_dir, self.max_kl)
         loss_before.detach_()
 
-        # Line search 역추적을 통한 파라미터 업데이트
+        # # Backtracking line search
         backup_params = deepcopy(dict(self.agent.policy.named_parameters()))
         for i in range(self.backtrack_iters):
             ratio = self.backtrack_coeff**i
@@ -212,7 +212,7 @@ class MetaLearner:
 
             loss_after, kl_after, policy_entropy = self.meta_surrogate_loss(set_grad=False)
 
-            # KL 제약조건을 만족할 경우 정책 업데이트
+            # Update the policy, when the KL constraint is satisfied
             is_improved = loss_after < loss_before
             is_constrained = kl_after <= self.max_kl
             print(f"{i}-Backtracks | Loss {loss_after:.4f} < Loss_old {loss_before:.4f} : ", end="")
@@ -235,20 +235,20 @@ class MetaLearner:
         )
 
     def meta_train(self) -> None:
-        # 메타-트레이닝
+        # MAML meta-train
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
             print(f"\n=============== Iteration {iteration} ===============")
-            # 메타-배치 태스크에 대한 데이터 수집
+            # Collect trajectory for meta-batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
             self.collect_train_data(indices)
 
-            # 경사하강 기반의 메타-업데이트
+            # Gradient based meta-update
             log_values = self.meta_update()
 
-            # 메타-테스트 태스크에서 학습성능 평가
+            # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -261,7 +261,7 @@ class MetaLearner:
                 break
 
     def visualize_within_tensorboard(self, results_summary: Dict[str, Any], iteration: int) -> None:
-        # 메타-트레이닝 및 메타-테스트 결과를 텐서보드에 기록
+        # Tensorboard visualization of meta-trained and meta-tested results
         self.writer.add_scalar("train/loss_after", results_summary["loss_after"], iteration)
         self.writer.add_scalar("train/kl_after", results_summary["kl_after"], iteration)
         self.writer.add_scalar("train/policy_entropy", results_summary["policy_entropy"], iteration)
@@ -309,7 +309,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        # 메타-테스트
+        # MAML meta-test
         results_summary = {}
         returns_before_grad = []
         returns_after_grad = []
@@ -359,12 +359,12 @@ class MetaLearner:
                 abs(run_cost_after_grad / len(self.test_tasks)),
             )
 
-        # 학습 결과가 조기 중단 조건을 만족하는지 체크
+        # Check whether each element of self.dq satisfies early stopping condition
         self.dq.append(results_summary["return_after_grad"])
         if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
             self.is_early_stopping = True
 
-        # 학습 모델 저장
+        # Save the trained models
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save({"policy": self.agent.policy.state_dict()}, ckpt_path)

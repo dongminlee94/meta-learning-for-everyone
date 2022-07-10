@@ -21,12 +21,12 @@ class MultiTaskReplayBuffer:
             )
 
     def add_trajs(self, task: int, trajs: List[Dict[str, np.ndarray]]) -> None:
-        # 멀티-태스트 리플레이 버퍼에 태스트에 대한 경로 추가
+        # Add trajectories of the task to multi-task replay buffer
         for traj in trajs:
             self.task_buffers[task].add_traj(traj)
 
     def sample_batch(self, task: int, batch_size: int) -> Dict[str, np.ndarray]:
-        # 멀티-태스크 리플레이 버퍼에서 태스크의 배치 생성
+        # Sample batch of the task in multi-task replay buffer
         return self.task_buffers[task].sample(batch_size)
 
 

@@ -27,7 +27,7 @@ class Sampler:
         update_posterior: bool,
         accum_context: bool = True,
     ) -> Tuple[List[Dict[str, np.ndarray]], int]:
-        # 최대 샘플량의 수까지 샘플들 얻기
+        # Obtain samples up to the number of maximum samples
         trajs = []
         cur_samples = 0
 
@@ -42,7 +42,7 @@ class Sampler:
         return trajs, cur_samples
 
     def rollout(self, accum_context: bool = True) -> Dict[str, np.ndarray]:
-        # 최대 경로 길이까지 경로 생성
+        # Rollout up to maximum trajectory length
         _cur_obs = []
         _actions = []
         _rewards = []
@@ -58,7 +58,7 @@ class Sampler:
             action = self.agent.get_action(obs)
             next_obs, reward, done, info = self.env.step(action)
 
-            # 에이전트의 현재 context 업데이트
+            # Update the agent's current context
             if accum_context:
                 self.update_context(obs=obs, action=action, reward=np.array([reward]))
 
@@ -81,7 +81,7 @@ class Sampler:
         )
 
     def update_context(self, obs: np.ndarray, action: np.ndarray, reward: np.ndarray) -> None:
-        # 현재 context에 하나의 transition 추가
+        # Append single transition to the current context
         obs = obs.reshape((1, 1, *obs.shape))
         action = action.reshape((1, 1, *action.shape))
         reward = reward.reshape((1, 1, *reward.shape))

@@ -19,10 +19,10 @@ class GRU(nn.Module):
         super().__init__()
         self.hidden_activation = hidden_activation
 
-        # GRU 레이어 생성
+        # Set GRU layers
         self.gru = nn.GRU(input_size=input_dim, hidden_size=hidden_dim)
 
-        # 출력 레이어 생성
+        # Set output layer
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)

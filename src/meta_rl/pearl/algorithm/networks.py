@@ -22,7 +22,7 @@ class MLP(nn.Module):
         self.output_dim = output_dim
         self.hidden_activation = hidden_activation
 
-        # Fully connected 레이어 생성
+        # Set fully connected layers
         self.fc_layers = nn.ModuleList()
         self.hidden_layers = [hidden_dim] * 3
         in_layer = input_dim
@@ -33,7 +33,7 @@ class MLP(nn.Module):
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
-        # 출력 레이어 생성
+        # Set the output layer
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         self.last_fc_layer.weight.data.uniform_(-init_w, init_w)
         self.last_fc_layer.bias.data.uniform_(-init_w, init_w)
@@ -72,18 +72,18 @@ class MLPEncoder(FlattenMLP):
         self.clear_z()
 
     def clear_z(self, num_tasks: int = 1) -> None:
-        # q(z|c)를 prior r(z)로 초기화
+        # Reset q(z|c) to the prior r(z)
         self.z_mean = torch.zeros(num_tasks, self.latent_dim).to(self.device)
         self.z_var = torch.ones(num_tasks, self.latent_dim).to(self.device)
 
-        # Prior r(z)에서 새로운 z를 생성
+        # Sample a new z from the prior r(z)
         self.sample_z()
 
-        # 지금까지 모은 context 초기화
+        # Reset the context collected so far
         self.context = None
 
     def sample_z(self) -> None:
-        # z ~ r(z) 또는 z ~ q(z|c) 생성
+        # Sample z ~ r(z) or z ~ q(z|c)
         dists = []
         for mean, var in zip(torch.unbind(self.z_mean), torch.unbind(self.z_var)):
             dist = torch.distributions.Normal(mean, torch.sqrt(var))
@@ -97,7 +97,7 @@ class MLPEncoder(FlattenMLP):
         mean: torch.Tensor,
         var: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Product of gaussians (POG)의 평균과 표준편차 계산
+        # Compute mean, stddev of product of gaussians (POG)
         var = torch.clamp(var, min=1e-7)
         pog_var = 1.0 / torch.sum(torch.reciprocal(var), dim=0)
         pog_mean = pog_var * torch.sum(mean / var, dim=0)
@@ -107,7 +107,7 @@ class MLPEncoder(FlattenMLP):
         params = self.forward(context)
         params = params.view(context.size(0), -1, self.output_dim).to(self.device)
 
-        # q(z|c)의 평균과 분산 계산
+        # With probabilistic z, predict mean and variance of q(z | c)
         z_mean = torch.unbind(params[..., : self.latent_dim])
         z_var = torch.unbind(F.softplus(params[..., self.latent_dim :]))
         z_params = [self.product_of_gaussians(mu, var) for mu, var in zip(z_mean, z_var)]
@@ -117,7 +117,7 @@ class MLPEncoder(FlattenMLP):
         self.sample_z()
 
     def compute_kl_div(self) -> torch.Tensor:
-        # KL( q(z|c) || r(z) ) 계산
+        # Compute KL( q(z|c) || r(z) )
         prior = torch.distributions.Normal(
             torch.zeros(self.latent_dim).to(self.device),
             torch.ones(self.latent_dim).to(self.device),

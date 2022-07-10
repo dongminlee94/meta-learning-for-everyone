@@ -1,53 +1,53 @@
 # RL^2 속도 목표 보상 환경 설정
 
-# 일반 환경 설정
-# -----------
-# 메타-트레이닝에 대한 태스크의 수
+# General setup
+# -------------
+# Number of tasks for meta-train
 train_tasks: 300
 
-# 메타-테스팅에 대한 태스크의 수
+# Number of tasks for meta-test
 test_tasks: 15
 
-# 정책 네트워크에서 사용되는 은닉 유닛의 수
+# Number of hidden units in policy networks
 policy_hidden_dim: 64
 
-# 정책 네트워크에서 사용되는 은닉 유닛의 수
+# Number of hidden units in value networks
 value_function_hidden_dim: 32
 
-# MAML 환경 설정
-# ------------
+# MAML setup
+# ----------
 maml_params:
-    # 트레이닝에 대한 반복 수
+    # Number of training iterations
     num_iterations: 1000
-    # 트레이닝에 대한 태스크 샘플 수
+    # Number of task samples for training
     meta_batch_size: 40
-    # 태스크마다 수집할 샘플 수
+    # Number of samples per task to train
     num_samples: 4000
-    # 환경에 대한 최대 스텝 수
+    # Maximum steps for the environment
     max_steps: 200
-    # 내부 루프 적응 에폭 수
+    # Number of inner adaptation iterations for the MAML algorithm
     num_adapt_epochs: 1
-    # 내부 루프 적응의 학습률
+    # Learning rate of inner adaptation
     inner_learning_rate: 0.1
-    # 조기 중단 조건의 수
+    # Number of early stopping conditions
     num_stop_conditions: 3
-    # 조기 중단 조건에서 사용되는 목표 값
+    # Goal value used to early stopping condition
     stop_goal: -100
-    # Backtracking line search에 대한 최대 반복 수
+    # Maximum iters for backtracking line search
     backtrack_iters: 15
-    # Line searching 단계에서 지수함수적으로 감소하는 비율
+    # Exponentially decreasing ratio for line searching step
     backtrack_coeff: 0.8
-    # KL-divergence의 제한 값
+    # KL-divergence limit
     max_kl: 0.01
 
-# PG 환경 설정
+# PG setup
 # ----------
 pg_params:
-    # Baseline fitting으로써 가치 함수의 학습률
+    # Learning rate of value_fuction as a baseline fitting
     vf_learning_rate: 0.1
-    # Baseline fitting으로써 가치 함수의 반복 수
+    # Learning iterations of value_fuction as a baseline fitting
     vf_learning_iters: 1
-    # 할인율
+    # RL discount factor
     gamma: 0.99
-    # GAE 파라미터
+    # gae parameters
     lamda: 1.0

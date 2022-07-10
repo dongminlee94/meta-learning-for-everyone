@@ -22,7 +22,7 @@ class PPO:
         self.mini_batch_size = config["mini_batch_size"]
         self.clip_param = config["clip_param"]
 
-        # 네트워크 초기화
+        # Instantiate networks
         self.policy = GaussianGRU(
             input_dim=trans_dim,
             output_dim=action_dim,
@@ -49,7 +49,7 @@ class PPO:
         trans: np.ndarray,
         hidden: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # 주어진 관측 상태와 은닉 상태에 따른 현재 정책의 action 얻기
+        # Get an action from the policy network
         action, log_prob, hidden_out = self.policy(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -61,7 +61,7 @@ class PPO:
         )
 
     def get_value(self, trans: np.ndarray, hidden: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        # 상태 가치 함수 추론
+        # Get values from the value network
         value, hidden_out = self.vf(
             torch.Tensor(trans).to(self.device),
             torch.Tensor(hidden).to(self.device),
@@ -69,7 +69,6 @@ class PPO:
         return value.detach().cpu().numpy(), hidden_out.detach().cpu().numpy()
 
     def train_model(self, batch_size: int, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
-        # PPO 알고리즘에 따른 네트워크 학습
         trans = batch["trans"]
         pi_hiddens = batch["pi_hiddens"]
         v_hiddens = batch["v_hiddens"]
@@ -114,11 +113,11 @@ class PPO:
                 advant_batches,
                 log_prob_batches,
             ):
-                # 상태 가치 함수 손실 계산
+                # Compute value function loss
                 value_batch, _ = self.vf(trans_batch, v_hidden_batch)
                 value_loss = F.mse_loss(value_batch.view(-1, 1), return_batch)
 
-                # 정책 손실 계산
+                # Compute policy loss
                 new_log_prob_batch = self.policy.get_log_prob(
                     trans_batch,
                     pi_hidden_batch,
@@ -133,7 +132,7 @@ class PPO:
 
                 policy_loss = -torch.min(policy_loss, clipped_loss).mean()
 
-                # 손실 합 계산
+                # Compute total loss
                 total_loss = policy_loss + 0.5 * value_loss
                 self.optimizer.zero_grad()
                 total_loss.backward()

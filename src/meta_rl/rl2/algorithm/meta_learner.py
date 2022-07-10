@@ -83,20 +83,20 @@ class MetaLearner:
             self.agent.vf.load_state_dict(ckpt["vf"])
             self.buffer = ckpt["buffer"]
 
-        # 조기 학습 중단 조건 설정
+        # Set up early stopping condition
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
         self.is_early_stopping = False
 
     def meta_train(self) -> None:
-        # 메타-트레이닝
+        # RL^2 meta-train
         total_start_time = time.time()
         for iteration in range(self.num_iterations):
             start_time = time.time()
 
             print(f"=============== Iteration {iteration} ===============")
-            # 메타-배치 태스크에 대한 경로를 수집
+            # Collect trajectories for meta-batch tasks
             indices = np.random.randint(len(self.train_tasks), size=self.meta_batch_size)
             for i, index in enumerate(indices):
                 self.env.reset_task(index)
@@ -110,11 +110,11 @@ class MetaLearner:
 
             batch = self.buffer.sample_batch()
 
-            # 정책과 가치함수를 PPO 알고리즘에서 학습
+            # Train the policy and the value function with PPO
             print(f"Start the meta-gradient update of iteration {iteration}")
             log_values = self.agent.train_model(self.batch_size, batch)
 
-            # 메타-테스트 태스크에서 학습 성능 평가
+            # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -127,7 +127,7 @@ class MetaLearner:
                 break
 
     def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
-        # 메타-트레이닝 및 메타-테스팅 결과를 텐서보드에 기록
+        # Tensorboard visualization of meta-trained and meta-tested results
         self.writer.add_scalar("test/return", test_results["return"], iteration)
         if self.env_name == "vel":
             self.writer.add_scalar("test/sum_run_cost", test_results["sum_run_cost"], iteration)
@@ -150,7 +150,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        # 메타-테스트
+        # RL^2 meta-test
         test_results = {}
         test_return: float = 0
         test_run_cost = np.zeros(self.max_step)
@@ -178,7 +178,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # 학습 결과가 조기 중단 조건을 만족하는지를 체크
+        # Check whether each element of self.dq satisfies early stopping condition
         if self.env_name == "dir":
             self.dq.append(test_results["return"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
@@ -188,7 +188,7 @@ class MetaLearner:
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
 
-        # 학습 모델 저장
+        # Save the trained models
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save(

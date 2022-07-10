@@ -19,7 +19,7 @@ class MLP(nn.Module):
         self.output_dim = output_dim
         self.hidden_activation = hidden_activation
 
-        # Fully connected 레이어 생성
+        # Set fully connected layers
         self.fc_layers = nn.ModuleList()
         self.hidden_layers = [hidden_dim] * 2
         in_layer = input_dim
@@ -32,7 +32,7 @@ class MLP(nn.Module):
             self.__setattr__("fc_layer{}".format(i), fc_layer)
             self.fc_layers.append(fc_layer)
 
-        # 출력 레이어 생성
+        # Set the output layer
         self.last_fc_layer = nn.Linear(hidden_dim, output_dim)
         nn.init.xavier_uniform_(self.last_fc_layer.weight.data)
         self.last_fc_layer.bias.data.zero_()

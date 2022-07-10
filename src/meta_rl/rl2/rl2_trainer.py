@@ -11,24 +11,24 @@ from meta_rl.rl2.algorithm.meta_learner import MetaLearner
 from meta_rl.rl2.algorithm.ppo import PPO
 
 if __name__ == "__main__":
-    # 실험 환경 설정에 대한 하이퍼파라미터들 불러오기
+    # Experiment configuration setup
     with open(os.path.join("configs", "experiment_config.yaml"), "r") as file:
         experiment_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
-    # 목표 보상 설정에 대한 하이퍼파라미터들 불러오기
+    # Target reward configuration setup
     with open(
         os.path.join("configs", experiment_config["env_name"] + "_target_config.yaml"),
         "r",
     ) as file:
         env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
-    # 멀티-태스크 환경과 샘플 태스크들 생성
+    # Create a multi-task environment and sample tasks
     env: HalfCheetahEnv = ENVS["cheetah-" + experiment_config["env_name"]](
         num_tasks=env_target_config["train_tasks"] + env_target_config["test_tasks"],
     )
     tasks: List[int] = env.get_all_task_idx()
 
-    # 랜덤 시드 값 설정
+    # Set a random seed
     env.reset(seed=experiment_config["seed"])
     np.random.seed(experiment_config["seed"])
     torch.manual_seed(experiment_config["seed"])
@@ -70,5 +70,5 @@ if __name__ == "__main__":
         **env_target_config["rl2_params"],
     )
 
-    # RL^2 학습 시작
+    # Run RL^2 training
     meta_learner.meta_train()

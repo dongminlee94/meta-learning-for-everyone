@@ -56,9 +56,9 @@ class MetaLearner:
 
         self.sampler = Sampler(env=env, agent=agent, max_step=config["max_step"], device=device)
 
-        # 리플레이 버퍼를 분리하여 초기화
-        # - RL 업데이트를 위한 버퍼
-        # - 인코더 업데이트를 위한 버퍼
+        # Separate replay buffers for
+        # - training RL update
+        # - training encoder update
         self.rl_replay_buffer = MultiTaskReplayBuffer(
             observ_dim=observ_dim,
             action_dim=action_dim,
@@ -98,7 +98,7 @@ class MetaLearner:
             self.rl_replay_buffer = ckpt["rl_replay_buffer"]
             self.encoder_replay_buffer = ckpt["encoder_replay_buffer"]
 
-        # 조기 학습 중단 조건 설정
+        # Set up early stopping condition
         self.dq: deque = deque(maxlen=config["num_stop_conditions"])
         self.num_stop_conditions: int = config["num_stop_conditions"]
         self.stop_goal: int = config["stop_goal"]
@@ -111,7 +111,7 @@ class MetaLearner:
         update_posterior: bool,
         add_to_enc_buffer: bool,
     ) -> None:
-        # 주어진 인덱스 태스크에 대한 경로 데이터 수집
+        # Data collection for a task corresponding to a given index
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = False
 
@@ -124,19 +124,19 @@ class MetaLearner:
             )
             cur_samples += num_samples
 
-            # RL 리플레이 버퍼에 수집한 데이터 저장
+            # Add collected trajectory to the RL replay buffer
             self.rl_replay_buffer.add_trajs(task_index, trajs)
             if add_to_enc_buffer:
-                # 인코더 리플레이 버퍼에 수집한 데이터 저장
+                # Add collected trajectory to the encoder replay buffer
                 self.encoder_replay_buffer.add_trajs(task_index, trajs)
 
             if update_posterior:
-                # 샘플한 context에 따른 posterior 업데이트
+                # Update posterior according to the samppled context
                 context_batch = self.sample_context(np.array([task_index]))
                 self.agent.encoder.infer_posterior(context_batch)
 
     def sample_context(self, indices: np.ndarray) -> torch.Tensor:
-        # 인코더 버퍼에서 주어진 인덱스에 해당하는 태스크의 context 샘플
+        # Sample batch of context from a list of tasks from the replay buffer
         context_batch = []
         for index in indices:
             batch = self.encoder_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -146,7 +146,7 @@ class MetaLearner:
         return torch.Tensor(context_batch).to(self.device)
 
     def sample_transition(self, indices: np.ndarray) -> List[torch.Tensor]:
-        # RL 버퍼에서 주어진 인덱스에 해당하는 태스크의 경로 샘플
+        # Sample batch of transitions for task corresponding to given indices
         cur_obs, actions, rewards, next_obs, dones = [], [], [], [], []
         for index in indices:
             batch = self.rl_replay_buffer.sample_batch(task=index, batch_size=self.batch_size)
@@ -164,12 +164,12 @@ class MetaLearner:
         return [cur_obs, actions, rewards, next_obs, dones]
 
     def meta_train(self) -> None:
-        # 메타-트레이닝
+        # PEARL meta-train
         total_start_time: float = time.time()
         for iteration in range(self.num_iterations):
             start_time: float = time.time()
 
-            # 첫번째 반복단계에 한해 모든 메타-트레이닝 태스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
+            # Collect trajectories for every meta-train tasks at the first iteration
             if iteration == 0:
                 for index in self.train_tasks:
                     self.env.reset_task(index)
@@ -181,13 +181,13 @@ class MetaLearner:
                     )
 
             print(f"\n=============== Iteration {iteration} ===============")
-            # 임의의 메타 트레이닝 태스크에 대한 새로운 경로를 버퍼에 저장
+            # Collect new trajectories for ramdomly sampled meta-train tasks
             for i in range(self.num_sample_tasks):
                 index = np.random.randint(len(self.train_tasks))
                 self.env.reset_task(index)
                 self.encoder_replay_buffer.task_buffers[index].clear()
 
-                #  샘플된 z ~ prior r(z)에 대한 경로 수집
+                #  Collect trajectories with sampled z ~ prior r(z)
                 if self.num_prior_samples > 0:
                     print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples with prior")
                     self.collect_train_data(
@@ -197,8 +197,8 @@ class MetaLearner:
                         add_to_enc_buffer=True,
                     )
 
-                # 인코더는 prior r(z)로 생성된 경로 데이터만을 사용하여 학습되나,
-                # RL 정책의 학습에는 z ~ posterior q(z|c)로 생성된 경로도 사용
+                # Even if encoder is trained only on samples from the prior r(z),
+                # the policy needs to learn to handle z ~ posterior q(z|c)
                 if self.num_posterior_samples > 0:
                     print(f"[{i + 1}/{self.num_sample_tasks}] collecting samples with posterior")
                     self.collect_train_data(
@@ -208,21 +208,21 @@ class MetaLearner:
                         add_to_enc_buffer=False,
                     )
 
-            # 샘플된 메타-배치 태스크들의 경로 데이터로 네트워크 업데이트
+            # Sample train tasks and compute gradient updates on parameters
             print(f"Start meta-gradient updates of iteration {iteration}")
             for i in range(self.num_meta_grads):
                 indices: np.ndarray = np.random.choice(self.train_tasks, self.meta_batch_size)
 
-                # 인코더의 context와 은닉 상태 초기화
+                # Zero out context and hidden encoder state
                 self.agent.encoder.clear_z(num_tasks=len(indices))
 
-                # Context 배치 샘플
+                # Sample context batch
                 context_batch: torch.Tensor = self.sample_context(indices)
 
-                # 경로 배치 샘플
+                # Sample transition batch
                 transition_batch: List[torch.Tensor] = self.sample_transition(indices)
 
-                # 정책, Q-함수, 인코더 네트워크를 SAC 알고리즘에서 학습
+                # Train the policy, Q-functions and the encoder
                 log_values: Dict[str, float] = self.agent.train_model(
                     meta_batch_size=self.meta_batch_size,
                     batch_size=self.batch_size,
@@ -230,10 +230,10 @@ class MetaLearner:
                     transition_batch=transition_batch,
                 )
 
-                # 인코더의 태스크변수 z의 Backpropagation 차단
+                # Stop backpropagation of the latent task variable z
                 self.agent.encoder.task_z.detach()
 
-            # 메타-테스트 태스크에서 학습성능 평가
+            # Evaluate on test tasks
             self.meta_test(iteration, total_start_time, start_time, log_values)
 
             if self.is_early_stopping:
@@ -250,7 +250,7 @@ class MetaLearner:
         max_samples: int,
         update_posterior: bool,
     ) -> List[List[Dict[str, np.ndarray]]]:
-        # 메타-테스트 태스크에 대한 경로 데이터 수집
+        # Collect trajectory for meta-test tasks
         self.agent.encoder.clear_z()
         self.agent.policy.is_deterministic = True
 
@@ -265,12 +265,12 @@ class MetaLearner:
             cur_trajs.append(trajs)
             cur_samples += num_samples
 
-            # Context에 따른 posterior 업데이트
+            # Updated posteriror according to the condext
             self.agent.encoder.infer_posterior(self.agent.encoder.context)
         return cur_trajs
 
     def visualize_within_tensorboard(self, test_results: Dict[str, Any], iteration: int) -> None:
-        # 메타-트레이닝 및 메타-테스팅 결과를 텐서보드에 기록
+        # Tensorboard visualization of meta-trained and meta-tested results
         self.writer.add_scalar(
             "test/return_before_infer",
             test_results["return_before_infer"],
@@ -317,7 +317,7 @@ class MetaLearner:
         start_time: float,
         log_values: Dict[str, float],
     ) -> None:
-        # 메타-테스트
+        # PEARL meta-test
         test_results = {}
         return_before_infer = 0
         return_after_infer = 0
@@ -362,7 +362,7 @@ class MetaLearner:
 
         self.visualize_within_tensorboard(test_results, iteration)
 
-        # 학습 결과가 조기 중단 조건을 만족하는지 체크
+        # Check whether each element of self.dq satisfies early stopping condition
         if self.env_name == "dir":
             self.dq.append(test_results["return_after_infer"])
             if all(list(map((lambda x: x >= self.stop_goal), self.dq))):
@@ -372,7 +372,7 @@ class MetaLearner:
             if all(list(map((lambda x: x <= self.stop_goal), self.dq))):
                 self.is_early_stopping = True
 
-        # 학습 모델 저장
+        # Save the trained models
         if self.is_early_stopping:
             ckpt_path = os.path.join(self.result_path, "checkpoint_" + str(iteration) + ".pt")
             torch.save(

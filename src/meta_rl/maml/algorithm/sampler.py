@@ -25,7 +25,7 @@ class Sampler:
         self.cur_samples = 0
 
     def obtain_samples(self, max_samples: int) -> List[Dict[str, np.ndarray]]:
-        # 최대 샘플량의 수까지 샘플들 얻기
+        # Obtain samples up to the number of maximum samples
         trajs = []
         cur_samples = 0
 
@@ -37,7 +37,7 @@ class Sampler:
         return trajs
 
     def rollout(self) -> Dict[str, np.ndarray]:
-        # 최대 경로 길이까지 경로 생성
+        # Rollout up to maximum trajectory length
         _cur_obs = []
         _actions = []
         _rewards = []

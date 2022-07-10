@@ -31,11 +31,11 @@ class MultiTaskBuffer:
             )
 
     def assign_index(self, task_index: int, adapt_index: int) -> int:
-        # 태스크 인덱스와 적응 인덱스에 따라 버퍼 인덱스 할당
+        # Assign buffer index according to current task and adapation
         return self.num_tasks * adapt_index + task_index
 
     def add_trajs(self, cur_task: int, cur_adapt: int, trajs: List[Dict[str, np.ndarray]]) -> None:
-        # 할당된 태스크 버퍼에 이동한 경로들 추가
+        # Add trajectories to the assigned task buffer
         self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_trajs(trajs)
 
     def add_params(
@@ -44,11 +44,11 @@ class MultiTaskBuffer:
         cur_adapt: int,
         params: Dict[str, torch.nn.parameter.Parameter],
     ) -> None:
-        # 할당된 태스크 버퍼에 태스크 파라미터 추가
+        # Add adapted parameters to the assigned task buffer
         self.task_buffers[self.assign_index(cur_task, cur_adapt)].add_task_params(params)
 
     def get_trajs(self, cur_task: int, cur_adapt: int) -> Dict[str, torch.Tensor]:
-        # 할당된 태스크 버퍼의 배치 얻기
+        # Get batch of the sassigned task buffer
         return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_trajs()
 
     def get_params(
@@ -56,11 +56,11 @@ class MultiTaskBuffer:
         cur_task: int,
         cur_adapt: int,
     ) -> Optional[Dict[str, torch.nn.parameter.Parameter]]:
-        # 할당된 태스크에서 정책 네트워크의 파라미터 얻기
+        # Get policy parameters at the sassigned task
         return self.task_buffers[self.assign_index(cur_task, cur_adapt)].get_task_params()
 
     def clear(self) -> None:
-        # 모든 태스크 버퍼들의 변수들 초기화
+        # Clear variables of all task buffers
         for buffer_index in range(self.num_buffers):
             self.task_buffers[buffer_index].clear_task()
 

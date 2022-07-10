@@ -1,25 +1,25 @@
-# 실험 환경 설정
+# RL^2 Experiment configs
 
-# "dir" 또는 "vel" 중에 하나 선택 (str)
+# Select either dir or vel (str)
 env_name: "dir"
 
-# 저장할 실험 이름 (str)
+# Set an experiment name to save (str)
 save_exp_name: "exp_1"
 
-# 저장할 파일 이름 (str or null)
+# Set a file name to save (str or null)
 save_file_name: null
 
-# 불러올 실험 이름 (str or null)
+# Set an experiment name to load (str or null)
 load_exp_name: null
 
-# 불러올 파일 이름 (str or null)
+# Set a file name to load (str or null)
 load_file_name: null
 
-# 불러올 체크포인트 숫자 (int)
+# Set a checkpoint number (int)
 load_ckpt_num: 0
 
-# GPU 인덱스 값 (int)
+# Set a GPU index (int)
 gpu_index: 0
 
-# 랜덤 시드 값 (int)
+# Set a random seed (int)
 seed: 0

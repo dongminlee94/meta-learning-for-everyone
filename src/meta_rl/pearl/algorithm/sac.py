@@ -25,7 +25,7 @@ class SAC:
         self.kl_lambda: float = config["kl_lambda"]
         self.batch_size: int = config["batch_size"]
 
-        # 네트워크 초기화
+        # Instantiate networks
         self.policy = TanhGaussianPolicy(
             input_dim=observ_dim + latent_dim,
             output_dim=action_dim,
@@ -60,7 +60,7 @@ class SAC:
             hidden_dim=hidden_dim,
         ).to(device)
 
-        # 타켓 행동 가치 함수 네트워크 초기화
+        # Initialize target parameters to match main parameters
         self.hard_target_update(self.qf1, self.target_qf1)
         self.hard_target_update(self.qf2, self.target_qf2)
 
@@ -71,7 +71,7 @@ class SAC:
         )
         self.qf_optimizer = optim.Adam(self.qf_parameters, lr=config["qf_lr"])
 
-        # SAC 관련 변수 초기화
+        # Initialize target entropy, log alpha, and alpha optimizer
         self.target_entropy: int = -np.prod((action_dim,)).item()
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha = self.log_alpha.exp()
@@ -79,17 +79,17 @@ class SAC:
 
     @classmethod
     def hard_target_update(cls, main: FlattenMLP, target: FlattenMLP) -> None:
-        # 타겟 네트워크의 파라미터를 메인 네트워크의 파라미터와 동일하게 업데이트
+        # Update target network to be the same as main network
         target.load_state_dict(main.state_dict())
 
     @classmethod
     def soft_target_update(cls, main: FlattenMLP, target: FlattenMLP, tau: float = 0.005):
-        # 타겟 네트워크의 파라미터를 메인 네트워크의 파라미터로 소프트 업데이트
+        # Soft update target network by polyak averaging
         for main_param, target_param in zip(main.parameters(), target.parameters()):
             target_param.data.copy_(tau * main_param.data + (1.0 - tau) * target_param.data)
 
     def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # 주어진 관측 상태에 따른 현재 정책의 행동 얻기
+        # Sample action from the policy
         task_z = self.encoder.task_z
         obs = torch.Tensor(obs).view(1, -1).to(self.device)
         inputs = torch.cat([obs, task_z], dim=-1).to(self.device)
@@ -111,20 +111,20 @@ class SAC:
         next_obs = next_obs.view(meta_batch_size * batch_size, -1)
         dones = dones.view(meta_batch_size * batch_size, -1)
 
-        # 주어진 context에 따른 z ~ posterior q(z|c) 샘플
+        # Given context c, sample context variable z ~ posterior q(z|c)
         self.encoder.infer_posterior(context_batch)
         task_z = self.encoder.task_z
 
         task_z = [z.repeat(batch_size, 1) for z in task_z]
         task_z = torch.cat(task_z, dim=0)
 
-        # 인코더의 KL-Divergence 손실 계산
+        # Encoder loss using KL divergence on z
         kl_div = self.encoder.compute_kl_div()
         encoder_loss = self.kl_lambda * kl_div
         self.encoder_optimizer.zero_grad()
         encoder_loss.backward(retain_graph=True)
 
-        # 타겟 행동 가치 함수 계산
+        # Compute target for Q regression
         with torch.no_grad():
             next_inputs = torch.cat([next_obs, task_z], dim=-1)
             next_policy, next_log_policy = self.policy(next_inputs)
@@ -135,7 +135,7 @@ class SAC:
             target_v = min_target_q - self.alpha * next_log_policy
             target_q = rewards + self.gamma * (1 - dones) * target_v
 
-        # 행동 가치 함수 손실 계산
+        # Q-function loss
         pred_q1 = self.qf1(cur_obs, actions, task_z)
         pred_q2 = self.qf2(cur_obs, actions, task_z)
         qf1_loss = F.mse_loss(pred_q1, target_q)
@@ -144,11 +144,11 @@ class SAC:
         self.qf_optimizer.zero_grad()
         qf_loss.backward()
 
-        # 행동 가치 함수와 인코더 업데이트
+        # Update two Q-network parameters and encoder network parameters
         self.qf_optimizer.step()
         self.encoder_optimizer.step()
 
-        # 정책 손실 계산
+        # Compute policy loss
         inputs = torch.cat([cur_obs, task_z.detach()], dim=-1)
         policy, log_policy = self.policy(inputs)
         min_q = torch.min(
@@ -160,14 +160,14 @@ class SAC:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        # Temperature 파라미터 알파 업데이트
+        # Update temperature parameter alpha
         alpha_loss = -(self.log_alpha * (log_policy + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
         self.alpha = self.log_alpha.exp()
 
-        # 타겟 함수에 대한 메인 함수 소프트 업데이트
+        # Soft update of target parameters toward main parameters
         self.soft_target_update(self.qf1, self.target_qf1)
         self.soft_target_update(self.qf2, self.target_qf2)
         return dict(
