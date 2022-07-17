@@ -9,23 +9,6 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-
-def find_version(*file_path_parts):
-    here = path.abspath(path.dirname(__file__))
-    with open(path.join(here, *file_path_parts), "r") as fp:
-        version_file_text = fp.read()
-
-    version_match = re.search(
-        r"^__version__ = ['\"]([^'\"]*)['\"]",
-        version_file_text,
-        re.M,
-    )
-    if version_match:
-        return version_match.group(1)
-
-    raise RuntimeError("Unable to find version string.")
-
-
 setup(
     name="meta-learning-for-everyone",
     version="latest",

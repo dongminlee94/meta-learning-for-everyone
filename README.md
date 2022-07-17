@@ -13,6 +13,8 @@
 
 "모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
 
+This repository supports English language. If you need English language, move to [archive/english-language](https://github.com/dongminlee94/meta-learning-for-everyone/tree/archive/english-language) branch.
+
 ## 필요 조건
 
 이 레포지토리에서는 **python 3.8.8** 버전을 사용합니다.
