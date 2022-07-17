@@ -10,6 +10,6 @@
 
 [//]: # (Please link the related issues, if applicable.)
 
-## Anything Else? (Optional) Optional section (e.g., code usage, experimental results, TODO)
+## Anything Else? (Optional)
 
 [//]: # (If there are any other things (e.g., code usage, experimental results, TODO), please explain them.)
