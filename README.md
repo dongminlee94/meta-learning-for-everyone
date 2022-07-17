@@ -9,7 +9,7 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-**This repository supports English language. If you need English language, move to [archive/english-language](https://github.com/dongminlee94/meta-learning-for-everyone/tree/archive/english-language) branch.**
+**This repository supports English language. If you need English language, move to [english-language](https://github.com/dongminlee94/meta-learning-for-everyone/tree/english-language) branch.**
 
 # 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
 
