@@ -55,18 +55,9 @@ https://www.anaconda.com/
 
 **Windows 사용자**
 
-git bash에서 다음 명령어를 실행시켜 conda 명령어가 동작하도록 합니다.
-
 ```bash
-$ echo ". /c/Users/{유저이름}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
-```
-
-git bash를 재실행하고 다음 명령어를 차례대로 실행시켜 주세요.
-
-```bash
-$ conda activate meta
-
-(meta) $ sh ./scripts/window-init.sh
+# 사용자
+(meta) $ "./scripts/window-init.bat"
 ```
 
 ### 4. 모델 학습 및 결과 확인

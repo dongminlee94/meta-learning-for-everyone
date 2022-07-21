@@ -12,13 +12,14 @@ from meta_rl.rl2.algorithm.ppo import PPO
 
 if __name__ == "__main__":
     # 실험 환경 설정에 대한 하이퍼파라미터들 불러오기
-    with open(os.path.join("configs", "experiment_config.yaml"), "r") as file:
+    with open(os.path.join("configs", "experiment_config.yaml"), "r", encoding="utf-8") as file:
         experiment_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
     # 목표 보상 설정에 대한 하이퍼파라미터들 불러오기
     with open(
         os.path.join("configs", experiment_config["env_name"] + "_target_config.yaml"),
         "r",
+        encoding="utf-8",
     ) as file:
         env_target_config: Dict[str, Any] = yaml.load(file, Loader=yaml.FullLoader)
 
