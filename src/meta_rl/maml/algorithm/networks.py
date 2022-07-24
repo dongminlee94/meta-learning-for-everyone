@@ -63,8 +63,8 @@ class GaussianPolicy(MLP):
 
         self.log_std = torch.Tensor([init_std]).log()
         self.log_std = torch.nn.Parameter(self.log_std)
-        self.min_log_std = torch.Tensor([min_std]).log().item() if not min_std else None
-        self.max_log_std = torch.Tensor([max_std]).log().item() if not max_std else None
+        self.min_log_std = torch.Tensor([min_std]).log().item() if min_std is not None else None
+        self.max_log_std = torch.Tensor([max_std]).log().item() if max_std is not None else None
 
         self.is_deterministic = is_deterministic
 

@@ -1,10 +1,11 @@
 import importlib
 import os
+from typing import Callable
 
 ENVS = {}
 
 
-def register_env(name: str) -> function:
+def register_env(name: str) -> Callable:
     def register_env_fn(filename: str) -> str:
         if name in ENVS:
             raise ValueError(f"Cannot register duplicate env {name}")
