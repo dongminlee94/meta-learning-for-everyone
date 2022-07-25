@@ -53,7 +53,6 @@ class GaussianPolicy(MLP):
         is_deterministic: bool = False,
         init_std: float = 1.0,
         min_std: float = 1e-6,
-        max_std: float = None,
     ) -> None:
         super().__init__(
             input_dim=input_dim,
@@ -63,14 +62,13 @@ class GaussianPolicy(MLP):
 
         self.log_std = torch.Tensor([init_std]).log()
         self.log_std = torch.nn.Parameter(self.log_std)
-        self.min_log_std = torch.Tensor([min_std]).log().item() if min_std is not None else None
-        self.max_log_std = torch.Tensor([max_std]).log().item() if max_std is not None else None
+        self.min_log_std = torch.Tensor([min_std]).log().item()
 
         self.is_deterministic = is_deterministic
 
     def get_normal_dist(self, x: torch.Tensor) -> Tuple[Normal, torch.Tensor]:
         mean = super().forward(x)
-        std = torch.exp(self.log_std.clamp(min=self.min_log_std, max=self.max_log_std))
+        std = torch.exp(self.log_std.clamp(min=self.min_log_std))
         return Normal(mean, std), mean
 
     def get_log_prob(self, obs: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
