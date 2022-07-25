@@ -53,18 +53,9 @@ Next, after cloning this repository, run the following command to install the re
 
 **Windows user**
 
-In git bash, execute the command below to make Conda commands work.
-
 ```bash
-$ echo ". /c/Users/{user name}/anaconda3/etc/profile.d/conda.sh" >> ~/.profile
-```
-
-Reopen git bash and run followed commands in order.
-
-```bash
-$ conda activate meta
-
-(meta) $ sh ./scripts/window-init.sh
+# User
+(meta) $ "./scripts/window-init.bat"
 ```
 
 ### 4. Train models & Check results
