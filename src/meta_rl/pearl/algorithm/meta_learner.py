@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from meta_rl.pearl.algorithm.buffers import MultiTaskReplayBuffer
 from meta_rl.pearl.algorithm.sac import SAC
@@ -171,7 +172,8 @@ class MetaLearner:
 
             # 첫번째 반복단계에 한해 모든 메타-트레이닝 태스크에 대한 경로를 수집하여 리플레이 버퍼에 저장
             if iteration == 0:
-                for index in self.train_tasks:
+                print("Collecting initial pool of data for train and eval")
+                for index in tqdm(self.train_tasks):
                     self.env.reset_task(index)
                     self.collect_train_data(
                         task_index=index,
