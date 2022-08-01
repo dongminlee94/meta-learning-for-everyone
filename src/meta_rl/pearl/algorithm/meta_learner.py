@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from meta_rl.pearl.algorithm.buffers import MultiTaskReplayBuffer
 from meta_rl.pearl.algorithm.sac import SAC
@@ -171,7 +172,8 @@ class MetaLearner:
 
             # Collect trajectories for every meta-train tasks at the first iteration
             if iteration == 0:
-                for index in self.train_tasks:
+                print("Collecting initial pool of data for train and eval")
+                for index in tqdm(self.train_tasks):
                     self.env.reset_task(index)
                     self.collect_train_data(
                         task_index=index,
