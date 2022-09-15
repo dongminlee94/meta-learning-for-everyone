@@ -18,7 +18,7 @@ init:
 	conda install -y tensorboard
 	jupyter contrib nbextension install --user
 	jupyter nbextensions_configurator enable --user
-	python -m ipykernel install --user
+	python3 -m ipykernel install --user
 
 publish:
 	poetry export --dev -f requirements.txt --output requirements.txt --without-hashes
