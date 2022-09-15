@@ -1,38 +1,24 @@
-STAGED := $(shell git diff --cached --name-only --diff-filter=ACMR -- 'src/***.py' | sed 's| |\\ |g')
-
-all: format lint
-	echo 'Makefile for meta-learning-for-everyone repository'
+all: init format lint
 
 format:
-	black .
-	isort .
-	nbqa black .
-	nbqa isort .
+	poetry run black .
+	poetry run isort .
+	poetry run nbqa black .
+	poetry run nbqa isort .
 
 lint:
-	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs
-
-lint-all:
-	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-
-lint-staged:
-ifdef STAGED
-	pytest $(STAGED) --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-else
-	@echo "No Staged Python File in the src folder"
-endif
+	poetry run pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs
 
 init:
+	pip install poetry==1.1.15
 	pip install -U pip
-	pip install -e .
-	pip install -r requirements.txt
+	poetry install
+	pre-commit install
 	python3 ./scripts/download-torch.py
 	conda install -y tensorboard
 	jupyter contrib nbextension install --user
 	jupyter nbextensions_configurator enable --user
-	python3 -m ipykernel install --user
+	python -m ipykernel install --user
 
-init-dev:
-	make init
-	pip install -r requirements-dev.txt
-	bash ./scripts/install.sh
+publish:
+	poetry export --dev -f requirements.txt --output requirements.txt --without-hashes

@@ -1,6 +1,8 @@
-pip install -e .
-pip install -r requirements.txt
-python ./scripts/download-torch.py
+pip install poetry==1.1.15
+pip install -U pip
+poetry install
+pre-commit install
+python3 ./scripts/download-torch.py
 conda install -y tensorboard
 jupyter contrib nbextension install --user
 jupyter nbextensions_configurator enable --user
