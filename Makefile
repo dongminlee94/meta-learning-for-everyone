@@ -1,26 +1,13 @@
-STAGED := $(shell git diff --cached --name-only --diff-filter=ACMR -- 'src/***.py' | sed 's| |\\ |g')
-
-all: format lint
-	echo 'Makefile for meta-learning-for-everyone repository'
+all: init format lint
 
 format:
-	black .
+	black . --line-length 104
 	isort .
 	nbqa black .
 	nbqa isort .
 
 lint:
 	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs
-
-lint-all:
-	pytest src/ --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-
-lint-staged:
-ifdef STAGED
-	pytest $(STAGED) --pylint --flake8 --ignore=src/meta_rl/envs --cache-clear
-else
-	@echo "No Staged Python File in the src folder"
-endif
 
 init:
 	pip install -U pip
