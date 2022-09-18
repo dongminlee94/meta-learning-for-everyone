@@ -1,6 +1,6 @@
 autopep8==1.5.0
 GPUtil==1.4.0
-gym==0.25.1
+gym==0.24.1
 imageio>=2.1.2
 jupyter==1.0.0
 jupyter-contrib-nbextensions==0.5.1
@@ -8,5 +8,6 @@ jupyter-nbextensions-configurator==0.4.1
 matplotlib>=3.5.2
 mujoco==2.2.0
 psutil==5.9.1
+setuptools==59.5.0
 torchmeta>=1.8.0
 tqdm>=4.62.3
