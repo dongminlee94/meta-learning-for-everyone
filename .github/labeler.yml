@@ -6,6 +6,8 @@ labels:
     branch: "^feature/.*"
   - label: "bugfix"
     branch: "^bugfix/.*"
+  - label: "hotfix"
+    branch: "^hotfix/.*"
   - label: "enh"
     branch: "^enhance/.*"
   - label: "style"
