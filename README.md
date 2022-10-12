@@ -9,7 +9,9 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-<img src='img/cover.jpeg' width="400">
+<p align="center">
+  <img src='img/cover.jpeg' width="400" />
+</p>
 
 **This repository supports English. If you use English, move to [language/english](https://github.com/dongminlee94/meta-learning-for-everyone/tree/language/english) branch.**
 
