@@ -11,12 +11,10 @@
 
 <center> <img src='img/cover.jpeg' width="400"> </center>
 
-&nbsp;
-
 **This repository supports English. If you use English, move to [language/english](https://github.com/dongminlee94/meta-learning-for-everyone/tree/language/english) branch.**
 
 # 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
-
+s
 "모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
 
 ## 필요 조건
