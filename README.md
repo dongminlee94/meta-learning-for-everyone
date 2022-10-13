@@ -9,6 +9,10 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
+<p align="center">
+  <img src='img/cover.jpeg' width="400" />
+</p>
+
 # Meta Learning for Everyone: Developing Few-shot Learning Models and Fast Reinforcement Learning Agents using PyTorch
 
 This repository is a repository for the book "Meta-Learning for Everyone".
