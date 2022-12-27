@@ -8,6 +8,6 @@ jupyter-nbextensions-configurator==0.4.1
 matplotlib>=3.5.2
 mujoco==2.2.0
 psutil==5.9.1
-setuptools==59.5.0
+setuptools==65.5.1
 torchmeta>=1.8.0
 tqdm>=4.62.3
