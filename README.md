@@ -19,7 +19,7 @@ This repository is a repository for the book "Meta-Learning for Everyone".
 
 ## Requirements
 
-This repository is implemented and verified on **python 3.8.8**.
+This repository is implemented and verified on **python 3.8.15**.
 
 ## Installation and Usage
 
