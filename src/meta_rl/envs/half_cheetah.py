@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import numpy as np
 from gym import utils
 from gym.envs.mujoco import HalfCheetahEnv as HalfCheetahEnv_
