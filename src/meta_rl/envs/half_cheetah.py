@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional
 
 import numpy as np
 from gym import utils
@@ -31,7 +31,7 @@ class HalfCheetahEnv(HalfCheetahEnv_):
         self.viewer.cam.distance = self.model.stat.extent * 0.35
         self.viewer._hide_overlay = True
 
-    def render(self, mode: str = "human") -> Union[List[float], None]:
+    def render(self, mode: str = "human") -> Optional[List[float]]:
         if mode == "rgb_array":
             self._get_viewer().render()
             width, height = 500, 500
