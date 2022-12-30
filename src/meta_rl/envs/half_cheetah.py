@@ -1,5 +1,3 @@
-from typing import List, Union
-
 import numpy as np
 from gym import utils
 from gym.envs.mujoco import HalfCheetahEnv as HalfCheetahEnv_
@@ -30,12 +28,3 @@ class HalfCheetahEnv(HalfCheetahEnv_):
         self.viewer.cam.fixedcamid = camera_id
         self.viewer.cam.distance = self.model.stat.extent * 0.35
         self.viewer._hide_overlay = True
-
-    def render(self, mode: str = "human") -> Union[List[float], None]:
-        if mode == "rgb_array":
-            self._get_viewer().render()
-            width, height = 500, 500
-            data = self._get_viewer().read_pixels(width, height, depth=False)
-            return data
-        elif mode == "human":
-            self._get_viewer().render()
