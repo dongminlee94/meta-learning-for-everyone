@@ -74,11 +74,7 @@ Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용�
 (meta) $ jupyter notebook
 ```
 
-Colab을 이용하실 경우, 아래의 명령어를 cell에 입력하여 PyTorch 관련 패키지들을 설치하고 이용해주세요.
-
-```python
-!pip install torchmeta torchtext==0.10.1 torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-```
+Colab을 이용하실 경우, [Colab에서 Torchmeta 설치하기](https://github.com/dongminlee94/meta-learning-for-everyone/issues/117) 가이드를 참고하여 Torchmeta를 설치하고 이용해주세요.
 
 **Meta-RL**
 
