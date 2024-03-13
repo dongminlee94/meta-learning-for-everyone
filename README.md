@@ -72,11 +72,7 @@ For Meta-SL, move to each algorithm folder, run the algorithms using `jupyter no
 (meta) $ jupyter notebook
 ```
 
-If you are trying to use Colab, please install PyTorch-related packages by executing the command bellow.
-
-```python
-!pip install torchmeta torchtext==0.10.1 torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-```
+If you're using Colab, please refer to the [Installation of Torchmeta in Colab](https://github.com/dongminlee94/meta-learning-for-everyone/issues/117) guide to install Torchmeta.
 
 **Meta-RL**
 
