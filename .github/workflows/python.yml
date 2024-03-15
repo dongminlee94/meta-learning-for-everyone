@@ -1,4 +1,4 @@
-name: "Repo CI] Python Code"
+name: "[Repo CI] Python Code"
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: "CodeQL"
+name: "[Repo CI] CodeQL"
 
 on:
   push:
