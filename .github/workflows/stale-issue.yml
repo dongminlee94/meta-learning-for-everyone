@@ -21,4 +21,5 @@ jobs:
           
           # Close stale issues
           days-before-close: 10
+          close-issue-reason: completed
           close-issue-message: This issue was automatically closed because of stale in 10 days
