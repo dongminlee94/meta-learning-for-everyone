@@ -43,7 +43,7 @@ class Buffer:
         value: np.ndarray,
         log_prob: np.ndarray,
     ) -> None:
-        # 버퍼에 변수들 추가
+        # Add variables to buffer
         assert self._top < self._max_size
         self._trans[self._top] = tran
         self._pi_hiddens[self._top] = pi_hidden
@@ -56,7 +56,7 @@ class Buffer:
         self._top += 1
 
     def add_trajs(self, trajs: List[Dict[str, np.ndarray]]) -> None:
-        # 버퍼에 경로들 추가
+        # Add trajectories to buffer
         for traj in trajs:
             for (tran, pi_hidden, v_hidden, action, reward, done, value, log_prob) in zip(
                 traj["trans"],
@@ -80,17 +80,17 @@ class Buffer:
                 )
 
     def compute_gae(self) -> None:
-        # 보상합과 GAE 값 계산
+        # Calculate return sums and GAE values
         prev_value = 0
         running_return = 0
         running_advant = 0
 
         for t in reversed(range(len(self._rewards))):
-            # 보상합 계산
+            # Calculate return sum
             running_return = self._rewards[t] + self.gamma * (1 - self._dones[t]) * running_return
             self._returns[t] = running_return
 
-            # GAE 값 계산
+            # Calculate GAE value
             running_tderror = (
                 self._rewards[t] + self.gamma * (1 - self._dones[t]) * prev_value - self._values[t]
             )
@@ -100,11 +100,11 @@ class Buffer:
             self._advants[t] = running_advant
             prev_value = self._values[t]
 
-        # 어드밴티지 정규화
+        # Normalize advantages
         self._advants = (self._advants - self._advants.mean()) / self._advants.std()
 
     def sample_batch(self) -> Dict[str, torch.Tensor]:
-        # 버퍼에서 배치 생성
+        # Generate batch from buffer
         assert self._top == self._max_size
         self._top = 0
 
