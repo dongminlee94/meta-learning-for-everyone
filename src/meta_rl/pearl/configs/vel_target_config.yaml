@@ -1,60 +1,60 @@
-# PEARL 속도 목표 보상 환경 설정
+# PEARL velocity target reward environment settings
 
-# 일반 환경 설정
+# General environment settings
 # ----------
-# 메타-트레이닝에 대한 태스크들의 수
+# Number of tasks for meta-training
 train_tasks: 100
 
-# 메타-태스팅에 대한 태스크들이 수
+# Number of tasks for meta-testing
 test_tasks: 30
 
-# Latent context의 차원의 수
+# Number of dimensions of latent context
 latent_dim: 5
 
-# 은닉 유닛의 차원의 수
+# Number of dimensions of hidden units
 hidden_dim: 300
 
-# PEARL 환경 설정
+# PEARL environment settings
 # -------------
 pearl_params:
-    # 트레이닝에 대한 반복 수
+    # Number of iterations for training
     num_iterations: 1000
-    # 매 반복에서 수집할 샘플된 태스크의 수
+    # Number of sampled tasks to collect per iteration
     num_sample_tasks: 5
-    # 트레이닝 이전에 태스크마다 수집된 샘플 수
+    # Number of samples collected per task before training
     num_init_samples: 2000
-    # z ~ prior를 이용할 때 태스크마다 수집할 샘플 수
+    # Number of samples to collect per task when using z ~ prior
     num_prior_samples: 400
-    # 정책 네트워크의 학습에만 사용되고 인코더에는 사용되지 않는
-    # z ~ posterior를 이용할 때 태스크마다 수집할 샘플 수
+    # Number of samples to collect per task when using z ~ posterior
+    # Used only for policy network training, not for encoder
     num_posterior_samples: 600
-    # 하나의 반복마다 취할 메타-그레디언트의 수
+    # Number of meta-gradients to take per iteration
     num_meta_grads: 1500
-    # 메타-배치의 샘플 수
+    # Sample size of meta-batch
     meta_batch_size: 16
-    # Context 배치의 샘플 수
+    # Sample size of context batch
     batch_size: 100
-    # 환경에 대한 최대 스텝 수
+    # Maximum number of steps for environment
     max_step: 200
-    # 최대 버퍼 사이즈
+    # Maximum buffer size
     max_buffer_size: 1000000
-    # 조기 중단 조건의 수
+    # Number of early stopping conditions
     num_stop_conditions: 3
-    # 조기 중단 조건에서 사용되는 목표 값
+    # Target value used in early stopping condition
     stop_goal: 20
 
-# SAC 환경 설정
+# SAC environment settings
 # -----------
 sac_params:
-    # 할인률
+    # Discount factor
     gamma: 0.99
-    # 인코더 손실 함수에서 사용되는 KL divergence에 대한 가중치 값
+    # Weight value for KL divergence used in encoder loss function
     kl_lambda: 0.1
-    # 정책 네트워크와 가치 네트워크의 배치에서 사용되는 샘플 수
+    # Number of samples used in batch for policy and value networks
     batch_size: 256
-    # 행동 가치 함수 네트워크의 학습률
+    # Learning rate for action-value function network
     qf_lr: 0.0003
-    # 인코더 네트워크의 학습률
+    # Learning rate for encoder network
     encoder_lr: 0.0003
-    # 정책 네트워크의 학습률
+    # Learning rate for policy network
     policy_lr: 0.0003
