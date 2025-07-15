@@ -15,25 +15,25 @@
 
 **This repository supports English. If you use English, move to [language/english](https://github.com/dongminlee94/meta-learning-for-everyone/tree/language/english) branch.**
 
-# 모두를 위한 메타러닝: PyTorch를 활용한 Few-shot 학습 모델과 빠른 강화학습 에이전트 만들기
+# Meta-Learning for Everyone: Building Few-shot Learning Models and Fast Reinforcement Learning Agents with PyTorch
 
-"모두를 위한 메타러닝" 책에 대한 코드 레포지토리입니다.
+This is the code repository for the book "Meta-Learning for Everyone".
 
-## 필요 조건
+## Requirements
 
-이 레포지토리에서는 **python 3.8.15** 버전을 사용합니다.
+This repository uses **python 3.8.15**.
 
-## 설치 및 사용 방법
+## Installation and Usage
 
-### 1. Anaconda 설치
+### 1. Install Anaconda
 
-먼저, 아래의 링크에서 Anaconda를 설치합니다.
+First, install Anaconda from the link below.
 
 https://www.anaconda.com/
 
-### 2. Anaconda 환경 만들기
+### 2. Create an Anaconda Environment
 
-다음으로, 아래의 명령어들을 통해 새로운 python 환경을 만들고, 그 환경을 활성화합니다.
+Next, create a new python environment and activate it using the commands below.
 
 ```bash
 (base) $ conda create -y -n meta python=3.8.8
@@ -43,42 +43,42 @@ https://www.anaconda.com/
 (meta) $ conda env list
 ```
 
-### 3. 패키지 설치
+### 3. Install Packages
 
-이어서, 이 레포지토리를 clone한 뒤, 다음의 명령어를 실행하여 필요한 패키지들을 설치해주세요.
+Then, after cloning this repository, run the following commands to install the required packages.
 
-**MacOS 및 Linux 사용자**
+**For MacOS and Linux users**
 
 ```bash
-# 사용자
+# User
 (meta) $ make init
 
-# 개발자
+# Developer
 (meta) $ make init-dev
 ```
 
-**Windows 사용자**
+**For Windows users**
 
 ```bash
-# 사용자
+# User
 (meta) $ "./scripts/window-init.bat"
 ```
 
-### 4. 모델 학습 및 결과 확인
+### 4. Model Training and Results
 
 **Meta-SL**
 
-Meta-SL은 각 알고리즘 폴더로 이동하여 `jupyter notebook`을 이용하여 해당 알고리즘을 실행해주시고 결과를 확인해주세요.
+For Meta-SL, move to each algorithm folder and use `jupyter notebook` to run the corresponding algorithm and check the results.
 
 ```bash
 (meta) $ jupyter notebook
 ```
 
-Colab을 이용하실 경우, [Colab에서 Torchmeta 설치하기](https://github.com/dongminlee94/meta-learning-for-everyone/issues/117) 가이드를 참고하여 Torchmeta를 설치하고 이용해주세요.
+If you are using Colab, please refer to the [Guide to Installing Torchmeta on Colab](https://github.com/dongminlee94/meta-learning-for-everyone/issues/117) to install and use Torchmeta.
 
 **Meta-RL**
 
-Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이용하여 실행해주세요.
+For Meta-RL, move to each algorithm folder and use the commands below to run the algorithms.
 
 ```bash
 # RL^2
@@ -91,7 +91,7 @@ Meta-RL은 각 알고리즘 폴더로 이동하여 아래의 명령어들을 이
 (meta) $ python pearl_trainer.py
 ```
 
-Meta-RL의 경우, 텐서보드를 이용하여 학습 결과를 확인해주세요.
+For Meta-RL, use TensorBoard to check the training results.
 
 ```bash
 (meta) $ tensorboard --logdir=./results
